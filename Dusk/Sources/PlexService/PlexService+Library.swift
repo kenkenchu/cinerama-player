@@ -206,11 +206,66 @@ extension PlexService {
     /// `includeGuids=1` so merging across servers can match the same title by
     /// its global Plex guid instead of falling back to title/year heuristics.
     func getHubs(serverID: String? = nil) async throws -> [PlexHub] {
-        try await fetchHubs(
+        let targetID = try resolveServerID(serverID)
+        let hubs = try await fetchHubs(
             path: "/hubs",
             queryItems: [URLQueryItem(name: "includeGuids", value: "1")],
-            serverID: serverID
+            serverID: targetID
         )
+        var normalized: [PlexHub] = []
+        for hub in hubs {
+            let items = hub.isRecentlyAddedTV
+                ? await recentlyAddedSeries(from: hub.items, serverID: targetID)
+                : hub.items
+            normalized.append(hub.replacingItems(items))
+        }
+        return normalized
+    }
+
+    /// Resolve real show metadata, retaining the newest episode/season's shelf
+    /// position. Do not fabricate show identities, artwork or watch counts from
+    /// an episode. Calls stay on the source server and failures omit that show.
+    func recentlyAddedSeries(from items: [PlexItem], serverID: String) async -> [PlexItem] {
+        var keys: [String] = []
+        var seen = Set<String>()
+        var shows: [String: PlexItem] = [:]
+        for item in items {
+            let key: String?
+            switch item.type {
+            case .show:
+                key = item.ratingKey
+                shows[item.ratingKey] = item
+            case .season: key = item.parentRatingKey
+            case .episode: key = item.grandparentRatingKey
+            default: key = nil
+            }
+            if let key, seen.insert(key).inserted { keys.append(key) }
+        }
+        let missing = keys.filter { shows[$0] == nil }
+        // Bound metadata fan-out, including the larger Show All result.
+        for start in stride(from: 0, to: missing.count, by: 4) {
+            guard !Task.isCancelled else { return [] }
+            let batch = missing[start..<min(start + 4, missing.count)]
+            let fetched = await withTaskGroup(of: PlexItem?.self) { group in
+                for key in batch {
+                    group.addTask {
+                        let metadata: [PlexItem]? = try? await self.fetchMetadata(
+                            path: "/library/metadata/\(key)",
+                            queryItems: [URLQueryItem(name: "includeGuids", value: "1")],
+                            serverID: serverID
+                        )
+                        return metadata?.first { $0.type == .show && $0.ratingKey == key }
+                    }
+                }
+                var result: [PlexItem] = []
+                for await item in group {
+                    if let item { result.append(item) }
+                }
+                return result
+            }
+            for show in fetched { shows[show.ratingKey] = show }
+        }
+        return keys.compactMap { shows[$0] }
     }
 
     func getContinueWatching(serverID: String? = nil) async throws -> [PlexItem] {

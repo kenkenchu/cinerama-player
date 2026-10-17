@@ -47,6 +47,19 @@ struct PlexHub: Decodable, Sendable, Identifiable, Hashable {
     let librarySectionTitle: String?
     let items: [PlexItem]
 
+    /// Home's recent-TV shelf can arrive as shows, seasons or episodes,
+    /// depending on the server's aggregation settings.
+    var isRecentlyAddedTV: Bool {
+        let identifier = hubIdentifier?.lowercased() ?? ""
+        let isRecent = identifier.contains("recentlyadded") ||
+            title.lowercased().contains("recently added")
+        guard isRecent else { return false }
+        let tvTypes: Set<PlexMediaType> = [.show, .season, .episode]
+        return ["show", "season", "episode"].contains(type ?? "") ||
+            identifier.hasPrefix("tv.") ||
+            (!items.isEmpty && items.allSatisfy { tvTypes.contains($0.type) })
+    }
+
     enum CodingKeys: String, CodingKey {
         case key, title, type, hubIdentifier, size, more
         case librarySectionID, librarySectionTitle

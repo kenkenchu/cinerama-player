@@ -58,6 +58,15 @@ rearranging the hero as late servers answer. Preserve the first-paint deadline,
 per-profile payload boundary, and late-server merge behavior. Library order
 comes from the Plex account; Home has no user-editable row layout.
 
+Recently Added TV contains series only. `PlexService.getHubs` resolves episode
+and season entries to real show metadata on their source server, removes repeat
+series and retains first appearance (the most recently added content) order.
+The same normalization runs before merging expanded rows and Show All results.
+Series posters, counts and navigation come from the show, not fabricated episode
+data. Metadata requests are bounded to four at a time; unresolved shows are
+omitted rather than falling back to episode tiles. Continue Watching and other
+episode shelves retain their episode entries.
+
 Library type roots merge recommendations across that type's libraries. Individual
 libraries remain server-scoped. Grid models own paging, sorting, genre and
 collection filters. Clips use landscape artwork and upload/duration labels.
@@ -85,8 +94,10 @@ The player hides the navigation toolbar and uses one video canvas in windowed
 and fullscreen playback. Controls attach as a bottom overlay of that canvas,
 so windowed toolbar/safe-area insets cannot offset them from their background. The bottom control bar contains a fullscreen toggle that
 switches between Enter and Exit Full Screen and targets the owning window; it is
-not duplicated in the toolbar or top overlay. Close remains available above the
-video in both modes, below the native titlebar reveal area in fullscreen. In both windowed and
+not duplicated in the toolbar or top overlay. A Close icon button
+(`rectangle.portrait.and.arrow.right`) sits
+beside the fullscreen toggle in the control bar; there is no top-left close
+overlay. Escape also closes playback, including during loading. In both windowed and
 fullscreen playback, controls fade after two seconds of inactivity; pointer
 movement or a click reveals them again. Hovering anywhere over the control bar
 keeps it visible, including with a stationary pointer. Leaving the bar starts a

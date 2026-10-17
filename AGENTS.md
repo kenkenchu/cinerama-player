@@ -103,7 +103,7 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - The user confirmed catalog player presentation, fullscreen entry/exit,
   windowed/fullscreen control-bar alignment, and Home Resume progress-fill
   corners. The player uses one canvas with no navigation toolbar; keep the
-  fullscreen toggle in the bottom control bar and Close over the video.
+  fullscreen toggle and Close icon button in the bottom control bar.
 - Controls hide after two seconds, but stay visible while hovered, paused, or
   scrubbing. The compact bar shows series name, season/episode numbers and title.
   The monitor-and-waveform button (Cmd-I) opens safe playback diagnostics.

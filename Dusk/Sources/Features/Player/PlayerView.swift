@@ -4,7 +4,6 @@ import SwiftUI
 struct PlayerView: View {
     var isFullScreen = false
     var toggleFullScreen: () -> Void
-    @State private var controlsVisible = true
     @Environment(PlaybackCoordinator.self) private var playback
     @Environment(\.scenePhase) private var scenePhase
 
@@ -12,7 +11,7 @@ struct PlayerView: View {
         ZStack {
             Color.black
             if let engine = playback.engine, let source = playback.playbackSource {
-                MacPlayerSession(engine: engine, source: source, playback: playback, isFullScreen: isFullScreen, controlsVisible: $controlsVisible, toggleFullScreen: toggleFullScreen)
+                MacPlayerSession(engine: engine, source: source, playback: playback, isFullScreen: isFullScreen, toggleFullScreen: toggleFullScreen)
                     .id(playback.playerPresentationID)
             }
             if playback.playerLoadingState.isVisible {
@@ -26,18 +25,7 @@ struct PlayerView: View {
                 }.padding(40).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
             }
         }
-        .overlay(alignment: .topLeading) {
-            Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
-                .keyboardShortcut(.escape, modifiers: [])
-                .help("Close Player (Esc)")
-                .labelStyle(.iconOnly)
-                .buttonStyle(.glass)
-                .padding(24)
-                .padding(.top, isFullScreen ? 32 : 0)
-                .opacity(controlsVisible ? 1 : 0)
-                .allowsHitTesting(controlsVisible)
-                .accessibilityHidden(!controlsVisible)
-        }
+        .onExitCommand { playback.showPlayer = false }
         .toolbarVisibility(.hidden, for: .windowToolbar)
         .preferredColorScheme(.dark)
         .environment(\.colorScheme, .dark)
@@ -51,17 +39,15 @@ private struct MacPlayerSession: View {
     let playback: PlaybackCoordinator
     let isFullScreen: Bool
     let toggleFullScreen: () -> Void
-    @Binding var controlsVisible: Bool
     @State private var model: PlayerViewModel
     @State private var activity: NSObjectProtocol?
     @State private var lastPointerLocation: CGPoint?
     @State private var showsDebugInfo = false
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
-    init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>, toggleFullScreen: @escaping () -> Void) {
+    init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, toggleFullScreen: @escaping () -> Void) {
         self.toggleFullScreen = toggleFullScreen
         self.isFullScreen = isFullScreen
-        _controlsVisible = controlsVisible
         self.source = source
         self.playback = playback
         _model = State(initialValue: PlayerViewModel(engine: engine, markers: playback.activeItemDetails?.markers ?? [], liveTVContext: source.liveTVContext))
@@ -135,9 +121,6 @@ private struct MacPlayerSession: View {
             }
         }
         .simultaneousGesture(TapGesture().onEnded { model.touchControls() })
-        .onChange(of: model.showControls, initial: true) { _, visible in
-            controlsVisible = visible
-        }
         .onChange(of: isFullScreen) { _, _ in model.touchControls() }
         .task { configure() }
         .onDisappear {
@@ -277,6 +260,9 @@ private struct MacPlayerSession: View {
                 }
                 .keyboardShortcut("f", modifiers: [.control, .command])
                 .help(isFullScreen ? "Exit Full Screen (⌃⌘F)" : "Enter Full Screen (⌃⌘F)")
+                Button("Close Player", systemImage: "rectangle.portrait.and.arrow.right") { playback.showPlayer = false }
+                    .keyboardShortcut(.escape, modifiers: [])
+                    .help("Close Player (Esc)")
             }
             .labelStyle(.iconOnly)
             .controlSize(.regular)

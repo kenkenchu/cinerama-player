@@ -129,11 +129,14 @@ extension PlexService {
                 guard let key = source.key else { continue }
                 let serverID = source.serverID
                 group.addTask {
-                    let items = (try? await service.getHubItems(
+                    var items = (try? await service.getHubItems(
                         hubKey: key,
                         size: size,
                         serverID: serverID
                     )) ?? []
+                    if hub.isRecentlyAddedTV {
+                        items = await service.recentlyAddedSeries(from: items, serverID: serverID)
+                    }
                     return (index, items)
                 }
             }
