@@ -235,6 +235,11 @@ it is not the program's total duration. They show Plex's reported output codecs,
 container and copy/transcode decisions, explicitly retaining unavailable values
 when Plex omits them. Hardware decoding is not inferred from these decisions.
 
+The native seek slider binds to normalized `timelineProgress`/`timelinePosition`
+from the live clock snapshot, not directly to the segment-stepped HLS seekable
+bounds. Watching live keeps the thumb at the live edge instead of jumping back
+on playlist updates; actual seeks still clamp to the reachable buffer.
+
 ## Timeline, Scrobble, and Up Next
 
 Online sessions report on the active server and maintain transcode keepalives.

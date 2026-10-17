@@ -188,9 +188,13 @@ private struct MacPlayerSession: View {
                     .monospacedDigit()
                     .help("Elapsed time")
                     .accessibilityLabel("Elapsed time: \(model.formattedTime)")
-                Slider(value: Binding(get: { model.isScrubbing ? model.scrubPosition : model.currentTime },
-                                      set: { model.updateScrub(to: $0) }),
-                       in: (model.seekableRange ?? 0...max(model.duration, 1)),
+                // Playlist bounds advance in whole segments. Drawing against
+                // them makes live progress jump backwards on every refresh.
+                // The live timeline projects a steady edge; seeking still
+                // clamps to the engine's actual reachable buffer.
+                Slider(value: Binding(get: { model.timelineProgress },
+                                      set: { model.updateScrub(to: model.timelinePosition(for: $0)) }),
+                       in: 0...1,
                        onEditingChanged: { editing in
                            if editing { model.beginScrub() } else { model.endScrub() }
                        })

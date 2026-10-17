@@ -77,9 +77,8 @@ struct LiveTimelineSnapshot: Equatable {
     /// touched the controls always reads LIVE.
     static let liveEdgeTolerance: TimeInterval = 10
     /// Span of the bar when the guide has no program covering the playhead.
-    /// Floored so a freshly tuned session (whose rewind window is only seconds
-    /// long) is not scrubbed by whole minutes per pixel, and capped so a long
-    /// session does not compress the playhead into the last pixel.
+    /// Used only until the reachable window is known. Once known, expose that
+    /// window without adding unseekable time before the channel was tuned.
     static let fallbackWindowSpan: TimeInterval = 5 * 60
     static let maximumFallbackWindowSpan: TimeInterval = 4 * 60 * 60
 
@@ -166,9 +165,9 @@ struct LiveTimelineSnapshot: Equatable {
             let lower = max(start, earliestReachableDate ?? start)
             window = lower...max(end, lower.addingTimeInterval(60))
         } else {
-            let reachableSpan = earliestReachableDate.map { now.timeIntervalSince($0) } ?? 0
+            let reachableSpan = earliestReachableDate.map { now.timeIntervalSince($0) } ?? fallbackWindowSpan
             let span = min(
-                max(reachableSpan, fallbackWindowSpan),
+                max(reachableSpan, 1),
                 maximumFallbackWindowSpan
             )
             window = now.addingTimeInterval(-span)...now

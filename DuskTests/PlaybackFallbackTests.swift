@@ -7,6 +7,31 @@ import Testing
 @Suite("Automatic playback recovery presentation")
 @MainActor
 struct PlaybackFallbackTests {
+    @Test func liveSliderWindowIgnoresPlaylistEndJumps() throws {
+        let channel = try JSONDecoder().decode(PlexLiveChannel.self, from: Data(#"{"id":"1","title":"Channel"}"#.utf8))
+        let provider = PlexLiveTVProvider(
+            identifier: "live", providerIdentifier: "live", title: "Live TV", dvrID: 1, gridKey: "/grid"
+        )
+        let lineup = PlexLiveTVLineup(provider: provider, guides: [.init(channel: channel, programs: [])])
+        let context = PlexLivePlaybackContext(lineup: lineup, channel: channel, program: nil, sessionID: "live")
+        let now = Date(timeIntervalSince1970: 1_000)
+        let before = LiveTimelineSnapshot.make(
+            context: context, position: 50, liveEdge: 50, seekableRange: 0...56, now: now
+        )
+        let after = LiveTimelineSnapshot.make(
+            context: context, position: 50, liveEdge: 50, seekableRange: 0...62, now: now
+        )
+        #expect(before.positionRange == after.positionRange)
+        #expect(abs(after.positionRange.lowerBound) < 0.001)
+        #expect(abs(after.positionRange.upperBound - 50) < 0.001)
+        let paused = LiveTimelineSnapshot.make(
+            context: context, position: 50, liveEdge: 70, seekableRange: 0...76,
+            now: now.addingTimeInterval(20)
+        )
+        #expect(abs(paused.positionRange.upperBound - 70) < 0.001)
+        #expect(paused.secondsBehindLive == 20)
+    }
+
     @Test func explicitServerConversionsAreRejectedBeforeServerAccess() async {
         let service = PlexService()
         let modes: [PlexService.TranscodeDeliveryMode] = [
