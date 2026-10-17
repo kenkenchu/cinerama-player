@@ -176,6 +176,19 @@ private struct MacPlayerSession: View {
             .accessibilityAction { model.togglePlayPause() }
     }
 
+    private var playbackTitle: String {
+        guard let details = playback.activeItemDetails else {
+            return source.liveTVContext?.channel.title ?? "Dusk"
+        }
+        if details.type == .episode,
+           let numbering = MediaTextFormatter.compactSeasonEpisodeLabel(
+               season: details.parentIndex, episode: details.index
+           ) {
+            return "\(numbering) · \(details.title)"
+        }
+        return details.title
+    }
+
     private var controls: some View {
         VStack(spacing: 6) {
             HStack {
@@ -200,10 +213,11 @@ private struct MacPlayerSession: View {
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
                     .help("Forward 10 Seconds (→)")
-                Text(playback.activeItemDetails?.title ?? source.liveTVContext?.channel.title ?? "Dusk")
+                Text(playbackTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
+                    .help(playbackTitle)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Toggle("Playback Debug Info", systemImage: "gearshape", isOn: $showsDebugInfo)
                     .toggleStyle(.button)
