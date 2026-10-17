@@ -170,7 +170,6 @@ private struct MacPlayerSession: View {
                         }
                     }
             )
-            .help("Click to play or pause; double-click for fullscreen")
             .accessibilityLabel("Video playback")
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { model.togglePlayPause() }
