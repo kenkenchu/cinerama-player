@@ -158,9 +158,7 @@ private struct MacPlayerSession: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 12) {
-            Text(playback.activeItemDetails?.title ?? source.liveTVContext?.channel.title ?? "Dusk")
-                .font(.headline).lineLimit(1)
+        VStack(spacing: 6) {
             HStack {
                 Text(MediaTextFormatter.playbackDuration(milliseconds: Int(model.currentTime * 1000)) ?? "0:00").monospacedDigit()
                 Slider(value: Binding(get: { model.isScrubbing ? model.scrubPosition : model.currentTime },
@@ -172,14 +170,19 @@ private struct MacPlayerSession: View {
                     .accessibilityLabel("Playback position")
                 Text(MediaTextFormatter.playbackDuration(milliseconds: Int(model.duration * 1000)) ?? "0:00").monospacedDigit()
             }
-            HStack(spacing: 20) {
+            .font(.caption.monospacedDigit())
+            HStack(spacing: 12) {
                 Button("Back 10 Seconds", systemImage: "gobackward.10") { model.seek(to: model.currentTime - 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.leftArrow, modifiers: [])
                 Button(model.state == .playing ? "Pause" : "Play", systemImage: model.state == .playing ? "pause.fill" : "play.fill") { model.togglePlayPause() }
                     .keyboardShortcut(.space, modifiers: [])
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
-                Spacer()
+                Text(playback.activeItemDetails?.title ?? source.liveTVContext?.channel.title ?? "Dusk")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Toggle("Playback Debug Info", systemImage: "gearshape", isOn: $showsDebugInfo)
                     .toggleStyle(.button)
                     .help("Show playback engine and rendering diagnostics")
@@ -213,9 +216,17 @@ private struct MacPlayerSession: View {
                 .help(isFullScreen ? "Exit Full Screen" : "Enter Full Screen")
             }
             .labelStyle(.iconOnly)
+            .controlSize(.small)
+            .buttonStyle(.borderless)
+            .menuStyle(.borderlessButton)
         }
-        .padding(18)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background {
+            RoundedRectangle(cornerRadius: 28)
+                .fill(.ultraThinMaterial)
+                .opacity(0.65)
+        }
     }
 
     private var debugOverlay: some View {

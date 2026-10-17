@@ -94,6 +94,10 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Escape | Close player |
 | Ctrl-Cmd-F | Native window fullscreen |
 
+The playback control bar uses two compact rows (timeline, then transport and
+menus with an inline title), small native controls, and a translucent ultra-thin
+material background so it covers less of the video.
+
 The gear-icon toggle in the playback control bar opens a live Playback Debug Info
 overlay. It stays visible independently of control auto-hide and has its own close
 button. It shows the engine, route, source codecs, subtitle selection/codec,
