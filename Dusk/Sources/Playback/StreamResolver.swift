@@ -251,6 +251,7 @@ enum StreamResolver {
     /// whether the native HLS path or VLCKit is the safer renderer.
     static func evaluateLiveTV(
         media: PlexMedia,
+        streamDecisions: PlexService.TranscodeStreamDecisions? = nil,
         forceAVPlayer: Bool = false,
         forceVLCKit: Bool = false
     ) -> Decision {
@@ -267,16 +268,32 @@ enum StreamResolver {
                 requiresServerTranscode: true
             )
         }
-        if let decision = videoDecision(for: media) {
-            return decision
+        // Tune metadata can omit codecs, or describe the tuner input rather
+        // than the delivered HLS. Prefer Plex's actual stream decision.
+        let videoStreams = media.parts.flatMap(\.streams).filter { $0.streamType == .video }
+        if let codec = streamDecisions?.videoCodec {
+            let source = streamDecisions?.videoDecision == "copy" ? videoStreams.first : nil
+            if let decision = videoDecision(codec: codec, stream: source) { return decision }
+        } else if videoStreams.isEmpty {
+            if let codec = media.videoCodec,
+               let decision = videoDecision(codec: codec, stream: nil) { return decision }
+        } else {
+            for stream in videoStreams {
+                if let codec = stream.codec ?? media.videoCodec,
+                   let decision = videoDecision(codec: codec, stream: stream) { return decision }
+            }
         }
-        if let decision = audioDecision(for: media) {
-            return decision
+        let audioCodecs = streamDecisions?.audioCodec.map { [$0] }
+            ?? media.parts.flatMap(\.streams).filter { $0.streamType == .audio }.compactMap { $0.codec ?? media.audioCodec }
+        for codec in audioCodecs.isEmpty ? [media.audioCodec].compactMap({ $0 }) : audioCodecs {
+            if let decision = audioDecision(codec: codec) { return decision }
         }
+        let nativeServerSubtitles = streamDecisions?.subtitleLocation == "segments-subs" ||
+            ["burn", "ignore"].contains(streamDecisions?.subtitleDecision ?? "")
         for part in media.parts {
             for stream in part.streams where stream.streamType == .subtitle {
                 guard let codec = stream.codec?.lowercased() else { continue }
-                if !avSubtitleCodecs.contains(codec) {
+                if !nativeServerSubtitles, !avSubtitleCodecs.contains(codec) {
                     return Decision(
                         engine: .vlcKit,
                         reason: "Live subtitle codec \(codec.uppercased()) requires VLCKit"
@@ -284,7 +301,7 @@ enum StreamResolver {
                 }
             }
         }
-        return Decision(engine: .avPlayer, reason: "Plex Live HLS is AVPlayer-compatible")
+        return Decision(engine: .avPlayer, reason: "Plex Live HLS through AVPlayer; missing codec metadata does not require VLC")
     }
 
     // MARK: - Dolby Atmos / Spatial Audio Remux

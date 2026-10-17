@@ -269,7 +269,11 @@ struct PlaybackDebugInfo: Sendable {
     }
 
     var containerLabel: String {
-        (part.container ?? media.container ?? "Unknown").uppercased()
+        if case .liveTV = decision {
+            guard let container = serverDecisions?.container, container.lowercased() != "hls" else { return "HLS" }
+            return "HLS / \(container.uppercased())"
+        }
+        return (part.container ?? media.container ?? "Unknown").uppercased()
     }
 
     var resolutionLabel: String {
@@ -296,6 +300,11 @@ struct PlaybackDebugInfo: Sendable {
     }
 
     var videoLabel: String {
+        if case .liveTV = decision {
+            return serverDecisions?.videoCodec?.uppercased()
+                ?? media.videoCodec?.uppercased() ?? selectedVideoStream?.codec?.uppercased()
+                ?? "Not reported by Plex"
+        }
         let codec = media.videoCodec?.uppercased() ?? selectedVideoStream?.codec?.uppercased() ?? "Unknown"
         if let profile = media.videoProfile?.uppercased() {
             return "\(codec) (\(profile))"
@@ -304,6 +313,15 @@ struct PlaybackDebugInfo: Sendable {
     }
 
     var audioLabel: String {
+        if case .liveTV = decision {
+            let codec = serverDecisions?.audioCodec?.uppercased()
+                ?? media.audioCodec?.uppercased() ?? selectedAudioStream?.codec?.uppercased()
+                ?? "Not reported by Plex"
+            if let channels = serverDecisions?.audioChannels ?? media.audioChannels ?? selectedAudioStream?.channels {
+                return "\(codec) \(channels)ch"
+            }
+            return codec
+        }
         let codec = media.audioCodec?.uppercased() ?? selectedAudioStream?.codec?.uppercased() ?? "Unknown"
         let channels = media.audioChannels ?? selectedAudioStream?.channels
         if let channels {

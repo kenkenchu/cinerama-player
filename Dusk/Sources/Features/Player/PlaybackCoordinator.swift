@@ -368,6 +368,7 @@ final class PlaybackCoordinator {
 
             let resolver = StreamResolver.evaluateLiveTV(
                 media: tune.media,
+                streamDecisions: tune.serverDecisions,
                 forceAVPlayer: preferences.forceAVPlayer,
                 forceVLCKit: preferences.forceVLCKit
             )
@@ -435,7 +436,8 @@ final class PlaybackCoordinator {
                 part: tune.part,
                 attemptID: attemptID,
                 resolverReason: resolverReason,
-                sanitizedPlaybackURL: context.sanitizedPlaybackURL
+                sanitizedPlaybackURL: context.sanitizedPlaybackURL,
+                serverDecisions: tune.serverDecisions
             )
             playerPresentationID = UUID()
             nowPlayingController.beginLiveSession(
@@ -450,10 +452,54 @@ final class PlaybackCoordinator {
             )
             startTimelineReporting()
             startLiveTVScheduleRefresh()
+            if engineType == .avPlayer, !preferences.forceAVPlayer,
+               !airPlayController.isAirPlayRouteSelected {
+                startDirectPlayFallbackWatch()
+            }
         } catch {
             guard currentPlaybackAttemptID == attemptID else { return }
             loadError = error.localizedDescription
         }
+    }
+
+    /// Keep the same tuner/HLS session when AVPlayer cannot decode its output.
+    /// A retry starts at the live edge and never tunes a second scarce tuner.
+    func fallBackLiveTVToVLC() {
+        guard let source = playbackSource, let live = activeLiveTVContext,
+              let info = debugInfo, info.engine == .avPlayer else { return }
+        let shouldAutoPlay = engine?.state != .paused
+        cancelDirectPlayFallbackWatch()
+        engine?.onPlaybackEnded = nil
+        engine?.stop()
+        let replacement = PlaybackEngineFactory.makeEngine(type: .vlcKit)
+        replacement.onPlaybackEnded = { [weak self] in
+            Task { @MainActor [weak self] in await self?.handlePlaybackEnded() }
+        }
+        replacement.setPictureInPictureDelegate(self)
+        let context = PlaybackAttemptContext(
+            attemptID: UUID(), title: info.title, ratingKey: ratingKey ?? live.sessionID,
+            engine: .vlcKit, resolverReason: "AVPlayer could not play Live HLS; retrying the same stream with VLC",
+            mediaID: info.media.id, partID: info.part.id, sanitizedPlaybackURL: info.sanitizedPlaybackURL
+        )
+        engine = replacement
+        playbackSource = PlaybackSource(
+            url: source.url, startPosition: nil, shouldAutoPlay: shouldAutoPlay,
+            context: context, locality: source.locality, liveTVContext: live
+        )
+        debugInfo = PlaybackDebugInfo(
+            title: info.title, engine: .vlcKit, decision: .liveTV,
+            media: info.media, part: info.part, attemptID: context.attemptID,
+            resolverReason: context.resolverReason, sanitizedPlaybackURL: info.sanitizedPlaybackURL,
+            serverDecisions: info.serverDecisions
+        )
+        playerPresentationID = UUID()
+        nowPlayingController.beginLiveSession(
+            title: info.title, channelTitle: live.channel.displayTitle,
+            artworkPath: live.program?.preferredLandscapePath ?? live.channel.thumb,
+            serverID: activePlaybackServerID, engine: replacement, plexService: plexService,
+            skipBackwardInterval: preferences.playerDoubleTapBackwardInterval.timeInterval,
+            skipForwardInterval: preferences.playerDoubleTapForwardInterval.timeInterval
+        )
     }
 
     // MARK: - Live TV Schedule

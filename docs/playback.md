@@ -202,6 +202,19 @@ session ID for keepalives. Seek against the sliding seekable window and use
 `PlayerLiveTimeline`'s wall-clock/live-edge model. Live sessions report stopped
 state but never scrobble a program as library content.
 
+The tune result retains Plex's HLS stream decisions for diagnostics and engine
+selection. Delivered codecs take priority over tuner-input metadata; missing
+codecs alone do not disqualify AVPlayer. Known incompatible codecs still route
+to VLC. An AVPlayer Live HLS error gets one VLC retry using the same URL and
+tuner/transcode session at the live edge (unless AVPlayer/AirPlay was forced),
+without tuning a second channel session. The existing failure watch owns this
+retry and is cancelled on dismissal or engine replacement.
+
+Live diagnostics label the seekable buffer separately from playback position;
+it is not the program's total duration. They show Plex's reported output codecs,
+container and copy/transcode decisions, explicitly retaining unavailable values
+when Plex omits them. Hardware decoding is not inferred from these decisions.
+
 ## Timeline, Scrobble, and Up Next
 
 Online sessions report on the active server and maintain transcode keepalives.

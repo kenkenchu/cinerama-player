@@ -146,7 +146,8 @@ extension PlexService {
             transcodeSessionID: transcodeSessionID,
             playbackURL: playbackURL,
             media: media,
-            part: part
+            part: part,
+            serverDecisions: transcodeSessionID != nil ? liveStream.streams : nil
         )
     }
 

@@ -7,6 +7,37 @@ import Testing
 @Suite("Automatic playback recovery presentation")
 @MainActor
 struct PlaybackFallbackTests {
+    @Test func liveHLSDoesNotTreatMissingCodecsAsIncompatibility() throws {
+        let media = try JSONDecoder().decode(PlexMedia.self, from: Data(#"""
+            {"id":1,"container":"mpegts","Part":[{"id":1,"key":"/live"}]}
+            """#.utf8))
+        #expect(StreamResolver.evaluateLiveTV(media: media).engine == .avPlayer)
+        #expect(StreamResolver.evaluateLiveTV(media: media, forceVLCKit: true).engine == .vlcKit)
+    }
+
+    @Test func liveHLSUsesDeliveredCodecsRatherThanTunerInput() throws {
+        let media = try JSONDecoder().decode(PlexMedia.self, from: Data(#"""
+            {"id":1,"container":"mpegts","videoCodec":"mpeg2video","audioCodec":"mp2",
+             "Part":[{"id":1,"key":"/live"}]}
+            """#.utf8))
+        #expect(StreamResolver.evaluateLiveTV(media: media).engine == .vlcKit)
+        let delivered = PlexService.TranscodeStreamDecisions(
+            container: "mpegts", videoDecision: "transcode", videoCodec: "h264",
+            audioDecision: "transcode", audioCodec: "aac", subtitleDecision: nil, subtitleLocation: nil
+        )
+        #expect(StreamResolver.evaluateLiveTV(media: media, streamDecisions: delivered).engine == .avPlayer)
+        let debug = PlaybackDebugInfo(
+            title: "Live", engine: .avPlayer, decision: .liveTV,
+            media: media, part: media.parts[0], attemptID: UUID(),
+            resolverReason: "Live HLS", sanitizedPlaybackURL: "https://example.invalid/live.m3u8",
+            serverDecisions: delivered
+        )
+        #expect(debug.videoLabel == "H264")
+        #expect(debug.audioLabel == "AAC")
+        #expect(debug.containerLabel == "HLS / MPEGTS")
+        #expect(debug.plexPlaybackLabel == "Server Transcoding")
+    }
+
     @Test(arguments: [
         #""DOVIPresent":true,"DOVIProfile":5,"DOVIBLCompatID":0,"bitDepth":10"#,
         #""DOVIPresent":true,"DOVIProfile":8,"DOVIBLCompatID":1"#,

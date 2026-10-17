@@ -385,6 +385,7 @@ struct PlexLiveTuneResult: Sendable {
     let playbackURL: URL
     let media: PlexMedia
     let part: PlexMediaPart
+    var serverDecisions: PlexService.TranscodeStreamDecisions? = nil
 }
 
 // MARK: - Plex response envelopes

@@ -313,11 +313,19 @@ private struct MacPlayerSession: View {
     private var debugRows: [(String, String)] {
         var rows: [(String, String)] = [
             ("State", String(describing: model.state)),
-            ("Position", String(format: "%.1f / %.1f s", model.currentTime, model.duration)),
+            ("Position", model.isLiveTV
+                ? String(format: "%.1f s · %@", model.currentTime, model.formattedLiveOffset)
+                : String(format: "%.1f / %.1f s", model.currentTime, model.duration)),
             ("Buffering", model.isBuffering ? "Yes" : "No"),
             ("Subtitle", model.selectedSubtitleTrack?.displayTitle ?? "Off"),
             ("Subtitle codec", model.selectedSubtitleTrack?.codec ?? "Unknown")
         ]
+        if model.isLiveTV {
+            let range = model.engine.seekableTimeRange
+            rows.append(("Live buffer", range.map {
+                String(format: "%.1f–%.1f s (seekable)", $0.lowerBound, $0.upperBound)
+            } ?? "Not available yet"))
+        }
         if let info = playback.debugInfo {
             rows.insert(contentsOf: [
                 ("Engine", info.engineLabel),
@@ -325,7 +333,8 @@ private struct MacPlayerSession: View {
                 ("Plex playback", info.plexPlaybackLabel),
                 ("Plex video", info.processingLabel(info.serverDecisions?.videoDecision)),
                 ("Plex audio", info.processingLabel(info.serverDecisions?.audioDecision)),
-                ("Video", "\(info.videoLabel) · \(info.resolutionLabel)"),
+                ("Video", model.isLiveTV && info.resolutionLabel == "Unknown"
+                    ? info.videoLabel : "\(info.videoLabel) · \(info.resolutionLabel)"),
                 ("Audio", info.audioLabel),
                 ("Container", info.containerLabel),
                 ("Reason", info.resolverLabel)

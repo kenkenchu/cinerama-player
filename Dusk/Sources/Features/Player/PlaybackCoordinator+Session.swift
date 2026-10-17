@@ -1460,8 +1460,9 @@ extension PlaybackCoordinator {
     /// While an online direct-play session is live, a ~500 ms cadence loop
     /// observes the engine; when it reports a terminal error the session is
     /// swapped to the server-stream ladder rung instead of dying on the error
-    /// overlay. Cancelled by finalize/clear and by every engine swap; never
-    /// armed for local downloads or server streams/transcodes.
+    /// overlay. Also watches native Live HLS for a one-shot VLC engine retry.
+    /// Cancelled by finalize/clear and by every engine swap; never armed for
+    /// local downloads or ordinary server streams/transcodes.
     func startDirectPlayFallbackWatch() {
         cancelDirectPlayFallbackWatch()
         isAutomaticDirectPlayFallbackAvailable = true
@@ -1501,6 +1502,10 @@ extension PlaybackCoordinator {
     /// stream (direct-stream/remux). If this attempt itself fails, the normal
     /// error surface stays in place — there is no rung below this one.
     func performDirectPlayServerStreamFallback() async {
+        if let info = debugInfo, case .liveTV = info.decision {
+            fallBackLiveTVToVLC()
+            return
+        }
         let failedPresentationID = playerPresentationID
         defer {
             // A replacement remux/direct-play attempt arms its own watch.
