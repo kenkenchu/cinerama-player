@@ -205,6 +205,14 @@ private struct MacPlayerSession: View {
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .idleDisplaySleepDisabled], reason: "Playing video")
         model.externalSubtitleURLProvider = { playback.plexService.externalSubtitleURL(for: $0, serverID: playback.activePlaybackServerID) }
         model.externalSubtitleRestartHandler = { playback.switchToVLCKitForExternalSubtitle(streamID: $0) }
+        // Capture the session scope so a later profile/item change cannot redirect the write.
+        let profileID = playback.plexService.activeProfileID
+        let serverID = playback.activePlaybackServerID
+        let seriesID = playback.activeItemDetails.flatMap { $0.type == .episode ? $0.grandparentRatingKey : nil }
+        let preferences = playback.preferences
+        model.subtitleSelectionHandler = { track in
+            preferences.rememberSeriesSubtitle(track, profileID: profileID, serverID: serverID, seriesID: seriesID)
+        }
         model.configureAutomaticTrackSelection(
             preferences: playback.preferences, part: playback.debugInfo?.part,
             mediaDetails: playback.activeItemDetails,
@@ -214,7 +222,8 @@ private struct MacPlayerSession: View {
             selectedSubtitleStreamID: playback.activeSubtitleStreamID,
             pendingExternalSubtitleStreamID: playback.consumePendingExternalSubtitleStreamID(),
             explicitTrackSelection: playback.consumePendingExplicitTrackSelection(),
-            spentAutoSkipMarkerIDs: playback.spentAutoSkipMarkerIDs)
+            spentAutoSkipMarkerIDs: playback.spentAutoSkipMarkerIDs,
+            seriesSubtitlePreference: preferences.seriesSubtitlePreference(profileID: profileID, serverID: serverID, seriesID: seriesID))
         model.autoSkipHandler = { marker in model.handleSkipMarker(marker) }
         model.autoSkipSpentHandler = { playback.noteAutoSkipSpent(markerID: $0) }
         model.upNextPosterHandler = { marker in

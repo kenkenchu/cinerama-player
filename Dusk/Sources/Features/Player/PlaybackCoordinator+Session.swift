@@ -194,6 +194,12 @@ extension PlaybackCoordinator {
             // metadata fetch; bail before building any playback state.
             guard !Task.isCancelled, currentPlaybackAttemptID == attemptID else { return .superseded }
 
+            let seriesSubtitlePreference = preferences.seriesSubtitlePreference(
+                profileID: plexService.activeProfileID,
+                serverID: itemServerID,
+                seriesID: details.type == .episode ? details.grandparentRatingKey : nil
+            )
+
             airPlayController.refreshRoute(notify: false)
             let wantsAirPlay = airPlayController.isAirPlayRouteSelected
             let downloadedURL = downloadManager?.localPlaybackURL(
@@ -294,7 +300,8 @@ extension PlaybackCoordinator {
                     let subtitleStreamID = PlayerViewModel.preferredSubtitleStreamID(
                         inPart: part,
                         preferredLanguage: preferences.defaultSubtitleLanguage,
-                        forcedOnly: preferences.subtitleForcedOnly
+                        forcedOnly: preferences.subtitleForcedOnly,
+                        seriesPreference: seriesSubtitlePreference
                     )
                     let result = try await plexService.airPlayStreamURL(
                         ratingKey: ratingKey,
@@ -334,7 +341,8 @@ extension PlaybackCoordinator {
                     let subtitleStreamID = PlayerViewModel.preferredSubtitleStreamID(
                         inPart: part,
                         preferredLanguage: preferences.defaultSubtitleLanguage,
-                        forcedOnly: preferences.subtitleForcedOnly
+                        forcedOnly: preferences.subtitleForcedOnly,
+                        seriesPreference: seriesSubtitlePreference
                     ).flatMap { id -> Int? in
                         guard let stream = part.streams.first(where: { $0.streamType == .subtitle && $0.id == id }) else {
                             return nil
@@ -404,7 +412,8 @@ extension PlaybackCoordinator {
                     let subtitleStreamID = PlayerViewModel.preferredSubtitleStreamID(
                         inPart: part,
                         preferredLanguage: preferences.defaultSubtitleLanguage,
-                        forcedOnly: preferences.subtitleForcedOnly
+                        forcedOnly: preferences.subtitleForcedOnly,
+                        seriesPreference: seriesSubtitlePreference
                     )
                     let mediaIndex = details.media.firstIndex { $0.id == media.id } ?? 0
                     // The request decides conversion before contacting Plex:
@@ -456,7 +465,8 @@ extension PlaybackCoordinator {
                     selectedSubtitleStreamID: PlayerViewModel.preferredSubtitleStreamID(
                         inPart: part,
                         preferredLanguage: preferences.defaultSubtitleLanguage,
-                        forcedOnly: preferences.subtitleForcedOnly
+                        forcedOnly: preferences.subtitleForcedOnly,
+                        seriesPreference: seriesSubtitlePreference
                     ),
                     forceAVPlayer: preferences.forceAVPlayer,
                     forceVLCKit: preferences.forceVLCKit
@@ -563,7 +573,8 @@ extension PlaybackCoordinator {
                 activeSubtitleStreamID = PlayerViewModel.preferredSubtitleStreamID(
                     inPart: part,
                     preferredLanguage: preferences.defaultSubtitleLanguage,
-                    forcedOnly: preferences.subtitleForcedOnly
+                    forcedOnly: preferences.subtitleForcedOnly,
+                    seriesPreference: seriesSubtitlePreference
                 )
             }
             activePlaybackServerID = serverID

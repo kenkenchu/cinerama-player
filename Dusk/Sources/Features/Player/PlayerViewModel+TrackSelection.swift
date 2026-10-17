@@ -7,7 +7,8 @@ private let trackSelectionLogger = Logger(
 )
 
 extension PlayerViewModel {
-    func selectSubtitle(_ track: SubtitleTrack?) {
+    func selectSubtitle(_ track: SubtitleTrack?, rememberSelection: Bool = true) {
+        if rememberSelection { subtitleSelectionHandler?(track) }
         hasAppliedAutomaticSubtitleSelection = true
         hasUserSelectedSubtitleTrack = true
 
@@ -147,6 +148,10 @@ extension PlayerViewModel {
 
         if !hasAppliedAutomaticSubtitleSelection, let explicitTrackSelection {
             applyExplicitSubtitleSelection(explicitTrackSelection)
+        } else if !hasAppliedAutomaticSubtitleSelection,
+                  let seriesSubtitlePreference,
+                  seriesSubtitlePreference.isOff || seriesSubtitlePreference.matchingTrack(in: subtitleTracks) != nil {
+            selectSubtitle(seriesSubtitlePreference.matchingTrack(in: subtitleTracks), rememberSelection: false)
         } else if !hasAppliedAutomaticSubtitleSelection, !subtitleTracks.isEmpty {
             let preferredSubtitleTrack = preferredSubtitleTrack()
             engine.selectSubtitleTrack(preferredSubtitleTrack)
@@ -326,6 +331,12 @@ extension PlayerViewModel {
     }
 
     func preferredSubtitleTrack() -> SubtitleTrack? {
+        if let seriesSubtitlePreference {
+            if seriesSubtitlePreference.isOff { return nil }
+            if let track = seriesSubtitlePreference.matchingTrack(in: automaticallySelectableSubtitleTracks) {
+                return track
+            }
+        }
         if subtitleForcedOnly {
             let forcedTracks = automaticallySelectableSubtitleTracks.filter {
                 $0.isForced || Self.containsForcedMarker($0.displayTitle)
@@ -833,12 +844,17 @@ extension PlayerViewModel {
     static func preferredSubtitleStreamID(
         inPart part: PlexMediaPart?,
         preferredLanguage rawPreferredLanguage: String?,
-        forcedOnly: Bool
+        forcedOnly: Bool,
+        seriesPreference: SeriesSubtitlePreference? = nil
     ) -> Int? {
         guard let part else { return nil }
         let tracks = part.streams
             .filter { $0.streamType == .subtitle }
             .map(SubtitleTrack.init(stream:))
+        if let seriesPreference {
+            if seriesPreference.isOff { return nil }
+            if let track = seriesPreference.matchingTrack(in: tracks) { return track.id }
+        }
         let preferredLanguage = normalizedLanguageCode(rawPreferredLanguage)
 
         let candidates: [SubtitleTrack]

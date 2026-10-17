@@ -154,7 +154,17 @@ The Mac player prevents display sleep with a ProcessInfo activity while mounted.
 
 `UserPreferences` persists language, subtitle sizing, skip/continuous-play,
 remux/enhancement and download preferences. `SettingsMacView` exposes the current
-Mac controls. Quality changes are session-only. Shared stored fields or protocol
+Mac controls. Manual subtitle selections for TV episodes also persist a local
+series preference scoped to the Plex profile, server, and series rating key.
+This remembers Off or the language, forced/hearing-impaired flags, and title;
+stream IDs are episode-specific and are never persisted as series choices.
+Later episodes and app launches prefer a matching track (exact title first),
+falling back to the normal language settings if none matches. Movies and Live TV
+do not update this preference. Explicit session carry-over still wins during
+engine changes, and startup server/remux decisions use the same series choice.
+A remembered sidecar can select the existing VLC route just as an explicit
+selection does. Automatic selection does not overwrite the stored preference.
+Quality changes are session-only. Shared stored fields or protocol
 hooks may have no Mac UI; check the concrete consumer before promising a feature.
 
 ## Where to Edit and Verify

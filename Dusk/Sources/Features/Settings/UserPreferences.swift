@@ -688,3 +688,52 @@ enum MaxResolution: String, CaseIterable, Identifiable {
         }
     }
 }
+
+/// A series preference describes a track, never an episode-specific stream ID.
+@MainActor
+struct SeriesSubtitlePreference: Codable {
+    let isOff: Bool
+    let languageCode: String?
+    let title: String?
+    let isForced: Bool
+    let isHearingImpaired: Bool
+
+    init(track: SubtitleTrack?) {
+        isOff = track == nil
+        languageCode = PlayerViewModel.normalizedLanguageCode(track?.languageCode)
+        title = track?.displayTitle
+        isForced = track?.isForced ?? false
+        isHearingImpaired = track?.isHearingImpaired ?? false
+    }
+
+    func matchingTrack(in tracks: [SubtitleTrack]) -> SubtitleTrack? {
+        guard !isOff else { return nil }
+        let candidates = tracks.filter {
+            $0.isForced == isForced && $0.isHearingImpaired == isHearingImpaired &&
+            (languageCode != nil
+                ? PlayerViewModel.normalizedLanguageCode($0.languageCode) == languageCode
+                : $0.displayTitle == title)
+        }
+        return candidates.first(where: { $0.displayTitle == title }) ?? candidates.first
+    }
+}
+
+extension UserPreferences {
+    private func seriesSubtitleKey(profileID: String?, serverID: String?, seriesID: String?) -> String? {
+        guard let profileID, let serverID, let seriesID,
+              let data = try? JSONEncoder().encode([profileID, serverID, seriesID]) else { return nil }
+        return "seriesSubtitlePreference.v1." + data.base64EncodedString()
+    }
+
+    func seriesSubtitlePreference(profileID: String?, serverID: String?, seriesID: String?) -> SeriesSubtitlePreference? {
+        guard let key = seriesSubtitleKey(profileID: profileID, serverID: serverID, seriesID: seriesID),
+              let data = UserDefaults.standard.data(forKey: key) else { return nil }
+        return try? JSONDecoder().decode(SeriesSubtitlePreference.self, from: data)
+    }
+
+    func rememberSeriesSubtitle(_ track: SubtitleTrack?, profileID: String?, serverID: String?, seriesID: String?) {
+        guard let key = seriesSubtitleKey(profileID: profileID, serverID: serverID, seriesID: seriesID),
+              let data = try? JSONEncoder().encode(SeriesSubtitlePreference(track: track)) else { return }
+        UserDefaults.standard.set(data, forKey: key)
+    }
+}
