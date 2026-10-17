@@ -95,10 +95,11 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Ctrl-Cmd-F | Native window fullscreen |
 
 The playback control bar uses two compact rows (timeline, then transport and
-menus with an inline title), small native controls, and a translucent ultra-thin
-material background so it covers less of the video. The material uses the
-padded control bounds with no safe-area expansion, and the whole bar is clipped
-to one rounded shape so the translucent surface stays aligned with its controls.
+menus with an inline title), small native controls, and a translucent neutral
+black background confined to the padded control bounds. The fill composites over
+both native video and letterboxing without sampling a separate AppKit backdrop.
+The player explicitly supplies the dark color environment even when the shell
+uses light appearance. Reduce Transparency makes the bar's background opaque.
 
 The gear-icon toggle in the playback control bar opens a live Playback Debug Info
 overlay. It stays visible independently of control auto-hide and has its own close

@@ -44,6 +44,7 @@ struct PlayerView: View {
         }
         .toolbarVisibility(isFullScreen ? .hidden : .visible, for: .windowToolbar)
         .preferredColorScheme(.dark)
+        .environment(\.colorScheme, .dark)
         .playerSharePlayPresentation(isPlayer: true)
         .onChange(of: scenePhase) { _, phase in playback.flushTimelineForScenePhase(phase) }
         .toolbar {
@@ -68,6 +69,7 @@ private struct MacPlayerSession: View {
     @State private var activity: NSObjectProtocol?
     @State private var lastPointerLocation: CGPoint?
     @State private var showsDebugInfo = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>, toggleFullScreen: @escaping () -> Void) {
         self.toggleFullScreen = toggleFullScreen
@@ -223,8 +225,14 @@ private struct MacPlayerSession: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
         .fixedSize(horizontal: false, vertical: true)
-        .background(.ultraThinMaterial.opacity(0.65), ignoresSafeAreaEdges: [])
-        .clipShape(RoundedRectangle(cornerRadius: 28))
+        // A uniform fill composites directly over native video and letterboxing;
+        // a backdrop material can sample a different AppKit surface underneath.
+        .background {
+            RoundedRectangle(cornerRadius: 28)
+                .fill(.black.opacity(reduceTransparency ? 1 : 0.45))
+        }
+        .foregroundStyle(.white)
+        .environment(\.colorScheme, .dark)
     }
 
     private var debugOverlay: some View {

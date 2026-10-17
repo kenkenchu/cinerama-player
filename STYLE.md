@@ -66,7 +66,10 @@ Search, context menus, tooltips and accessibility labels must work with pointer
 and keyboard input. Keep empty/error states secondary in color with one clear
 native retry/action control. Loading uses a plain `ProgressView()`.
 
-The player uses a dark native video surface and material controls. Preserve
+The player uses a dark native video surface. Its compact transport bar uses a
+translucent neutral black fill with light controls so the background composites
+consistently over native AVPlayer/VLC surfaces and letterboxing; honor Reduce
+Transparency with an opaque fill. Other player panels use system materials. Preserve
 space/arrow/Escape shortcuts and native fullscreen. Do not add TV focus plates,
 remote gesture rules, touch overlays, or status-bar compensation.
 
