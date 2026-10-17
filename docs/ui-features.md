@@ -82,10 +82,11 @@ so windowed toolbar/safe-area insets cannot offset them from their background. T
 switches between Enter and Exit Full Screen and targets the owning window; it is
 not duplicated in the toolbar or top overlay. Close remains available above the
 video in both modes, below the native titlebar reveal area in fullscreen. In both windowed and
-fullscreen playback, controls fade after four seconds of inactivity; pointer movement or a
-click reveals them again. A stationary pointer over the controls does not hold
-them open, and repeated hover callbacks at the same position do not reset the
-timeout. Scrubbing keeps controls visible, and pausing reveals them.
+fullscreen playback, controls fade after two seconds of inactivity; pointer
+movement or a click reveals them again. Hovering anywhere over the control bar
+keeps it visible, including with a stationary pointer. Leaving the bar starts a
+fresh two-second timeout. Repeated hover callbacks at the same video position do
+not reset the timeout. Scrubbing keeps controls visible, and pausing reveals them.
 Leaving fullscreen keeps the same player mounted; closing the player restores
 the shell with its previous sidebar visibility and navigation path.
 The shell observes its own window, including fullscreen entered with the green

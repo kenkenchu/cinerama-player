@@ -98,6 +98,10 @@ private struct MacPlayerSession: View {
                             }.padding().background(.regularMaterial, in: .capsule)
                         }
                         controls
+                            .onHover { hovering in
+                                if hovering { model.beginControlsInteractionHold() }
+                                else { model.endControlsInteractionHold() }
+                            }
                             .opacity(model.showControls ? 1 : 0)
                             .allowsHitTesting(model.showControls)
                             .accessibilityHidden(!model.showControls)

@@ -16,7 +16,7 @@ extension PlayerViewModel {
     private static let stallRecoveryCooldown: TimeInterval = 8.0
     private static let stallProgressTolerance: TimeInterval = 0.75
     private static let maxStallRecoveryAttempts = 2
-    private static let controlsAutoHideDelay: TimeInterval = 4.0
+    private static let controlsAutoHideDelay: TimeInterval = 2.0
     // The settings menu is a deliberate, multi-step interaction (open the menu,
     // read the options, drill into a picker), so it gets a longer auto-hide
     // window than a normal tap to avoid the HUD vanishing mid-selection.
