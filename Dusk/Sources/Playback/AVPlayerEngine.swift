@@ -651,7 +651,6 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
         _ item: AVPlayerItem,
         attemptID: UUID
     ) async {
-        await loadDurationAndTracks(for: item)
         guard currentAttemptContext?.attemptID == attemptID,
               player.currentItem === item else { return }
 
@@ -685,7 +684,17 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
             isBuffering = false
         } else {
             player.play()
+            avPlayerEngineLogger.notice(
+                "Playback attempt \(attemptID.uuidString, privacy: .public) AVPlayer requested playback before track discovery"
+            )
         }
+
+        // A ready HLS item can play while media-selection metadata is still
+        // loading. In particular, a subtitle rendition may wait for segment
+        // loading to start; awaiting it before play can strand a fresh start.
+        // Resume seeks remain above play, so saved positions do not flash the
+        // beginning of the video. Discovery keeps its own item identity guards.
+        await loadDurationAndTracks(for: item)
     }
 
     // MARK: - Private: Time Observer

@@ -24,6 +24,9 @@ playback from the coordinator; they do not construct URLs or engines themselves.
    commits under the player presentation ID.
 5. `MacPlayerSession` creates its view model, wires coordinator callbacks and
    calls `startPlaybackIfNeeded`. The engine loads a source once per session.
+   AVPlayer starts a ready item after any requested resume seek, before awaiting
+   duration/media-selection discovery. HLS subtitle metadata must never gate
+   starting video; discovery applies queued subtitle selection when available.
 6. Finalization snapshots progress before stopping the engine and reporting
    stopped state. Cleanup cancels timers/attempts and closes server transcodes.
 
