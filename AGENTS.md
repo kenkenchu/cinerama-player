@@ -75,6 +75,24 @@ Run `xcodegen generate` after changing `project.yml` or adding, removing, or
 renaming source files. Never hand-edit the generated Xcode project. Use the
 pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 
+## Next-Session Handoff
+
+- Native entry and sidebar: `Dusk/Sources/App/DuskApp.swift` and
+  `Dusk/Sources/App/MainTabView.swift`. Player controls live in
+  `Dusk/Sources/Features/Player/PlayerView.swift`; Mac settings live in
+  `Dusk/Sources/Features/Settings/SettingsMacView.swift`.
+- The signed Debug app is produced at
+  `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+- The user confirmed Plex sign-in and Home loading worked after the Mac
+  signing/Local Network fix. Permission appearing enabled alone did not fix
+  the earlier Home timeout; preserve the signing and executable identity
+  settings described above.
+- The subsequent Mac-only cleanup passed a signed build and compiled the
+  retained tests without running them. Playback, HDR, and offline behavior
+  still need runtime verification; do not describe compilation as runtime QA.
+- The user handles browser-based actions. Provide instructions when a browser
+  step is needed; use local CLI workflows for authorized repository work.
+
 ## Git and Documentation
 
 - Check `git status --short` before editing and finishing. Preserve unrelated
