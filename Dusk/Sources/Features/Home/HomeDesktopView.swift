@@ -55,15 +55,15 @@ struct HomeDesktopView: View {
                                     }
                                     .homeHeroNativeButtonStyle()
                                     .pointerStyle(.link)
-                                    .frame(
-                                        maxWidth: DuskPlatform.usesWideLayout ? 300 : 240,
-                                        alignment: .leading
-                                    )
                                     .overlay {
                                         if let progress = item.posterProgress {
                                             HomeHeroResumeProgress(progress: progress)
                                         }
                                     }
+                                    .frame(
+                                        maxWidth: DuskPlatform.usesWideLayout ? 300 : 240,
+                                        alignment: .leading
+                                    )
                                     .accessibilityValue(item.posterProgress.map {
                                         "\(Int((min(1, max(0, $0)) * 100).rounded())) percent watched"
                                     } ?? "")
