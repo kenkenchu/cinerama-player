@@ -76,6 +76,45 @@ entitlements. Set `DUSK_MACOS_SIGNING_IDENTITY` to an installed Apple-issued
 identity when available; otherwise it uses ad hoc signing. Distribution signing
 and notarization are separate from a local development build.
 
+For repeated local builds, use the same Apple Development identity. Ad hoc
+signatures identify a particular build, so changed builds can repeatedly prompt
+for permission to read existing Plex credentials from the login Keychain.
+
+```bash
+security find-identity -v -p codesigning
+export DUSK_MACOS_SIGNING_IDENTITY='Apple Development: Your Name (IDENTIFIER)'
+./scripts/build_macos.sh
+```
+
+Copy the exact identity name from the command output. Export it in each build
+shell (or configure it in your local shell environment); the build script does
+not remember a previous invocation's identity. Agents must explicitly select the
+installed identity rather than silently reverting to ad hoc signing. Switching
+from ad hoc to certificate signing may require one more Keychain approval.
+
+To create an identity, open Xcode → Settings → Apple Accounts, sign in, select
+your Personal Team, then Manage Certificates → + → Apple Development. Local
+development can use a free Apple Account. Keep the private key in the login
+Keychain; never commit or share it.
+
+If `security find-identity -v -p codesigning` reports no valid identities:
+
+- Run `security find-identity -p codesigning` without `-v` to distinguish an
+  absent identity from an installed identity that fails validation.
+- In Keychain Access → login → My Certificates, confirm the development
+  certificate has its matching private key and is within its validity dates.
+- Check the issuer's intermediate certificate. Apple Development certificates
+  issued by WWDR G3 need the matching **Worldwide Developer Relations – G3**
+  intermediate from [Apple PKI](https://www.apple.com/certificateauthority/).
+  An older WWDR intermediate does not replace G3. Install the public intermediate
+  in the login Keychain and rerun the identity check. Use system-default trust;
+  do not work around validation failures with “Always Trust”.
+
+On this workstation, installing the missing WWDR G3 intermediate made the
+existing Apple Development identity valid. A subsequent certificate-signed build
+passed the build script's signature verification and the user confirmed it works.
+
+
 Keep `ENABLE_DEBUG_DYLIB=NO` so the main executable contains app-specific code and
 has its own UUID. Local-network privacy uses signature/executable identity;
 Apple-issued identities are preferred for stable permission tracking. See

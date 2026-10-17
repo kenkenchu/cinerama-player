@@ -64,6 +64,17 @@ start a tune session. Historical guide entries are not recordings.
 ## Player
 
 `Features/Player/PlayerView.swift` replaces the shell detail area during playback.
+In native window fullscreen, the shell hides the sidebar and divider, and the
+player hides the window toolbar and extends through the safe area. Close and
+Exit Full Screen remain available over the video, below the native titlebar
+reveal area, and target the owning window. Fullscreen controls fade after the
+shared player idle timeout during playback; pointer movement or a click reveals
+them again. Hovering over the playback controls or scrubbing keeps them visible.
+Leaving fullscreen restores the previous sidebar visibility without remounting
+playback; closing the player also restores the sidebar.
+The shell observes its own window, including fullscreen entered with the green
+window button or the keyboard shortcut.
+
 Its `MacPlayerSession` uses the common player view model for tracks, scrubbing,
 marker skipping, buffering and snapshots. It wires source selection, server
 stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.

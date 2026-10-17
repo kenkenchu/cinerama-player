@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 private enum MacDestination: String, CaseIterable, Identifiable {
@@ -21,13 +22,17 @@ private enum MacDestination: String, CaseIterable, Identifiable {
 struct MainTabView: View {
     @Environment(PlexService.self) private var plex
     @Environment(PlaybackCoordinator.self) private var playback
+    @State private var window: NSWindow?
+    @State private var isFullScreen = false
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
+    @State private var savedColumnVisibility: NavigationSplitViewVisibility?
     @State private var selection: MacDestination? = .home
     @State private var paths: [MacDestination: NavigationPath] = [:]
     @State private var libraries: LibrariesViewModel?
     @State private var liveTV: LiveTVViewModel?
 
     var body: some View {
-        NavigationSplitView {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
             List(MacDestination.allCases, selection: $selection) { item in
                 Label(item.rawValue, systemImage: item.symbol).tag(item)
             }
@@ -35,12 +40,28 @@ struct MainTabView: View {
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
         } detail: {
             if playback.showPlayer {
-                PlayerView()
+                PlayerView(isFullScreen: isFullScreen, toggleFullScreen: { window?.toggleFullScreen(nil) })
+                    .ignoresSafeArea(isFullScreen ? .all : [], edges: .all)
             } else if let libraries, let liveTV {
                 destination(selection ?? .home, libraries: libraries, liveTV: liveTV)
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+        .background(MacPlaybackWindowReader { window in
+            self.window = window
+            isFullScreen = window.styleMask.contains(.fullScreen)
+            updatePlayerColumns()
+        })
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didEnterFullScreenNotification)) { notification in
+            guard let changedWindow = notification.object as? NSWindow, changedWindow === window else { return }
+            isFullScreen = true
+            updatePlayerColumns()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didExitFullScreenNotification)) { notification in
+            guard let changedWindow = notification.object as? NSWindow, changedWindow === window else { return }
+            isFullScreen = false
+            updatePlayerColumns()
         }
         .frame(minWidth: 900, minHeight: 600)
         .background(Color.duskBackground)
@@ -51,6 +72,7 @@ struct MainTabView: View {
             await liveTV?.discover()
         }
         .onChange(of: playback.showPlayer) { _, shown in
+            updatePlayerColumns()
             if !shown { playback.onPlayerDismissed() }
         }
         .onDisappear {
@@ -64,6 +86,18 @@ struct MainTabView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .duskShowSearch)) { _ in
             selection = .search
+        }
+    }
+
+    private func updatePlayerColumns() {
+        if playback.showPlayer && isFullScreen {
+            if savedColumnVisibility == nil {
+                savedColumnVisibility = columnVisibility
+                columnVisibility = .detailOnly
+            }
+        } else if let savedColumnVisibility {
+            columnVisibility = savedColumnVisibility
+            self.savedColumnVisibility = nil
         }
     }
 
@@ -97,4 +131,32 @@ struct DuskMacCommands: Commands {
 
 extension Notification.Name {
     static let duskShowSearch = Notification.Name("DuskShowSearch")
+}
+
+/// Resolves the owning window without relying on whichever window is currently key.
+private struct MacPlaybackWindowReader: NSViewRepresentable {
+    var onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> WindowView {
+        let view = WindowView()
+        view.onWindow = onWindow
+        return view
+    }
+
+    func updateNSView(_ nsView: WindowView, context: Context) {
+        nsView.onWindow = onWindow
+    }
+
+    final class WindowView: NSView {
+        var onWindow: ((NSWindow) -> Void)?
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            guard let window else { return }
+            DispatchQueue.main.async { [weak self, weak window] in
+                guard let self, let window else { return }
+                self.onWindow?(window)
+            }
+        }
+    }
 }

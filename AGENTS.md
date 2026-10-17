@@ -54,6 +54,12 @@ and native converter are fetched/built locally and are never committed:
 ./scripts/build_macos.sh
 ```
 
+Before building, run `security find-identity -v -p codesigning` and set
+`DUSK_MACOS_SIGNING_IDENTITY` to the installed Apple Development identity.
+Keep using the same identity across rebuilds; do not silently fall back to ad hoc
+signing on this workstation. See the signing and certificate troubleshooting
+steps in `docs/development-workflow.md`. Never commit private keys or certificates.
+
 After code changes, complete this signed, compile-only Mac build before
 finishing. It verifies nested signatures and the embedded VLC binary. Do not
 run tests or launch the app unless the user explicitly asks.
@@ -87,6 +93,13 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   signing/Local Network fix. Permission appearing enabled alone did not fix
   the earlier Home timeout; preserve the signing and executable identity
   settings described above.
+- Apple Development signing is now configured and the user confirmed the result
+  works. The missing WWDR G3 intermediate was installed from Apple. Preserve
+  certificate signing on future builds to avoid repeated Keychain authorization.
+- Fullscreen playback hides the sidebar/divider/toolbar and uses the owning
+  window for fullscreen actions. The controls use the shared idle timeout;
+  pointer movement or a click reveals them. The user confirmed the current build
+  is good; this does not establish HDR or offline runtime verification.
 - The subsequent Mac-only cleanup passed a signed build and compiled the
   retained tests without running them. Playback, HDR, and offline behavior
   still need runtime verification; do not describe compilation as runtime QA.

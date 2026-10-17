@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 
 struct PlayerView: View {
+    var isFullScreen = false
+    var toggleFullScreen: () -> Void
+    @State private var controlsVisible = true
     @Environment(PlaybackCoordinator.self) private var playback
     @Environment(\.scenePhase) private var scenePhase
 
@@ -9,7 +12,7 @@ struct PlayerView: View {
         ZStack {
             Color.black
             if let engine = playback.engine, let source = playback.playbackSource {
-                MacPlayerSession(engine: engine, source: source, playback: playback)
+                MacPlayerSession(engine: engine, source: source, playback: playback, isFullScreen: isFullScreen, controlsVisible: $controlsVisible)
                     .id(playback.playerPresentationID)
             }
             if playback.playerLoadingState.isVisible {
@@ -23,17 +26,40 @@ struct PlayerView: View {
                 }.padding(40).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
             }
         }
+        .overlay(alignment: .topLeading) {
+            if isFullScreen {
+                HStack {
+                    Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
+                        .keyboardShortcut(.escape, modifiers: [])
+                    Button("Exit Full Screen", systemImage: "arrow.down.right.and.arrow.up.left") {
+                        toggleFullScreen()
+                    }
+                    .keyboardShortcut("f", modifiers: [.control, .command])
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.glass)
+                .padding(24)
+                // Keep interactive controls below the native fullscreen titlebar reveal area.
+                .padding(.top, 32)
+                .opacity(controlsVisible ? 1 : 0)
+                .allowsHitTesting(controlsVisible)
+                .accessibilityHidden(!controlsVisible)
+            }
+        }
+        .toolbarVisibility(isFullScreen ? .hidden : .automatic, for: .windowToolbar)
         .preferredColorScheme(.dark)
         .playerSharePlayPresentation(isPlayer: true)
         .onChange(of: scenePhase) { _, phase in playback.flushTimelineForScenePhase(phase) }
         .toolbar {
-            ToolbarItem(placement: .navigation) {
-                Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
-                    .keyboardShortcut(.escape, modifiers: [])
-            }
-            ToolbarItem {
-                Button("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right") { NSApp.keyWindow?.toggleFullScreen(nil) }
-                    .keyboardShortcut("f", modifiers: [.control, .command])
+            if !isFullScreen {
+                ToolbarItem(placement: .navigation) {
+                    Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
+                        .keyboardShortcut(.escape, modifiers: [])
+                }
+                ToolbarItem {
+                    Button("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right") { toggleFullScreen() }
+                        .keyboardShortcut("f", modifiers: [.control, .command])
+                }
             }
         }
     }
@@ -42,10 +68,14 @@ struct PlayerView: View {
 private struct MacPlayerSession: View {
     let source: PlaybackSource
     let playback: PlaybackCoordinator
+    let isFullScreen: Bool
+    @Binding var controlsVisible: Bool
     @State private var model: PlayerViewModel
     @State private var activity: NSObjectProtocol?
 
-    init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator) {
+    init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>) {
+        self.isFullScreen = isFullScreen
+        _controlsVisible = controlsVisible
         self.source = source
         self.playback = playback
         _model = State(initialValue: PlayerViewModel(engine: engine, markers: playback.activeItemDetails?.markers ?? [], liveTVContext: source.liveTVContext))
@@ -80,6 +110,13 @@ private struct MacPlayerSession: View {
                     }.padding().background(.regularMaterial, in: .capsule)
                 }
                 controls
+                    .opacity(!isFullScreen || model.showControls ? 1 : 0)
+                    .allowsHitTesting(!isFullScreen || model.showControls)
+                    .accessibilityHidden(isFullScreen && !model.showControls)
+                    .onHover { hovering in
+                        if hovering { model.beginControlsInteractionHold() }
+                        else { model.endControlsInteractionHold() }
+                    }
             }.padding(24)
             if let error = model.playbackError, !playback.isAutomaticDirectPlayFallbackPending {
                 VStack {
@@ -89,6 +126,14 @@ private struct MacPlayerSession: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .onContinuousHover { phase in
+            if case .active = phase { model.touchControls() }
+        }
+        .simultaneousGesture(TapGesture().onEnded { model.touchControls() })
+        .onChange(of: model.showControls, initial: true) { _, visible in
+            controlsVisible = visible
+        }
+        .onChange(of: isFullScreen) { _, _ in model.touchControls() }
         .task { configure() }
         .onDisappear {
             model.playbackSnapshotHandler = nil
