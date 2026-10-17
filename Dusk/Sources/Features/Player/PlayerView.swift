@@ -46,7 +46,7 @@ struct PlayerView: View {
                 .accessibilityHidden(!controlsVisible)
             }
         }
-        .toolbarVisibility(isFullScreen ? .hidden : .automatic, for: .windowToolbar)
+        .toolbarVisibility(isFullScreen ? .hidden : .visible, for: .windowToolbar)
         .preferredColorScheme(.dark)
         .playerSharePlayPresentation(isPlayer: true)
         .onChange(of: scenePhase) { _, phase in playback.flushTimelineForScenePhase(phase) }

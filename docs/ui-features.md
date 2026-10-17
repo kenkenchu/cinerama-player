@@ -63,17 +63,22 @@ start a tune session. Historical guide entries are not recordings.
 
 ## Player
 
-`Features/Player/PlayerView.swift` replaces the shell detail area during playback.
-In native window fullscreen, the shell hides the sidebar and divider, and the
-player hides the window toolbar and extends through the safe area. Close and
+`Features/Player/PlayerView.swift` is presented in a separate navigation stack
+above the whole shell in both windowed and fullscreen playback. The catalog
+stack stays mounted, invisible and noninteractive underneath, so a pushed detail
+page cannot stay in front of the player when Play is selected. Do not replace a
+split-view detail root to present playback: native pushed destinations can remain
+in front while audio starts. Closing playback restores the same page and sidebar.
+In native window fullscreen, the player hides the window toolbar and extends
+through the safe area. Close and
 Exit Full Screen remain available over the video, below the native titlebar
 reveal area, and target the owning window. In both windowed and fullscreen
 playback, controls fade after four seconds of inactivity; pointer movement or a
 click reveals them again. A stationary pointer over the controls does not hold
 them open, and repeated hover callbacks at the same position do not reset the
 timeout. Scrubbing keeps controls visible, and pausing reveals them.
-Leaving fullscreen restores the previous sidebar visibility without remounting
-playback; closing the player also restores the sidebar.
+Leaving fullscreen keeps the same player mounted; closing the player restores
+the shell with its previous sidebar visibility and navigation path.
 The shell observes its own window, including fullscreen entered with the green
 window button or the keyboard shortcut.
 

@@ -96,6 +96,10 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - Apple Development signing is now configured and the user confirmed the result
   works. The missing WWDR G3 intermediate was installed from Apple. Preserve
   certificate signing on future builds to avoid repeated Keychain authorization.
+- Player presentation belongs above the whole navigation shell in its own
+  stack. Keep catalog stacks mounted but hidden/disabled underneath; replacing
+  the split-view detail root can leave a pushed catalog page in front of active
+  playback (audio without the player or controls). See `docs/ui-features.md`.
 - Fullscreen playback hides the sidebar/divider/toolbar and uses the owning
   window for fullscreen actions. The controls use the shared idle timeout;
   pointer movement or a click reveals them. The user confirmed the current build

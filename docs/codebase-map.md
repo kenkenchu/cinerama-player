@@ -46,7 +46,9 @@ on session/foreground/network changes, and exposes Retry to screens.
 
 `App/MainTabView.swift` owns the `NavigationSplitView` sidebar and per-destination
 paths. Home, Movies, TV Shows, Videos, Live TV, Search, Downloads, and Settings
-are fixed sidebar destinations. Player presentation replaces the detail area.
+are fixed sidebar destinations. Player presentation is a separate navigation
+stack above the entire shell. The shell stays mounted but hidden during playback
+to preserve pushed detail routes and prevent them from covering the player.
 `AppNavigationRoute` carries server-scoped identities into detail/library flows.
 
 ## Feature Owners
