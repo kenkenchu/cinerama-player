@@ -242,9 +242,10 @@ on playlist updates; actual seeks still clamp to the reachable buffer.
 
 The user confirmed a real Live TV channel plays through VLC as copied MPEG-2
 video and AC3 6-channel audio after the copy-only policy change. That confirms
-this channel's delivery, not all tuner formats or hardware decoding. The later
-channel-browser and live-slider changes have signed compile-only verification;
-their visual layout and the slider's runtime behavior still need confirmation.
+this channel's delivery, not all tuner formats or hardware decoding. The user
+also confirmed the channel-grid layout and live-slider fix both work. These
+changes passed signed builds; broader tuner, seek and format coverage remains
+unverified.
 
 ## Timeline, Scrobble, and Up Next
 

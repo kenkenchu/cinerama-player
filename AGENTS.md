@@ -114,8 +114,8 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   or scheduled programs for browsing, tuning or playback titles.
 - The user confirmed Live TV plays through VLC with MPEG-2 video and AC3 6ch,
   both copied by Plex without re-encoding. VLC is intentional for this codec.
-  The newer channel-grid layout and steady live-slider change passed signed
-  builds but have not received explicit runtime/visual confirmation. The slider
+  The user also confirmed the channel-grid layout and steady live-slider fix
+  both work. The slider
   uses the live clock, not the segment-stepped playlist bounds; preserve seek
   clamping to the actual buffer and avoid adding an unseekable five-minute zone.
 - Direct/local engine routing considers preferred audio and remembered/current
