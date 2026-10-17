@@ -90,37 +90,6 @@ struct HomeHeroResumeProgress: View {
     }
 }
 
-struct HomeHeroSecondaryActionButtonLabel: View {
-    let title: String
-
-
-    var body: some View {
-        Text(title)
-            .font(heroButtonFont)
-            .foregroundStyle(Color.primary)
-            .padding(.horizontal, horizontalPadding)
-            .padding(.vertical, verticalPadding)
-            .background(.ultraThinMaterial, in: Capsule())
-            .overlay(
-                Capsule()
-                    .strokeBorder(Color.primary.opacity(0.18), lineWidth: 1)
-            )
-            .shadow(color: .black.opacity(0.14), radius: 10, y: 4)
-    }
-
-    private var heroButtonFont: Font {
-        .headline.weight(.semibold)
-    }
-
-    private var horizontalPadding: CGFloat {
-        20
-    }
-
-    private var verticalPadding: CGFloat {
-        14
-    }
-}
-
 /// The pager pills on screen when the hero has more items than
 /// `maxVisible`, in the manner of `UIPageControl`: a fixed number of slots that
 /// slides to keep the current item centred, with the outermost pills shrunk on

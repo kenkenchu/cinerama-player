@@ -32,13 +32,6 @@ enum PlaybackBufferPolicy {
     }
 }
 
-struct PlaybackEngineDiagnostic: Sendable, Identifiable {
-    let label: String
-    let value: String
-
-    var id: String { label }
-}
-
 /// Receives Picture in Picture lifecycle events from a `PlaybackEngine` so the
 /// owner (the coordinator) can keep the session alive while the floating window
 /// is shown and restore the player UI when the user returns from it.
@@ -112,7 +105,6 @@ protocol PlaybackEngine: AnyObject {
     /// Safe renderer facts only; never include media URLs or credentials.
     var renderingDiagnostics: [(String, String)] { get }
     var onPlaybackEnded: (@MainActor () -> Void)? { get set }
-    var playbackDiagnostics: [PlaybackEngineDiagnostic] { get }
 
     // MARK: - Track Selection
 
@@ -201,7 +193,6 @@ extension PlaybackEngine {
         duration > 0 ? 0...duration : nil
     }
 
-    var playbackDiagnostics: [PlaybackEngineDiagnostic] { [] }
     func setVideoFillEnabled(_ enabled: Bool) {}
 
     // Bumped when the engine replaces its rendering view mid-session (VLCKit
