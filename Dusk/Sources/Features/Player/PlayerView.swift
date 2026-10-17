@@ -12,7 +12,7 @@ struct PlayerView: View {
         ZStack {
             Color.black
             if let engine = playback.engine, let source = playback.playbackSource {
-                MacPlayerSession(engine: engine, source: source, playback: playback, isFullScreen: isFullScreen, controlsVisible: $controlsVisible)
+                MacPlayerSession(engine: engine, source: source, playback: playback, isFullScreen: isFullScreen, controlsVisible: $controlsVisible, toggleFullScreen: toggleFullScreen)
                     .id(playback.playerPresentationID)
             }
             if playback.playerLoadingState.isVisible {
@@ -31,10 +31,6 @@ struct PlayerView: View {
                 HStack {
                     Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
                         .keyboardShortcut(.escape, modifiers: [])
-                    Button("Exit Full Screen", systemImage: "arrow.down.right.and.arrow.up.left") {
-                        toggleFullScreen()
-                    }
-                    .keyboardShortcut("f", modifiers: [.control, .command])
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
@@ -56,10 +52,7 @@ struct PlayerView: View {
                     Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
                         .keyboardShortcut(.escape, modifiers: [])
                 }
-                ToolbarItem {
-                    Button("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right") { toggleFullScreen() }
-                        .keyboardShortcut("f", modifiers: [.control, .command])
-                }
+
             }
         }
     }
@@ -69,13 +62,15 @@ private struct MacPlayerSession: View {
     let source: PlaybackSource
     let playback: PlaybackCoordinator
     let isFullScreen: Bool
+    let toggleFullScreen: () -> Void
     @Binding var controlsVisible: Bool
     @State private var model: PlayerViewModel
     @State private var activity: NSObjectProtocol?
     @State private var lastPointerLocation: CGPoint?
     @State private var showsDebugInfo = false
 
-    init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>) {
+    init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>, toggleFullScreen: @escaping () -> Void) {
+        self.toggleFullScreen = toggleFullScreen
         self.isFullScreen = isFullScreen
         _controlsVisible = controlsVisible
         self.source = source
@@ -207,6 +202,15 @@ private struct MacPlayerSession: View {
                         }
                     }
                 }
+                Button(
+                    isFullScreen ? "Exit Full Screen" : "Enter Full Screen",
+                    systemImage: isFullScreen ? "arrow.down.right.and.arrow.up.left" : "arrow.up.left.and.arrow.down.right"
+                ) {
+                    model.touchControls()
+                    toggleFullScreen()
+                }
+                .keyboardShortcut("f", modifiers: [.control, .command])
+                .help(isFullScreen ? "Exit Full Screen" : "Enter Full Screen")
             }
             .labelStyle(.iconOnly)
         }
