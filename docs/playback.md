@@ -210,6 +210,12 @@ session ID for keepalives. Seek against the sliding seekable window and use
 `PlayerLiveTimeline`'s wall-clock/live-edge model. Live sessions report stopped
 state but never scrobble a program as library content.
 
+The current UI loads only provider/channel metadata, then builds a lineup with
+empty program lists. No grid/watch-now EPG requests gate Home, the Live TV tab or
+tuning. Channel-only sessions do not start the schedule-refresh task; their
+titles use channel names and LIVE status. The inherited timeline/guide helpers
+remain available internally, but are not required by the channel browser.
+
 The tune result retains Plex's HLS stream decisions for diagnostics and engine
 selection. Delivered codecs take priority over tuner-input metadata; missing
 codecs alone do not disqualify AVPlayer. Known incompatible codecs still route

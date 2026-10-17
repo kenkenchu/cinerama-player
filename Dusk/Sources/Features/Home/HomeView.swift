@@ -77,7 +77,7 @@ struct HomeView: View {
                 guard isSelected else { return }
                 resetHeroSelection()
                 guard preferences.showsLiveTVOnHome else { return }
-                Task { await liveTVViewModel.loadNowPlaying(force: true) }
+                Task { await liveTVViewModel.load(force: true) }
             }
             .refreshable {
                 await viewModel?.load(maxRecentlyAddedItems: recentlyAddedInlineItemLimit)
@@ -129,7 +129,7 @@ struct HomeView: View {
 
     private func playLiveTV(
         _ channel: PlexLiveChannel,
-        _ program: PlexLiveProgram,
+        _ program: PlexLiveProgram?,
         _ lineup: PlexLiveTVLineup
     ) {
         Task {

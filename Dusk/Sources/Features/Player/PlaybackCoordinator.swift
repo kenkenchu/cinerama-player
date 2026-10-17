@@ -451,7 +451,10 @@ final class PlaybackCoordinator {
                 skipForwardInterval: preferences.playerDoubleTapForwardInterval.timeInterval
             )
             startTimelineReporting()
-            startLiveTVScheduleRefresh()
+            // A channel-only lineup has no schedule to refresh.
+            if lineup.guides.contains(where: { !$0.programs.isEmpty }) {
+                startLiveTVScheduleRefresh()
+            }
             if engineType == .avPlayer, !preferences.forceAVPlayer,
                !airPlayController.isAirPlayRouteSelected {
                 startDirectPlayFallbackWatch()

@@ -15,389 +15,156 @@ struct LiveTVView: View {
 struct LiveTVRootContent: View {
     @Environment(PlaybackCoordinator.self) private var playback
     let viewModel: LiveTVViewModel
-    @State private var selectedProgram: PlexLiveProgram?
+    @State private var searchText = ""
+
+    private var filteredChannels: [PlexLiveChannel] {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return viewModel.channels }
+        return viewModel.channels.filter { channel in
+            [channel.displayTitle, channel.displayNumber, channel.callSign]
+                .compactMap { $0 }
+                .contains { $0.localizedStandardContains(query) }
+        }
+    }
 
     var body: some View {
         ZStack {
             Color.duskBackground.ignoresSafeArea()
-
             if viewModel.isLoading, viewModel.lineup == nil {
                 FeatureLoadingView()
-            } else if !viewModel.isAvailable, viewModel.error == nil {
-                FeatureEmptyStateView(
-                    systemImage: "dot.radiowaves.left.and.right",
-                    title: "Live TV isn’t available",
-                    message: "Set up a tuner and program guide on this Plex server to watch live channels."
-                )
             } else if let error = viewModel.error, viewModel.lineup == nil {
-                FeatureErrorView(message: error) {
-                    Task { await viewModel.load(force: true) }
-                }
-            } else if let lineup = viewModel.lineup {
-                guide(lineup)
+                FeatureErrorView(message: error) { Task { await viewModel.load(force: true) } }
+            } else if !viewModel.isAvailable {
+                FeatureEmptyStateView(
+                    systemImage: "dot.radiowaves.left.and.right", title: "Live TV isn’t available",
+                    message: "Set up a tuner and channels on your Plex server."
+                )
+            } else if viewModel.channels.isEmpty {
+                FeatureEmptyStateView(
+                    systemImage: "tv", title: "No channels available",
+                    message: "Check the channel lineup on your Plex server, then refresh."
+                )
+            } else if filteredChannels.isEmpty {
+                ContentUnavailableView.search(text: searchText)
+            } else {
+                channelGrid
             }
         }
         .navigationTitle("Live TV")
-
-        .task {
-            await viewModel.load()
-        }
-        .refreshable {
-            await viewModel.load(force: true)
-        }
-        .sheet(item: $selectedProgram) { program in
-            LiveTVProgramDetails(
-                program: program,
-                channel: channel(for: program),
-                canPlay: program.isAiring(),
-                play: {
-                    selectedProgram = nil
-                    play(program: program)
+        .searchable(text: $searchText, prompt: "Search channels by name or number")
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Refresh Channels", systemImage: "arrow.clockwise") {
+                    Task { await viewModel.load(force: true) }
                 }
-            )
+                .disabled(viewModel.isLoading)
+                .help("Refresh channels")
+            }
         }
+        .task { await viewModel.load() }
+        .refreshable { await viewModel.load(force: true) }
     }
 
-    private func guide(_ lineup: PlexLiveTVLineup) -> some View {
+    private var channelGrid: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 24) {
-                datePicker
-
-                ForEach(lineup.guides) { guide in
-                    LiveTVChannelGuideRow(
-                        guide: guide,
-                        imageURL: viewModel.imageURL,
-                        selectProgram: { program in
-                            if program.isAiring() { play(program: program, channel: guide.channel) }
-                            else { selectedProgram = program }
-                        },
-                        watchChannel: { play(channel: guide.channel) }
-                    )
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    Text("\(filteredChannels.count) \(filteredChannels.count == 1 ? "channel" : "channels")")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if viewModel.isLoading { ProgressView().controlSize(.small) }
+                }
+                if let error = viewModel.error {
+                    HStack {
+                        Text(error).font(.callout).foregroundStyle(.secondary)
+                        Button("Retry") { Task { await viewModel.load(force: true) } }
+                    }
+                }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 180, maximum: 260), spacing: 16)], spacing: 16) {
+                    ForEach(filteredChannels) { channel in
+                        LiveTVChannelCard(
+                            channel: channel,
+                            logoURL: viewModel.imageURL(for: channel.thumb, width: 400, height: 200),
+                            isPlaying: playback.activePlaybackServerID == viewModel.serverID &&
+                                playback.activeLiveTVContext?.channel.id == channel.id
+                        ) {
+                            guard let lineup = viewModel.lineup else { return }
+                            Task { await playback.playLiveTV(channel: channel, program: nil, lineup: lineup) }
+                        }
+                    }
                 }
             }
-            .padding(.horizontal)
-            .padding(.bottom, 36)
+            .padding(24)
         }
         .scrollIndicators(.hidden)
     }
-
-    private var datePicker: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 10) {
-                ForEach(viewModel.dateOptions, id: \.self) { date in
-                    Button {
-                        Task { await viewModel.selectDate(date) }
-                    } label: {
-                        Text(dateLabel(date))
-                            .font(DuskFont.buttonLabel(style: .subheadline.weight(.semibold)))
-                            .foregroundStyle(
-                                Calendar.current.isDate(date, inSameDayAs: viewModel.selectedDate)
-                                    ? Color.duskBackground
-                                    : Color.duskTextPrimary
-                            )
-                            .padding(.horizontal, 18)
-                            .frame(height: 42)
-                            .background(
-                                Calendar.current.isDate(date, inSameDayAs: viewModel.selectedDate)
-                                    ? Color.duskTextPrimary
-                                    : Color.duskSurface
-                            )
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-    }
-
-    private func play(program: PlexLiveProgram, channel preferredChannel: PlexLiveChannel? = nil) {
-        guard program.isAiring(),
-              let lineup = viewModel.lineup,
-              let channel = preferredChannel ?? channel(for: program) else { return }
-        Task {
-            await playback.playLiveTV(channel: channel, program: program, lineup: lineup)
-        }
-    }
-
-    private func play(channel: PlexLiveChannel) {
-        guard let lineup = viewModel.lineup else { return }
-        let program = lineup.guides.first { $0.channel.id == channel.id }?.currentProgram()
-        Task {
-            await playback.playLiveTV(channel: channel, program: program, lineup: lineup)
-        }
-    }
-
-    private func channel(for program: PlexLiveProgram) -> PlexLiveChannel? {
-        viewModel.lineup?.channels.first {
-            $0.gridKey == program.channelGridKey ||
-                $0.id == program.channelIdentifier
-        }
-    }
-
-    private func dateLabel(_ date: Date) -> String {
-        if Calendar.current.isDateInToday(date) { return "Today" }
-        if Calendar.current.isDateInTomorrow(date) { return "Tomorrow" }
-        if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
-        return date.formatted(.dateTime.weekday(.abbreviated).day())
-    }
 }
 
-struct LiveTVChannelGuideRow: View {
-    let guide: PlexLiveChannelGuide
-    let imageURL: (String?, Int, Int) -> URL?
-    let selectProgram: (PlexLiveProgram) -> Void
-    let watchChannel: () -> Void
+/// A channel is playable without schedule metadata. Reused by Home and Live TV.
+struct LiveTVChannelCard: View {
+    let channel: PlexLiveChannel
+    let logoURL: URL?
+    var isPlaying = false
+    let play: () -> Void
+    @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Button(action: watchChannel) {
-                    HStack(spacing: 12) {
-                        channelLogo
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(guide.channel.displayTitle)
-                                .font(DuskFont.rowTitle(style: .headline))
-                                .foregroundStyle(Color.duskTextPrimary)
-                                .lineLimit(1)
-                            if let number = guide.channel.displayNumber {
-                                Text(number)
-                                    .font(DuskFont.caption(style: .subheadline))
-                                    .foregroundStyle(Color.duskTextSecondary)
-                            }
+        Button(action: play) {
+            VStack(alignment: .leading, spacing: 0) {
+                ZStack {
+                    Rectangle().fill(.quaternary)
+                    if let logoURL {
+                        DuskAsyncImage(url: logoURL) { phase in
+                            if case .success(let image) = phase {
+                                image.resizable().scaledToFit().padding(20)
+                            } else { placeholder }
                         }
+                    } else { placeholder }
+                }
+                .frame(height: 100)
+                .overlay(alignment: .bottomTrailing) {
+                    Image(systemName: isPlaying ? "speaker.wave.2.fill" : "play.circle.fill")
+                        .font(.title2)
+                        .symbolRenderingMode(.hierarchical)
+                        .padding(10)
+                        .opacity(isPlaying || isHovered ? 1 : 0)
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(channel.displayTitle)
+                        .font(.headline)
+                        .lineLimit(1)
+                    HStack {
+                        if let number = channel.displayNumber { Text(number) }
+                        Spacer(minLength: 4)
+                        if isPlaying { Text("Playing").fontWeight(.medium) }
                     }
-                    .contentShape(Rectangle())
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(minHeight: 14)
                 }
-                .buttonStyle(.plain)
-                .pointerStyle(.link)
-                .help("Watch \(guide.channel.displayTitle)")
-                .accessibilityLabel("Watch \(guide.channel.displayTitle)")
-
-                Spacer()
-
-                Button(action: watchChannel) {
-                    Label("Watch", systemImage: "play.fill")
-                        .foregroundStyle(Color.duskPrimaryActionLabel)
-                }
-                .detailHeroNativePrimaryButtonStyle()
+                .padding(12)
             }
-
-            if guide.programs.isEmpty {
-                Text("No program information")
-                    .font(DuskFont.caption(style: .subheadline))
-                    .foregroundStyle(Color.duskTextSecondary)
-                    .frame(height: 120)
-            } else {
-                ScrollView(.horizontal) {
-                    LazyHStack(spacing: 12) {
-                        ForEach(guide.programs) { program in
-                            Button {
-                                selectProgram(program)
-                            } label: {
-                                LiveTVProgramCard(
-                                    program: program,
-                                    imageURL: imageURL(program.preferredLandscapePath, 480, 270),
-                                    channelLogoURL: imageURL(guide.channel.thumb, 256, 256)
-                                )
-                            }
-                            .buttonStyle(.plain)
-                            .pointerStyle(.link)
-
-                        }
-                    }
-                }
-                .scrollIndicators(.hidden)
+            .frame(maxWidth: .infinity)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.primary.opacity(isPlaying ? 0.55 : isHovered ? 0.25 : 0.08), lineWidth: isPlaying ? 2 : 1)
             }
+            .contentShape(RoundedRectangle(cornerRadius: 16))
         }
-    }
-
-    private var channelLogo: some View {
-        Group {
-            if let url = imageURL(guide.channel.thumb, 128, 128) {
-                DuskAsyncImage(url: url) { phase in
-                    if case .success(let image) = phase {
-                        image.resizable().scaledToFit()
-                    } else {
-                        channelPlaceholder
-                    }
-                }
-            } else {
-                channelPlaceholder
-            }
-        }
-        .frame(width: 52, height: 52)
-        .padding(6)
-        .background(Color.duskSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-    }
-
-    private var channelPlaceholder: some View {
-        Image(systemName: "antenna.radiowaves.left.and.right")
-            .foregroundStyle(Color.duskTextSecondary)
-    }
-}
-
-struct LiveTVProgramCard: View {
-    let program: PlexLiveProgram
-    let imageURL: URL?
-    /// Shown when the program carries no artwork of its own, which is common
-    /// on XMLTV and cloud lineups. A centered channel logo says what the card
-    /// is; an empty rectangle says nothing.
-    var channelLogoURL: URL?
-
-    var body: some View {
-        ZStack(alignment: .bottomLeading) {
-            Group {
-                if let imageURL {
-                    DuskAsyncImage(url: imageURL) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill()
-                        } else {
-                            placeholder
-                        }
-                    }
-                } else {
-                    placeholder
-                }
-            }
-            .frame(width: cardWidth, height: cardHeight)
-            .clipped()
-
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.86)],
-                startPoint: .center,
-                endPoint: .bottom
-            )
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(program.displayTitle)
-                    .font(DuskFont.cardTitle(style: .subheadline.weight(.semibold)))
-                    .lineLimit(2)
-                if let beginsAt = program.beginsAt, let endsAt = program.endsAt {
-                    Text("\(beginsAt.formatted(date: .omitted, time: .shortened)) – \(endsAt.formatted(date: .omitted, time: .shortened))")
-                        .font(DuskFont.cardSubtitle(style: .caption))
-                        .foregroundStyle(.white.opacity(0.78))
-                }
-            }
-            .foregroundStyle(.white)
-            .padding(12)
-
-            if let progress = program.progress(), program.isAiring() {
-                VStack {
-                    Spacer()
-                    GeometryReader { proxy in
-                        Capsule()
-                            .fill(Color.white.opacity(0.92))
-                            .frame(width: proxy.size.width * progress, height: 4)
-                    }
-                    .frame(height: 4)
-                }
-            }
-        }
-        .frame(width: cardWidth, height: cardHeight)
-        .background(Color.duskSurface)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .buttonStyle(.plain)
+        .pointerStyle(.link)
+        .onHover { isHovered = $0 }
+        .animation(.easeOut(duration: 0.15), value: isHovered)
+        .help("Watch \(channel.displayTitle)")
+        .accessibilityLabel("Watch \(channel.displayTitle)\(channel.displayNumber.map { ", channel \($0)" } ?? "")")
+        .accessibilityValue(isPlaying ? "Playing" : "")
     }
 
     private var placeholder: some View {
-        Color.duskSurface.overlay {
-            if let channelLogoURL {
-                DuskAsyncImage(url: channelLogoURL) { phase in
-                    if case .success(let image) = phase {
-                        image
-                            .resizable()
-                            .scaledToFit()
-                            .padding(cardHeight * 0.22)
-                    } else {
-                        placeholderSymbol
-                    }
-                }
-            } else {
-                placeholderSymbol
-            }
-        }
-    }
-
-    private var placeholderSymbol: some View {
         Image(systemName: "tv")
-            .font(DuskFont.glyphLarge(style: .title2))
-            .foregroundStyle(Color.duskTextSecondary)
-    }
-
-    private var cardWidth: CGFloat {
-        260
-    }
-
-    private var cardHeight: CGFloat {
-        cardWidth * 9 / 16
-    }
-}
-
-private struct LiveTVProgramDetails: View {
-    @Environment(\.dismiss) private var dismiss
-    let program: PlexLiveProgram
-    let channel: PlexLiveChannel?
-    let canPlay: Bool
-    let play: () -> Void
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    Text(program.displayTitle)
-                        .font(DuskFont.pageTitle(style: .title.bold()))
-                        .foregroundStyle(Color.duskTextPrimary)
-                    if let subtitle = program.displaySubtitle {
-                        Text(subtitle)
-
-                            .foregroundStyle(Color.duskTextSecondary)
-                    }
-                    if let channel {
-                        Label(
-                            [channel.displayNumber, channel.displayTitle]
-                                .compactMap { $0 }
-                                .joined(separator: " · "),
-                            systemImage: "dot.radiowaves.left.and.right"
-                        )
-
-                        .foregroundStyle(Color.duskTextSecondary)
-                    }
-                    if let beginsAt = program.beginsAt, let endsAt = program.endsAt {
-                        Text("\(beginsAt.formatted(date: .abbreviated, time: .shortened)) – \(endsAt.formatted(date: .omitted, time: .shortened))")
-
-                            .foregroundStyle(Color.duskTextSecondary)
-                    }
-                    if let summary = program.summary?.nilIfEmpty {
-                        Text(summary)
-
-                            .foregroundStyle(Color.duskTextPrimary)
-                    }
-                    if canPlay {
-                        Button(action: play) {
-                            Label("Watch Live", systemImage: "play.fill")
-                                .frame(maxWidth: .infinity)
-                                .foregroundStyle(Color.duskPrimaryActionLabel)
-                        }
-                        .detailHeroNativePrimaryButtonStyle()
-                    } else {
-                        Text(program.endsAt.map { $0 < .now } == true
-                            ? "This program is no longer live."
-                            : "This program hasn’t started yet.")
-                            .font(DuskFont.caption(style: .subheadline))
-                            .foregroundStyle(Color.duskTextSecondary)
-                    }
-                }
-                .padding(24)
-                .frame(maxWidth: 680, alignment: .leading)
-            }
-            .background(Color.duskBackground.ignoresSafeArea())
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
+            .font(.largeTitle)
+            .foregroundStyle(.secondary)
     }
 }

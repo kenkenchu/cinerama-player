@@ -22,7 +22,7 @@ Dusk/Sources/
     Home/           HomeDesktopView, hero, hubs and recommendation view models
     Libraries/      Library roots, grids, collections and recommendations
     Detail/         Movie/show/season/episode/video/person detail flows
-    LiveTV/         Guide, lineup and tuned-channel presentation
+    LiveTV/         Searchable channel browser, lineup and tuned-channel presentation
     Player/         Native PlayerView, coordinator, track logic, timeline and Up Next
     Downloads/      Downloaded library and queue UI
     Search/         Search UI, merged Plex/Seerr results

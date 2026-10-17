@@ -1,53 +1,35 @@
 import SwiftUI
 
 struct LiveTVHomeShelf: View {
+    @Environment(PlaybackCoordinator.self) private var playback
     let viewModel: LiveTVViewModel
-    let play: (PlexLiveChannel, PlexLiveProgram, PlexLiveTVLineup) -> Void
+    let play: (PlexLiveChannel, PlexLiveProgram?, PlexLiveTVLineup) -> Void
 
     var body: some View {
-        if let lineup = viewModel.nowPlayingLineup {
-            let currentPrograms = lineup.guides.compactMap { guide -> (PlexLiveChannel, PlexLiveProgram)? in
-                guard let program = guide.currentProgram() else { return nil }
-                return (guide.channel, program)
-            }
+        if let lineup = viewModel.lineup, !lineup.channels.isEmpty {
+            VStack(alignment: .leading, spacing: DuskPosterMetrics.carouselSectionSpacing) {
+                Text("Live TV")
+                    .font(DuskFont.sectionHeader(style: .title2.bold()))
+                    .foregroundStyle(Color.duskTextPrimary)
+                    .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
 
-            if !currentPrograms.isEmpty {
-                VStack(alignment: .leading, spacing: DuskPosterMetrics.carouselSectionSpacing) {
-                    Text("Live TV")
-                        .font(DuskFont.sectionHeader(style: .title2.bold()))
-                        .foregroundStyle(Color.duskTextPrimary)
-                        .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
-
-                    ScrollView(.horizontal) {
-                        LazyHStack(spacing: 14) {
-                            ForEach(currentPrograms, id: \.1.id) { channel, program in
-                                Button {
-                                    play(channel, program, lineup)
-                                } label: {
-                                    LiveTVProgramCard(
-                                        program: program,
-                                        imageURL: viewModel.imageURL(
-                                            for: program.preferredLandscapePath,
-                                            width: 640,
-                                            height: 360
-                                        ),
-                                        channelLogoURL: viewModel.imageURL(
-                                            for: channel.thumb,
-                                            width: 256,
-                                            height: 256
-                                        )
-                                    )
-                                }
-                                .buttonStyle(.plain)
-
-
+                ScrollView(.horizontal) {
+                    LazyHStack(spacing: 16) {
+                        ForEach(lineup.channels) { channel in
+                            LiveTVChannelCard(
+                                channel: channel,
+                                logoURL: viewModel.imageURL(for: channel.thumb, width: 400, height: 200),
+                                isPlaying: playback.activePlaybackServerID == viewModel.serverID &&
+                                    playback.activeLiveTVContext?.channel.id == channel.id
+                            ) {
+                                play(channel, nil, lineup)
                             }
+                            .frame(width: 220)
                         }
-                        .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
                     }
-                    .scrollIndicators(.hidden)
-
+                    .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
                 }
+                .scrollIndicators(.hidden)
             }
         }
     }

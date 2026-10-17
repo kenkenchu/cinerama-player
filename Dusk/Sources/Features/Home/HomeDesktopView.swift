@@ -13,7 +13,7 @@ struct HomeDesktopView: View {
     let heroSelectionResetRevision: Int
     let liveTVViewModel: LiveTVViewModel
     let showsLiveTV: Bool
-    let playLiveTV: (PlexLiveChannel, PlexLiveProgram, PlexLiveTVLineup) -> Void
+    let playLiveTV: (PlexLiveChannel, PlexLiveProgram?, PlexLiveTVLineup) -> Void
     let play: (PlexItem) -> Void
 
     var body: some View {
@@ -127,7 +127,7 @@ struct HomeDesktopView: View {
         }
         .task(id: showsLiveTV) {
             guard showsLiveTV else { return }
-            await liveTVViewModel.loadNowPlaying(force: true)
+            await liveTVViewModel.load(force: true)
         }
     }
 

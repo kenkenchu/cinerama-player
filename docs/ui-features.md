@@ -79,11 +79,15 @@ changes. Use the shared route rather than presenting a new detail stack manually
 
 Search uses the shared carousel presentation and merged Plex/Seerr results.
 Seerr pages are request-only and never expose Plex playback/download actions.
-Live TV guide behavior belongs in `LiveTVViewModel`. Clicking a channel's
-logo/name or its always-available Watch button tunes the live channel, even
-without current-program metadata. Current program cards also tune directly;
-past/future program cards open details and cannot play that scheduled program.
-Historical guide entries are not recordings.
+Live TV is a channel browser, with an adaptive grid of landscape logo/name/number
+cards, native name/number search, a count, Refresh/Retry and loading/empty states.
+Every card tunes immediately, shows a hand cursor and play affordance on hover,
+and marks the active server-scoped channel. There is no date picker, program
+timeline, schedule detail sheet or empty guide placeholder. The optional Home
+Live TV shelf reuses the channel cards and also works without EPG data.
+`LiveTVViewModel` loads provider/channels only, shares in-flight loading between
+Home and the tab, and builds a channel-only lineup for playback. The control bar
+shows the channel display name and LIVE status rather than a program title.
 
 ## Player
 

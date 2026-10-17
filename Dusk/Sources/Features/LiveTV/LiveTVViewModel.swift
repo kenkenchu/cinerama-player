@@ -8,119 +8,95 @@ final class LiveTVViewModel {
     private(set) var provider: PlexLiveTVProvider?
     private(set) var channels: [PlexLiveChannel] = []
     private(set) var lineup: PlexLiveTVLineup?
-    private(set) var nowPlayingLineup: PlexLiveTVLineup?
-    private(set) var selectedDate = Calendar.current.startOfDay(for: .now)
+    private(set) var serverID: String?
     private(set) var isLoading = false
     private(set) var isAvailable = false
     private(set) var error: String?
 
-    private var loadedDate: Date?
     private var discoveryCompleted = false
+    @ObservationIgnored private var loadTask: Task<Void, Never>?
 
     init(plexService: PlexService) {
         self.plexService = plexService
     }
 
+    private func resetIfServerChanged() {
+        guard serverID != plexService.liveTVServerID else { return }
+        provider = nil
+        channels = []
+        lineup = nil
+        discoveryCompleted = false
+        serverID = plexService.liveTVServerID
+    }
+
     func discover() async {
+        resetIfServerChanged()
         guard !discoveryCompleted else { return }
         do {
-            provider = try await plexService.getLiveTVProvider()
+            provider = try await plexService.getLiveTVProvider(serverID: serverID)
             isAvailable = provider != nil
             discoveryCompleted = true
         } catch {
-            // Live TV is optional. A discovery failure must not block the rest
-            // of Dusk, but opening the destination can retry and show details.
+            // Optional discovery never blocks Home; opening Live TV retries.
             isAvailable = false
         }
     }
 
+    /// Home and the tab share one request. Navigating between them while loading
+    /// must await that request rather than leave the destination without data.
     func load(force: Bool = false) async {
-        guard !isLoading else { return }
-        if !force, lineup != nil, Calendar.current.isDate(loadedDate ?? .distantPast, inSameDayAs: selectedDate) {
+        if let loadTask {
+            await loadTask.value
             return
         }
+        resetIfServerChanged()
+        guard force || lineup == nil else { return }
+        let task = Task { [weak self] in
+            guard let self else { return }
+            await self.loadChannels(force: force)
+        }
+        loadTask = task
+        await task.value
+        loadTask = nil
+    }
 
+    private func loadChannels(force: Bool) async {
         isLoading = true
         error = nil
         defer { isLoading = false }
-
+        let targetID = serverID
         do {
-            if provider == nil {
-                provider = try await plexService.getLiveTVProvider()
+            let resolvedProvider: PlexLiveTVProvider?
+            if provider == nil || force {
+                resolvedProvider = try await plexService.getLiveTVProvider(serverID: targetID)
+            } else {
+                resolvedProvider = provider
             }
-            guard let provider else {
+            guard targetID == plexService.liveTVServerID else { return }
+            provider = resolvedProvider
+            guard let provider = resolvedProvider else {
                 isAvailable = false
                 discoveryCompleted = true
+                channels = []
                 lineup = nil
                 return
             }
-
+            let loadedChannels = try await plexService.getLiveTVChannels(provider: provider, serverID: targetID)
+            guard targetID == plexService.liveTVServerID else { return }
+            channels = loadedChannels
+            // Playback needs the provider/channel snapshot, never an EPG.
+            lineup = PlexLiveTVLineup(
+                provider: provider,
+                guides: channels.map { PlexLiveChannelGuide(channel: $0, programs: []) }
+            )
             isAvailable = true
             discoveryCompleted = true
-            if channels.isEmpty || force {
-                channels = try await plexService.getLiveTVChannels(provider: provider)
-            }
-            lineup = try await plexService.getLiveTVGuide(
-                provider: provider,
-                channels: channels,
-                date: selectedDate
-            )
-            loadedDate = selectedDate
         } catch {
             self.error = error.localizedDescription
         }
-    }
-
-    func loadNowPlaying(force: Bool = false) async {
-        guard !isLoading else { return }
-        guard force || nowPlayingLineup == nil else { return }
-        isLoading = true
-        defer { isLoading = false }
-
-        do {
-            if provider == nil {
-                provider = try await plexService.getLiveTVProvider()
-            }
-            guard let provider else {
-                isAvailable = false
-                discoveryCompleted = true
-                return
-            }
-            isAvailable = true
-            discoveryCompleted = true
-            if channels.isEmpty {
-                channels = try await plexService.getLiveTVChannels(provider: provider)
-            }
-            nowPlayingLineup = try await plexService.getLiveTVNowPlaying(
-                provider: provider,
-                channels: channels
-            )
-        } catch {
-            self.error = error.localizedDescription
-        }
-    }
-
-    func selectDate(_ date: Date) async {
-        selectedDate = Calendar.current.startOfDay(for: date)
-        await load(force: true)
     }
 
     func imageURL(for path: String?, width: Int, height: Int) -> URL? {
-        // Explicit because `imageURL` falls back to the primary server, while
-        // the endpoints above resolve `liveTVServerID` themselves. Both are the
-        // same server today; routing the art by hand keeps it that way if Live
-        // TV ever stops being pinned to the highest-priority server.
-        plexService.imageURL(
-            for: path,
-            serverID: plexService.liveTVServerID,
-            width: width,
-            height: height
-        )
-    }
-
-    var dateOptions: [Date] {
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: .now)
-        return (-1...7).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
+        plexService.imageURL(for: path, serverID: serverID, width: width, height: height)
     }
 }

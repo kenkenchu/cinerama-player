@@ -108,6 +108,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - Controls hide after two seconds, but stay visible while hovered, paused, or
   scrubbing. The compact bar shows series name, season/episode numbers and title.
   The monitor-and-waveform button (Cmd-I) opens safe playback diagnostics.
+- Live TV is a searchable channel grid with direct tuning and a channel-card
+  Home shelf. This server has no guide data: do not require EPG requests, dates
+  or scheduled programs for browsing, tuning or playback titles.
 - Pointer feedback on media cards/episode rows belongs only on artwork; the Home
   hero Play/Resume button also has a hand cursor. Video click toggles play/pause,
   double-click toggles fullscreen, and video hover has no tooltip.
