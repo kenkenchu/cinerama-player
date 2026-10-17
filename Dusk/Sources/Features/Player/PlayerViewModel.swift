@@ -105,7 +105,7 @@ final class PlayerViewModel {
     /// track appears — and never after the viewer has chosen for themselves.
     var hasReappliedAutomaticSubtitleSelectionForExternalTracks = false
     var hasUserSelectedSubtitleTrack = false
-    var seriesSubtitlePreference: SeriesSubtitlePreference?
+    var savedSubtitlePreference: PlaybackSubtitlePreference?
     var subtitleSelectionHandler: ((SubtitleTrack?) -> Void)?
     /// Builds the token-bearing URL for a Plex sidecar subtitle stream. Set by
     /// `PlayerView` from the coordinator's `PlexService`; nil in previews, where
@@ -229,9 +229,9 @@ final class PlayerViewModel {
         pendingExternalSubtitleStreamID: Int? = nil,
         explicitTrackSelection: ExplicitTrackSelection? = nil,
         spentAutoSkipMarkerIDs: Set<Int> = [],
-        seriesSubtitlePreference: SeriesSubtitlePreference? = nil
+        savedSubtitlePreference: PlaybackSubtitlePreference? = nil
     ) {
-        self.seriesSubtitlePreference = seriesSubtitlePreference
+        self.savedSubtitlePreference = savedSubtitlePreference
         userPreferences = preferences
         // Apply the saved zoom-to-fill choice now that preferences are known.
         // Safe to call in any order relative to the first layout pass: it

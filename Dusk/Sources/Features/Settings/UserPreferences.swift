@@ -689,9 +689,9 @@ enum MaxResolution: String, CaseIterable, Identifiable {
     }
 }
 
-/// A series preference describes a track, never an episode-specific stream ID.
+/// A movie or series preference describes a track, never a file-specific stream ID.
 @MainActor
-struct SeriesSubtitlePreference: Codable {
+struct PlaybackSubtitlePreference: Codable {
     let isOff: Bool
     let languageCode: String?
     let title: String?
@@ -719,21 +719,35 @@ struct SeriesSubtitlePreference: Codable {
 }
 
 extension UserPreferences {
-    private func seriesSubtitleKey(profileID: String?, serverID: String?, seriesID: String?) -> String? {
-        guard let profileID, let serverID, let seriesID,
-              let data = try? JSONEncoder().encode([profileID, serverID, seriesID]) else { return nil }
-        return "seriesSubtitlePreference.v1." + data.base64EncodedString()
+    private func subtitlePreferenceKey(profileID: String?, serverID: String?, mediaDetails: PlexMediaDetails?) -> String? {
+        guard let profileID, let serverID, let mediaDetails else { return nil }
+        let itemID: String
+        let namespace: String
+        switch mediaDetails.type {
+        case .episode:
+            guard let seriesID = mediaDetails.grandparentRatingKey else { return nil }
+            itemID = seriesID
+            // Preserve the existing series keys so saved choices survive this update.
+            namespace = "seriesSubtitlePreference.v1."
+        case .movie:
+            itemID = mediaDetails.ratingKey
+            namespace = "movieSubtitlePreference.v1."
+        default:
+            return nil
+        }
+        guard let data = try? JSONEncoder().encode([profileID, serverID, itemID]) else { return nil }
+        return namespace + data.base64EncodedString()
     }
 
-    func seriesSubtitlePreference(profileID: String?, serverID: String?, seriesID: String?) -> SeriesSubtitlePreference? {
-        guard let key = seriesSubtitleKey(profileID: profileID, serverID: serverID, seriesID: seriesID),
+    func savedSubtitlePreference(profileID: String?, serverID: String?, mediaDetails: PlexMediaDetails?) -> PlaybackSubtitlePreference? {
+        guard let key = subtitlePreferenceKey(profileID: profileID, serverID: serverID, mediaDetails: mediaDetails),
               let data = UserDefaults.standard.data(forKey: key) else { return nil }
-        return try? JSONDecoder().decode(SeriesSubtitlePreference.self, from: data)
+        return try? JSONDecoder().decode(PlaybackSubtitlePreference.self, from: data)
     }
 
-    func rememberSeriesSubtitle(_ track: SubtitleTrack?, profileID: String?, serverID: String?, seriesID: String?) {
-        guard let key = seriesSubtitleKey(profileID: profileID, serverID: serverID, seriesID: seriesID),
-              let data = try? JSONEncoder().encode(SeriesSubtitlePreference(track: track)) else { return }
+    func rememberSubtitle(_ track: SubtitleTrack?, profileID: String?, serverID: String?, mediaDetails: PlexMediaDetails?) {
+        guard let key = subtitlePreferenceKey(profileID: profileID, serverID: serverID, mediaDetails: mediaDetails),
+              let data = try? JSONEncoder().encode(PlaybackSubtitlePreference(track: track)) else { return }
         UserDefaults.standard.set(data, forKey: key)
     }
 }

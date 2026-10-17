@@ -149,9 +149,9 @@ extension PlayerViewModel {
         if !hasAppliedAutomaticSubtitleSelection, let explicitTrackSelection {
             applyExplicitSubtitleSelection(explicitTrackSelection)
         } else if !hasAppliedAutomaticSubtitleSelection,
-                  let seriesSubtitlePreference,
-                  seriesSubtitlePreference.isOff || seriesSubtitlePreference.matchingTrack(in: subtitleTracks) != nil {
-            selectSubtitle(seriesSubtitlePreference.matchingTrack(in: subtitleTracks), rememberSelection: false)
+                  let savedSubtitlePreference,
+                  savedSubtitlePreference.isOff || savedSubtitlePreference.matchingTrack(in: subtitleTracks) != nil {
+            selectSubtitle(savedSubtitlePreference.matchingTrack(in: subtitleTracks), rememberSelection: false)
         } else if !hasAppliedAutomaticSubtitleSelection, !subtitleTracks.isEmpty {
             let preferredSubtitleTrack = preferredSubtitleTrack()
             engine.selectSubtitleTrack(preferredSubtitleTrack)
@@ -331,9 +331,9 @@ extension PlayerViewModel {
     }
 
     func preferredSubtitleTrack() -> SubtitleTrack? {
-        if let seriesSubtitlePreference {
-            if seriesSubtitlePreference.isOff { return nil }
-            if let track = seriesSubtitlePreference.matchingTrack(in: automaticallySelectableSubtitleTracks) {
+        if let savedSubtitlePreference {
+            if savedSubtitlePreference.isOff { return nil }
+            if let track = savedSubtitlePreference.matchingTrack(in: automaticallySelectableSubtitleTracks) {
                 return track
             }
         }
@@ -845,15 +845,15 @@ extension PlayerViewModel {
         inPart part: PlexMediaPart?,
         preferredLanguage rawPreferredLanguage: String?,
         forcedOnly: Bool,
-        seriesPreference: SeriesSubtitlePreference? = nil
+        savedPreference: PlaybackSubtitlePreference? = nil
     ) -> Int? {
         guard let part else { return nil }
         let tracks = part.streams
             .filter { $0.streamType == .subtitle }
             .map(SubtitleTrack.init(stream:))
-        if let seriesPreference {
-            if seriesPreference.isOff { return nil }
-            if let track = seriesPreference.matchingTrack(in: tracks) { return track.id }
+        if let savedPreference {
+            if savedPreference.isOff { return nil }
+            if let track = savedPreference.matchingTrack(in: tracks) { return track.id }
         }
         let preferredLanguage = normalizedLanguageCode(rawPreferredLanguage)
 

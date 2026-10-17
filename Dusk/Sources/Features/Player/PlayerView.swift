@@ -208,10 +208,10 @@ private struct MacPlayerSession: View {
         // Capture the session scope so a later profile/item change cannot redirect the write.
         let profileID = playback.plexService.activeProfileID
         let serverID = playback.activePlaybackServerID
-        let seriesID = playback.activeItemDetails.flatMap { $0.type == .episode ? $0.grandparentRatingKey : nil }
+        let mediaDetails = playback.activeItemDetails
         let preferences = playback.preferences
         model.subtitleSelectionHandler = { track in
-            preferences.rememberSeriesSubtitle(track, profileID: profileID, serverID: serverID, seriesID: seriesID)
+            preferences.rememberSubtitle(track, profileID: profileID, serverID: serverID, mediaDetails: mediaDetails)
         }
         model.configureAutomaticTrackSelection(
             preferences: playback.preferences, part: playback.debugInfo?.part,
@@ -223,7 +223,7 @@ private struct MacPlayerSession: View {
             pendingExternalSubtitleStreamID: playback.consumePendingExternalSubtitleStreamID(),
             explicitTrackSelection: playback.consumePendingExplicitTrackSelection(),
             spentAutoSkipMarkerIDs: playback.spentAutoSkipMarkerIDs,
-            seriesSubtitlePreference: preferences.seriesSubtitlePreference(profileID: profileID, serverID: serverID, seriesID: seriesID))
+            savedSubtitlePreference: preferences.savedSubtitlePreference(profileID: profileID, serverID: serverID, mediaDetails: mediaDetails))
         model.autoSkipHandler = { marker in model.handleSkipMarker(marker) }
         model.autoSkipSpentHandler = { playback.noteAutoSkipSpent(markerID: $0) }
         model.upNextPosterHandler = { marker in
