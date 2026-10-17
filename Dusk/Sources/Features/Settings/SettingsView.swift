@@ -17,12 +17,6 @@ struct SettingsRootContent: View {
     @State private var viewModel = SettingsViewModel()
 
     var body: some View {
-        #if os(macOS)
         SettingsMacView(viewModel: viewModel)
-        #elseif os(tvOS)
-        SettingsTVView(viewModel: viewModel)
-        #else
-        SettingsIOSView(viewModel: viewModel)
-        #endif
     }
 }

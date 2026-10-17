@@ -10,28 +10,20 @@ import Foundation
 /// ```
 @MainActor
 enum PlaybackEngineFactory {
-    #if canImport(AVFoundation)
     private static var warmedAVPlayerEngine: AVPlayerEngine?
-    #endif
 
-    #if canImport(MobileVLCKit) || canImport(TVVLCKit) || canImport(VLCKit)
     private static var warmedVLCKitEngine: VLCKitEngine?
-    #endif
 
     /// Front-load one-time player setup so first playback does not pay the
     /// initialization cost while the user is waiting for video to start.
     static func prewarmIfNeeded() {
-        #if canImport(AVFoundation)
         if warmedAVPlayerEngine == nil {
             warmedAVPlayerEngine = AVPlayerEngine()
         }
-        #endif
 
-        #if canImport(MobileVLCKit) || canImport(TVVLCKit) || canImport(VLCKit)
         if warmedVLCKitEngine == nil {
             warmedVLCKitEngine = VLCKitEngine()
         }
-        #endif
     }
 
     /// Build a playback engine for the given media.
@@ -61,25 +53,17 @@ enum PlaybackEngineFactory {
     static func makeEngine(type engineType: PlaybackEngineType) -> any PlaybackEngine {
         switch engineType {
         case .avPlayer:
-            #if canImport(AVFoundation)
             if let warmedAVPlayerEngine {
                 self.warmedAVPlayerEngine = nil
                 return warmedAVPlayerEngine
             }
             return AVPlayerEngine()
-            #else
-            fatalError("AVPlayer is not available on this platform")
-            #endif
         case .vlcKit:
-            #if canImport(MobileVLCKit) || canImport(TVVLCKit) || canImport(VLCKit)
             if let warmedVLCKitEngine {
                 self.warmedVLCKitEngine = nil
                 return warmedVLCKitEngine
             }
             return VLCKitEngine()
-            #else
-            fatalError("VLCKit is not available on this platform")
-            #endif
         }
     }
 }

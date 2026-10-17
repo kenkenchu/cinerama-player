@@ -1,7 +1,4 @@
 import SwiftUI
-#if os(iOS)
-import UIKit
-#endif
 
 struct HomeView: View {
     @Environment(PlexService.self) private var plexService
@@ -11,11 +8,7 @@ struct HomeView: View {
     @Binding var path: NavigationPath
     let isSelected: Bool
     let liveTVViewModel: LiveTVViewModel
-    /// tvOS: set while the page is scrolled away from its top, so the tab
-    /// shell can send the Siri Remote's Back press back to the hero instead
-    /// of letting it leave the app.
     var isScrolledOffTop: Binding<Bool> = .constant(false)
-    /// tvOS: bumped by the tab shell to bring the page back to the hero.
     var scrollToTopRevision = 0
     @State private var viewModel: HomeViewModel?
     @State private var heroSelectionResetRevision = 0
@@ -95,22 +88,7 @@ struct HomeView: View {
 
     @ViewBuilder
     private func platformContent(_ viewModel: HomeViewModel) -> some View {
-        #if os(tvOS)
-        HomeTVView(
-            path: $path,
-            viewModel: viewModel,
-            offlineServerNames: availability.offlineServerNames,
-            recentlyAddedInlineItemLimit: recentlyAddedInlineItemLimit,
-            heroSelectionResetRevision: heroSelectionResetRevision,
-            liveTVViewModel: liveTVViewModel,
-            showsLiveTV: preferences.showsLiveTVOnHome,
-            isScrolledOffTop: isScrolledOffTop,
-            scrollToTopRevision: scrollToTopRevision,
-            playLiveTV: playLiveTV,
-            play: play
-        )
-        #else
-        HomeIOSView(
+        HomeDesktopView(
             path: $path,
             viewModel: viewModel,
             offlineServerNames: availability.offlineServerNames,
@@ -121,7 +99,6 @@ struct HomeView: View {
             playLiveTV: playLiveTV,
             play: play
         )
-        #endif
     }
 
     /// Mirrors the branches in `body`: whether the page itself is on screen.
@@ -136,11 +113,7 @@ struct HomeView: View {
     }
 
     private var recentlyAddedInlineItemLimit: Int {
-        #if os(iOS)
-        UIDevice.current.userInterfaceIdiom == .pad ? 22 : 15
-        #else
         15
-        #endif
     }
 
     private func play(_ item: PlexItem) {

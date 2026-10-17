@@ -5,18 +5,10 @@ struct ActorDetailView: View {
 
     private let horizontalPadding: CGFloat = DuskPosterMetrics.detailHorizontalPadding
     private let gridSpacing: CGFloat = {
-        #if os(tvOS)
-        DuskPosterMetrics.gridSpacing
-        #else
         DuskPosterMetrics.detailGridSpacing
-        #endif
     }()
     private let preferredPosterWidth: CGFloat = {
-        #if os(tvOS)
-        DuskPosterMetrics.gridPreferredWidth
-        #else
         DuskPosterMetrics.detailGridPreferredWidth
-        #endif
     }()
     private let minimumColumnCount = 2
 
@@ -42,7 +34,7 @@ struct ActorDetailView: View {
                 contentView
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
@@ -82,26 +74,15 @@ struct ActorDetailView: View {
                 .padding(.bottom, 56)
             }
             .scrollIndicators(.hidden)
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
         }
     }
 
     private var header: some View {
         let artworkSize: CGFloat = {
-            #if os(tvOS)
-            160
-            #else
             120
-            #endif
         }()
         let headerSpacing: CGFloat = {
-            #if os(tvOS)
-            32
-            #else
             20
-            #endif
         }()
 
         return HStack(alignment: .center, spacing: headerSpacing) {
@@ -109,18 +90,18 @@ struct ActorDetailView: View {
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(viewModel.person.name)
-                    .font(DuskFont.pageTitle(ios: .title2.bold()))
+                    .font(DuskFont.pageTitle(style: .title2.bold()))
                     .foregroundStyle(Color.primary)
                     .multilineTextAlignment(.leading)
 
                 if let roleName = viewModel.person.roleName, !roleName.isEmpty {
                     Text(roleName)
-                        .font(DuskFont.metadata(ios: .subheadline))
+                        .font(DuskFont.metadata(style: .subheadline))
                         .foregroundStyle(Color.primary.opacity(0.78))
                 }
 
                 Text(viewModel.creditSummary)
-                    .font(DuskFont.caption(ios: .subheadline))
+                    .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.primary.opacity(0.76))
             }
 
@@ -174,11 +155,7 @@ struct ActorDetailView: View {
             minimumColumnCount: minimumColumnCount
         )
         let sectionSpacing: CGFloat = {
-            #if os(tvOS)
-            24
-            #else
             16
-            #endif
         }()
 
         VStack(alignment: .leading, spacing: sectionSpacing) {
@@ -200,17 +177,17 @@ struct ActorDetailView: View {
     }
 
     private var sectionTitleFont: Font {
-        DuskFont.sectionHeader(ios: .headline)
+        DuskFont.sectionHeader(style: .headline)
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("No titles found")
-                .font(DuskFont.rowTitle(ios: .headline))
+                .font(DuskFont.rowTitle(style: .headline))
                 .foregroundStyle(Color.primary)
 
             Text("This actor doesn't have any movies or shows available in your connected Plex library.")
-                .font(DuskFont.caption(ios: .subheadline))
+                .font(DuskFont.caption(style: .subheadline))
                 .foregroundStyle(Color.primary.opacity(0.76))
                 .fixedSize(horizontal: false, vertical: true)
         }

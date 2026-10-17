@@ -77,14 +77,12 @@ final class LibraryOrderSettingsViewModel {
 
     // MARK: - Editing
 
-    /// iOS/iPadOS list editing.
     func move(fromOffsets offsets: IndexSet, toOffset destination: Int) {
         var updated = libraries
         updated.move(fromOffsets: offsets, toOffset: destination)
         apply(updated)
     }
 
-    /// tvOS position menus: move one library to an absolute slot.
     func move(_ library: PlexLibrary, to index: Int) {
         guard let current = libraries.firstIndex(of: library) else { return }
 

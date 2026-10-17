@@ -1,8 +1,5 @@
 import Foundation
 import SwiftUI
-#if os(tvOS)
-import UIKit
-#endif
 
 enum PlayerLoadingState: Equatable {
     case hidden
@@ -60,8 +57,6 @@ final class PlaybackCoordinator {
     @ObservationIgnored var isDolbyVision7ConversionSuppressed = false
     var isSwitchingQuality = false
     var qualitySwitchError: String?
-    /// System AirPlay route state shared by playback preparation and the iOS
-    /// route-picker UI. The selected route itself remains owned by the system.
     let airPlayController: PlaybackAirPlayController
     /// Group Activities lifecycle and engine coordination for SharePlay.
     let sharePlayController: PlaybackSharePlayController
@@ -84,9 +79,6 @@ final class PlaybackCoordinator {
     /// Set by the sidecar-download flow and by the AVPlayer → VLCKit switch,
     /// consumed by `PlayerViewModel.configureAutomaticTrackSelection`.
     var pendingExternalSubtitleStreamID: Int?
-    /// Plex audio/subtitle choice to carry into the next player configuration
-    /// when a remux returns to direct play or enhanced SDR subtitles switch
-    /// tvOS from AVPlayer to VLCKit. Consumed once by `PlayerView`.
     var pendingExplicitTrackSelection: ExplicitTrackSelection?
     /// Bumped when `refreshSubtitleStreamsAfterDownload` replaced the active
     /// part snapshot. The player observes it and re-reads the part's subtitle
@@ -146,13 +138,6 @@ final class PlaybackCoordinator {
     /// freezes while the user pauses during the credits instead of autoplaying.
     @ObservationIgnored var latestActivePlaybackState: PlaybackState = .idle
 
-    /// Whether the system idle timer (screen saver / auto-lock) should be
-    /// suppressed. Owned here rather than in `PlayerSessionView` because that
-    /// view is rebuilt (fresh `.id`) on every episode transition: two idle-timer
-    /// modifiers would overlap during the swap and the departing one would clear
-    /// the flag the arriving one just set, letting the screen saver appear on the
-    /// next episode. On tvOS, each playback snapshot also reconciles UIKit's
-    /// actual flag because VLCKit writes it independently on state changes.
     var isIdleTimerSuppressed = false
 
     @ObservationIgnored nonisolated(unsafe) var timelineTimer: Timer?
@@ -302,7 +287,7 @@ final class PlaybackCoordinator {
         await sharePlayController.retryPendingActivityIfPossible()
     }
 
-    /// Drives the phone's remote presentation. Route selection becomes true
+    /// Tracks external playback route presentation. Route selection becomes true
     /// before AVPlayer finishes the handoff; AVPlayer's state covers the brief
     /// period where the system route is active but the audio-session snapshot
     /// has not refreshed yet.
@@ -587,26 +572,6 @@ final class PlaybackCoordinator {
         )
     }
 
-    #if DEBUG && !os(macOS)
-    /// Screenshot mode (`ScreenshotMode`): starts at an exact position instead
-    /// of the item's resume point. With `-DuskScreenshotUpNext` it then raises
-    /// the full-screen Up Next screen for the following episode.
-    func playForScreenshot(id: PlexItemID, startPosition: TimeInterval?) async {
-        await beginPlayback(
-            id: id,
-            startPositionOverride: startPosition,
-            resumeOffsetMilliseconds: nil,
-            selectedMediaID: nil,
-            placeholder: nil
-        )
-        guard ScreenshotMode.frozenUpNextSeconds != nil,
-              let details = activeItemDetails,
-              details.type == .episode,
-              let next = await nextEpisode(after: details) else { return }
-        try? await Task.sleep(for: .seconds(1))
-        presentUpNext(for: next)
-    }
-    #endif
 
     /// An explicitly chosen media version stays on the server it was chosen
     /// from: another server's copy of the same title has entirely different
@@ -749,24 +714,12 @@ final class PlaybackCoordinator {
         latestActivePlaybackState = state
 
         let shouldSuppress: Bool
-        #if os(tvOS)
-        // A finalized engine stays behind Up Next, and late engine callbacks
-        // must not keep that waiting screen awake. Loading alone is not playback.
-        shouldSuppress = showPlayer && !didFinalizeCurrentSession &&
-            upNextPresentation == nil && state == .playing
-        // VLCKit can change UIKit's flag without changing our observed Bool.
-        // Reconcile the actual value on every snapshot, not just on transitions.
-        if UIApplication.shared.isIdleTimerDisabled != shouldSuppress {
-            UIApplication.shared.isIdleTimerDisabled = shouldSuppress
-        }
-        #else
         switch state {
         case .loading, .playing:
             shouldSuppress = !isAirPlayPlaybackActive
         case .idle, .paused, .stopped, .error:
             shouldSuppress = false
         }
-        #endif
         if isIdleTimerSuppressed != shouldSuppress {
             isIdleTimerSuppressed = shouldSuppress
         }

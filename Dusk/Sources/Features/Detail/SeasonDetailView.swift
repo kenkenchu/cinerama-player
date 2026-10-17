@@ -1,4 +1,3 @@
-#if !os(tvOS)
 import SwiftUI
 
 struct SeasonDetailView: View {
@@ -40,7 +39,7 @@ struct SeasonDetailView: View {
                 contentView(details)
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
@@ -145,7 +144,7 @@ struct SeasonDetailView: View {
 
         if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
-                .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                 .foregroundStyle(Color.primary.opacity(0.78))
         }
     }
@@ -165,7 +164,7 @@ struct SeasonDetailView: View {
                 watchedButton()
             }
         }
-        .detailHeroActionStackFrame(isCompactPhone: usesFullWidthDetailActionButtons(for: sizeClass))
+        .detailHeroActionStackFrame(isCompactLayout: usesFullWidthDetailActionButtons(for: sizeClass))
     }
 
     private func seasonPlayActions(label: String) -> some View {
@@ -220,7 +219,7 @@ struct SeasonDetailView: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Episodes")
-                    .font(DuskFont.sectionHeader(ios: .headline))
+                    .font(DuskFont.sectionHeader(style: .headline))
                     .foregroundStyle(Color.primary)
 
                 LazyVStack(alignment: .leading, spacing: 20) {
@@ -480,13 +479,13 @@ private struct SeasonEpisodeTextContent: View {
             HStack(alignment: .firstTextBaseline, spacing: 8) {
                 if let label, !label.isEmpty {
                     Text(label)
-                        .font(DuskFont.caption(ios: .caption.weight(.semibold)))
+                        .font(DuskFont.caption(style: .caption.weight(.semibold)))
                         .foregroundStyle(Color.primary.opacity(0.78))
                 }
 
                 if isWatched {
                     Image(systemName: "checkmark")
-                        .font(DuskFont.glyphSmall(ios: .caption2.weight(.semibold)))
+                        .font(DuskFont.glyphSmall(style: .caption2.weight(.semibold)))
                         .foregroundStyle(Color.primary.opacity(0.6))
                         .accessibilityLabel("Watched")
                 }
@@ -495,14 +494,14 @@ private struct SeasonEpisodeTextContent: View {
             }
 
             Text(episode.title)
-                .font(DuskFont.rowTitle(ios: .headline))
+                .font(DuskFont.rowTitle(style: .headline))
                 .foregroundStyle(isUnavailableOffline ? Color.primary.opacity(0.55) : Color.primary)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle, !subtitle.isEmpty {
                 Text(subtitle)
-                    .font(DuskFont.caption(ios: .caption))
+                    .font(DuskFont.caption(style: .caption))
                     .foregroundStyle(Color.primary.opacity(0.76))
             }
 
@@ -519,15 +518,15 @@ private struct SeasonEpisodeTextContent: View {
         } else if isPlayableOffline {
             Label("Downloaded", systemImage: "arrow.down.circle.fill")
                 .labelStyle(.iconOnly)
-                .font(DuskFont.glyphSmall(ios: .caption))
+                .font(DuskFont.glyphSmall(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.6))
         } else if showsOfflineAvailability {
             Text(isUsingCachedData ? "Unavailable Offline" : "Not Downloaded")
-                .font(DuskFont.badge(ios: .caption2.weight(.semibold)))
+                .font(DuskFont.badge(style: .caption2.weight(.semibold)))
                 .foregroundStyle(Color.duskTextSecondary)
         } else if let downloadStatus, downloadStatus != .completed {
             Text(downloadStatus.displayName)
-                .font(DuskFont.badge(ios: .caption2.weight(.semibold)))
+                .font(DuskFont.badge(style: .caption2.weight(.semibold)))
                 .foregroundStyle(downloadStatus == .failed ? .red : Color.duskTextSecondary)
         }
     }
@@ -541,7 +540,7 @@ private struct SeasonEpisodeSummaryText: View {
     var body: some View {
         if let summary = episode.summary, !summary.isEmpty {
             Text(summary)
-                .font(DuskFont.body(ios: .subheadline))
+                .font(DuskFont.body(style: .subheadline))
                 .foregroundStyle(Color.primary.opacity(0.76))
                 .lineSpacing(4)
                 .lineLimit(lineLimit)
@@ -558,4 +557,3 @@ private struct SeasonEpisodeDivider: View {
             .frame(height: 1)
     }
 }
-#endif

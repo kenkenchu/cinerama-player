@@ -7,7 +7,6 @@ struct SignInView: View {
     @State private var isSigningIn = false
     @State private var error: String?
     @State private var pollingTask: Task<Void, Never>?
-    @State private var authURL: URL?
 
     var body: some View {
         ZStack {
@@ -15,13 +14,6 @@ struct SignInView: View {
 
             signInContent
         }
-        #if os(iOS)
-        .sheet(isPresented: authSheetPresented) {
-            if let authURL {
-                DuskSafariView(url: authURL)
-            }
-        }
-        #endif
         .onDisappear {
             pollingTask?.cancel()
         }
@@ -29,14 +21,10 @@ struct SignInView: View {
 
     @ViewBuilder
     private var signInContent: some View {
-        #if os(tvOS)
-        tvSignInContent
-        #else
-        iosSignInContent
-        #endif
+        desktopSignInContent
     }
 
-    private var iosSignInContent: some View {
+    private var desktopSignInContent: some View {
         VStack(spacing: 0) {
             Spacer()
 
@@ -76,61 +64,6 @@ struct SignInView: View {
         }
     }
 
-    private var tvSignInContent: some View {
-        VStack(spacing: 0) {
-            Spacer(minLength: 0)
-
-            VStack(spacing: 24) {
-                branding(
-                    iconSize: 112,
-                    titleFont: DuskFont.pageTitleRounded(
-                        ios: .system(size: 44, weight: .bold, design: .rounded)
-                    )
-                )
-
-                VStack(spacing: 10) {
-                    Text("Sign in with Plex")
-                        .font(DuskFont.sectionHeader(ios: .title2.weight(.semibold)))
-                        .foregroundStyle(Color.duskTextPrimary)
-
-                    Text("On another device, open plex.tv/link and enter the code shown below.")
-                        .font(DuskFont.pageSubtitle(ios: .title3))
-                        .foregroundStyle(Color.duskTextSecondary)
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: 720)
-                }
-
-                signInError
-
-                if let linkPinCode {
-                    VStack(spacing: 12) {
-                        Text("plex.tv/link")
-                            .font(DuskFont.rowTitle(ios: .title3.weight(.semibold)))
-                            .foregroundStyle(Color.duskTextSecondary)
-
-                        Text(linkPinCode)
-                            .font(.system(size: 54, weight: .bold, design: .monospaced))
-                            .tracking(8)
-                            .foregroundStyle(Color.duskTextPrimary)
-                    }
-                    .padding(.horizontal, 54)
-                    .padding(.vertical, 28)
-                    .background(Color.duskSurface, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
-                }
-
-                signInButton
-                    .frame(maxWidth: 520)
-
-                if isSigningIn {
-                    cancelButton
-                }
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 40)
-        .padding(.vertical, 60)
-    }
 
     private func branding(iconSize: CGFloat, titleFont: Font) -> some View {
         VStack(spacing: 16) {
@@ -144,7 +77,7 @@ struct SignInView: View {
                     .font(titleFont)
                     .foregroundStyle(Color.duskTextPrimary)
                 Text("The Plex App we Deserve.")
-                    .font(DuskFont.caption(ios: .subheadline))
+                    .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.duskTextSecondary)
             }
         }
@@ -155,7 +88,7 @@ struct SignInView: View {
         if let error {
             Text(error)
                 .foregroundStyle(.red)
-                .font(DuskFont.body(ios: .callout))
+                .font(DuskFont.body(style: .callout))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
         }
@@ -168,18 +101,14 @@ struct SignInView: View {
             HStack(spacing: 8) {
                 if isSigningIn {
                     ProgressView()
-                        #if !os(tvOS)
                         .tint(Color.duskPrimaryActionLabel)
-                        #endif
                 }
                 Text(isSigningIn ? "Waiting for approval…" : "Sign in with Plex")
             }
-            .font(DuskFont.buttonLabel(ios: .headline))
+            .font(DuskFont.buttonLabel(style: .headline))
             .frame(maxWidth: .infinity)
             .padding(.vertical, 8)
-            #if !os(tvOS)
             .foregroundStyle(Color.duskPrimaryActionLabel)
-            #endif
         }
         .disabled(isSigningIn)
         .detailHeroNativePrimaryButtonStyle()
@@ -189,10 +118,10 @@ struct SignInView: View {
         Button("Cancel") {
             cancelSignIn()
         }
-        .duskFont(tvOnly: DuskFont.TV.buttonLabel)
+
         .foregroundStyle(Color.duskTextSecondary)
-        .duskSuppressTVOSButtonChrome()
-        .duskTVOSFocusEffectShape(Capsule())
+
+
     }
 
     private func linkCodeContent(code: String, titleFont: Font, codeFont: Font) -> some View {
@@ -216,11 +145,6 @@ struct SignInView: View {
         linkPinCode = nil
 
         do {
-            #if os(tvOS)
-            let linkPin = try await plexService.generatePin()
-            linkPinCode = linkPin.code
-            startPolling(primaryPinID: linkPin.id)
-            #else
             // Plex uses a longer-lived "strong" PIN for browser approval, but
             // plex.tv/link expects the short code flow, so we keep both active.
             let browserPin = try await plexService.generatePin(strong: true)
@@ -233,7 +157,6 @@ struct SignInView: View {
 
             startPolling(primaryPinID: browserPin.id, fallbackPinID: linkPin?.id)
             openAuthURL(url)
-            #endif
         } catch {
             self.error = error.localizedDescription
             isSigningIn = false
@@ -254,7 +177,6 @@ struct SignInView: View {
                     plexService.setAuthToken(token)
                     isSigningIn = false
                     linkPinCode = nil
-                    authURL = nil
                     return
                 }
 
@@ -264,7 +186,6 @@ struct SignInView: View {
                         plexService.setAuthToken(token)
                         isSigningIn = false
                         linkPinCode = nil
-                        authURL = nil
                         return
                 }
             }
@@ -274,7 +195,6 @@ struct SignInView: View {
             // returns early above, so aborting never surfaces this message.
             isSigningIn = false
             linkPinCode = nil
-            authURL = nil
             error = "Sign-in timed out. Please try again."
         }
     }
@@ -283,38 +203,11 @@ struct SignInView: View {
         pollingTask?.cancel()
         isSigningIn = false
         linkPinCode = nil
-        authURL = nil
     }
 
-    #if !os(tvOS)
-    private var authSheetPresented: Binding<Bool> {
-        Binding(
-            get: { authURL != nil },
-            set: {
-                guard !$0 else { return }
-                authURL = nil
-            }
-        )
-    }
 
-    /// Opens the Plex approval page for the browser PIN.
-    ///
-    /// On iPhone/iPad this presents the in-app `SFSafariViewController` sheet.
-    /// For an iOS app running on macOS ("Designed for iPad") that sheet is
-    /// unreliable — the system hands the URL to the default browser and
-    /// dismisses the sheet immediately — so we open the external browser
-    /// directly there instead. Either path leaves polling running and the
-    /// `plex.tv/link` code on screen as the fallback.
+    /// Opens Plex approval in the default Mac browser while PIN polling continues.
     private func openAuthURL(_ url: URL) {
-        #if os(macOS)
         openURL(url)
-        #else
-        if ProcessInfo.processInfo.isiOSAppOnMac || ProcessInfo.processInfo.isMacCatalystApp {
-            openURL(url)
-        } else {
-            authURL = url
-        }
-        #endif
     }
-    #endif
 }

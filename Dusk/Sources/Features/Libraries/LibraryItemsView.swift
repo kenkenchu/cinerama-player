@@ -50,7 +50,7 @@ struct LibraryItemsView: View {
             }
         }
         .duskNavigationTitle(viewModel.navigationTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
         .task {
             await viewModel.loadItems()
         }
@@ -98,9 +98,6 @@ struct LibraryItemsView: View {
                 }
             }
             .scrollIndicators(.hidden)
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
         }
     }
 
@@ -148,7 +145,7 @@ struct LibraryItemsView: View {
                 isActive: viewModel.selectedGenre != .all
             )
         }
-        .duskSuppressTVOSButtonChrome()
+
     }
 
     private var sortMenu: some View {
@@ -173,12 +170,9 @@ struct LibraryItemsView: View {
                 isActive: viewModel.selectedSort != viewModel.defaultSortOption
             )
         }
-        .duskSuppressTVOSButtonChrome()
+
     }
 
-    /// A filter chip rather than a menu: one tap (one click on tvOS) flips it.
-    /// On, it inverts to a `TextPrimary` fill with a filled checkmark, the
-    /// STYLE.md selected treatment, so the active filter reads at a glance.
     private var unwatchedToggle: some View {
         let isOn = viewModel.showsUnwatchedOnly
 
@@ -187,11 +181,11 @@ struct LibraryItemsView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
-                    .font(DuskFont.glyphMedium(ios: .headline))
+                    .font(DuskFont.glyphMedium(style: .headline))
                     .foregroundStyle(isOn ? Color.duskBackground : Color.duskTextSecondary)
 
                 Text("Unwatched")
-                    .font(DuskFont.buttonLabel(ios: .subheadline.weight(.medium)))
+                    .font(DuskFont.buttonLabel(style: .subheadline.weight(.medium)))
                     .foregroundStyle(isOn ? Color.duskBackground : Color.duskTextPrimary)
                     .lineLimit(1)
             }
@@ -208,9 +202,9 @@ struct LibraryItemsView: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel("Unwatched only")
             .accessibilityAddTraits(isOn ? .isSelected : [])
-            .duskTVOSFocusEffectShape(RoundedRectangle(cornerRadius: controlCornerRadius, style: .continuous))
+
         }
-        .duskSuppressTVOSButtonChrome()
+
         .animation(.snappy(duration: 0.2), value: isOn)
     }
 
@@ -221,16 +215,16 @@ struct LibraryItemsView: View {
     ) -> some View {
         HStack(spacing: 10) {
             Image(systemName: systemImage)
-                .font(DuskFont.glyphMedium(ios: .headline))
+                .font(DuskFont.glyphMedium(style: .headline))
                 .foregroundStyle(isActive ? Color.duskTextPrimary : Color.duskTextSecondary)
 
             Text(value)
-                .font(DuskFont.buttonLabel(ios: .subheadline.weight(.medium)))
+                .font(DuskFont.buttonLabel(style: .subheadline.weight(.medium)))
                 .foregroundStyle(Color.duskTextPrimary)
                 .lineLimit(1)
 
             Image(systemName: "chevron.down")
-                .font(DuskFont.glyphSmall(ios: .caption.weight(.semibold)))
+                .font(DuskFont.glyphSmall(style: .caption.weight(.semibold)))
                 .foregroundStyle(Color.duskTextSecondary)
         }
         .padding(.horizontal, 14)
@@ -249,7 +243,7 @@ struct LibraryItemsView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(systemImage == "line.3.horizontal.decrease.circle" ? "Genre" : "Sort")
         .accessibilityValue(value)
-        .duskTVOSFocusEffectShape(RoundedRectangle(cornerRadius: controlCornerRadius, style: .continuous))
+
     }
 
     private func posterGrid(_ layout: AdaptivePosterGridLayout) -> some View {

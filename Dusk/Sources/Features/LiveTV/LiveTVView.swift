@@ -38,7 +38,7 @@ struct LiveTVRootContent: View {
             }
         }
         .duskNavigationTitle("Live TV")
-        .duskNavigationBarTitleDisplayModeLarge()
+
         .task {
             await viewModel.load()
         }
@@ -86,7 +86,7 @@ struct LiveTVRootContent: View {
                         Task { await viewModel.selectDate(date) }
                     } label: {
                         Text(dateLabel(date))
-                            .font(DuskFont.buttonLabel(ios: .subheadline.weight(.semibold)))
+                            .font(DuskFont.buttonLabel(style: .subheadline.weight(.semibold)))
                             .foregroundStyle(
                                 Calendar.current.isDate(date, inSameDayAs: viewModel.selectedDate)
                                     ? Color.duskBackground
@@ -102,7 +102,7 @@ struct LiveTVRootContent: View {
                             .clipShape(Capsule())
                     }
                     .buttonStyle(.plain)
-                    .duskTVOSFocusEffectShape(Capsule())
+
                 }
             }
         }
@@ -146,12 +146,12 @@ struct LiveTVChannelGuideRow: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(guide.channel.displayTitle)
-                        .font(DuskFont.rowTitle(ios: .headline))
+                        .font(DuskFont.rowTitle(style: .headline))
                         .foregroundStyle(Color.duskTextPrimary)
                         .lineLimit(1)
                     if let number = guide.channel.displayNumber {
                         Text(number)
-                            .font(DuskFont.caption(ios: .subheadline))
+                            .font(DuskFont.caption(style: .subheadline))
                             .foregroundStyle(Color.duskTextSecondary)
                     }
                 }
@@ -163,9 +163,7 @@ struct LiveTVChannelGuideRow: View {
                         play(current)
                     } label: {
                         Label("Watch", systemImage: "play.fill")
-                            #if !os(tvOS)
                             .foregroundStyle(Color.duskPrimaryActionLabel)
-                            #endif
                     }
                     .detailHeroNativePrimaryButtonStyle()
                 }
@@ -173,7 +171,7 @@ struct LiveTVChannelGuideRow: View {
 
             if guide.programs.isEmpty {
                 Text("No program information")
-                    .font(DuskFont.caption(ios: .subheadline))
+                    .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.duskTextSecondary)
                     .frame(height: 120)
             } else {
@@ -190,9 +188,7 @@ struct LiveTVChannelGuideRow: View {
                                 )
                             }
                             .buttonStyle(.plain)
-                            .duskTVOSFocusEffectShape(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            )
+
                         }
                     }
                 }
@@ -261,11 +257,11 @@ struct LiveTVProgramCard: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(program.displayTitle)
-                    .font(DuskFont.cardTitle(ios: .subheadline.weight(.semibold)))
+                    .font(DuskFont.cardTitle(style: .subheadline.weight(.semibold)))
                     .lineLimit(2)
                 if let beginsAt = program.beginsAt, let endsAt = program.endsAt {
                     Text("\(beginsAt.formatted(date: .omitted, time: .shortened)) – \(endsAt.formatted(date: .omitted, time: .shortened))")
-                        .font(DuskFont.cardSubtitle(ios: .caption))
+                        .font(DuskFont.cardSubtitle(style: .caption))
                         .foregroundStyle(.white.opacity(0.78))
                 }
             }
@@ -310,16 +306,12 @@ struct LiveTVProgramCard: View {
 
     private var placeholderSymbol: some View {
         Image(systemName: "tv")
-            .font(DuskFont.glyphLarge(ios: .title2))
+            .font(DuskFont.glyphLarge(style: .title2))
             .foregroundStyle(Color.duskTextSecondary)
     }
 
     private var cardWidth: CGFloat {
-        #if os(tvOS)
-        360
-        #else
         260
-        #endif
     }
 
     private var cardHeight: CGFloat {
@@ -339,11 +331,11 @@ private struct LiveTVProgramDetails: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     Text(program.displayTitle)
-                        .font(DuskFont.pageTitle(ios: .title.bold()))
+                        .font(DuskFont.pageTitle(style: .title.bold()))
                         .foregroundStyle(Color.duskTextPrimary)
                     if let subtitle = program.displaySubtitle {
                         Text(subtitle)
-                            .duskFont(tvOnly: DuskFont.TV.pageSubtitle)
+
                             .foregroundStyle(Color.duskTextSecondary)
                     }
                     if let channel {
@@ -353,33 +345,31 @@ private struct LiveTVProgramDetails: View {
                                 .joined(separator: " · "),
                             systemImage: "dot.radiowaves.left.and.right"
                         )
-                        .duskFont(tvOnly: DuskFont.TV.metadata)
+
                         .foregroundStyle(Color.duskTextSecondary)
                     }
                     if let beginsAt = program.beginsAt, let endsAt = program.endsAt {
                         Text("\(beginsAt.formatted(date: .abbreviated, time: .shortened)) – \(endsAt.formatted(date: .omitted, time: .shortened))")
-                            .duskFont(tvOnly: DuskFont.TV.metadata)
+
                             .foregroundStyle(Color.duskTextSecondary)
                     }
                     if let summary = program.summary?.nilIfEmpty {
                         Text(summary)
-                            .duskFont(tvOnly: DuskFont.TV.body)
+
                             .foregroundStyle(Color.duskTextPrimary)
                     }
                     if canPlay {
                         Button(action: play) {
                             Label("Watch Live", systemImage: "play.fill")
                                 .frame(maxWidth: .infinity)
-                                #if !os(tvOS)
                                 .foregroundStyle(Color.duskPrimaryActionLabel)
-                                #endif
                         }
                         .detailHeroNativePrimaryButtonStyle()
                     } else {
                         Text(program.endsAt.map { $0 < .now } == true
                             ? "This program is no longer live."
                             : "This program hasn’t started yet.")
-                            .font(DuskFont.caption(ios: .subheadline))
+                            .font(DuskFont.caption(style: .subheadline))
                             .foregroundStyle(Color.duskTextSecondary)
                     }
                 }

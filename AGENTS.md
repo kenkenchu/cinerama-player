@@ -1,82 +1,91 @@
-This is **Dusk**, a native Swift/SwiftUI Plex client for Apple platforms. Read `docs/product-and-scope.md` for product intent and long-lived constraints.
+# Dusk Player for Mac — Agent Instructions
 
-Mandatory for agents: read this local `AGENTS.md` before planning, editing, committing, or pushing in this repository. Treat it as the repo-local source of truth for workflow expectations, especially verification and multi-agent git hygiene.
+This fork, `kenkenchu/dusk-player-mac`, is a **native macOS-only** Plex client.
+Read this file before planning, editing, committing, or pushing. Read
+`AGENTS.local.md` immediately afterward if it exists. Then read
+`docs/product-and-scope.md`, `docs/codebase-map.md`, and the relevant topic guide
+from `docs/README.md` before discovery-heavy or deep implementation work.
 
-If `AGENTS.local.md` exists, read it immediately after this file. It contains checkout-specific verification and publishing constraints.
+## Platform and Ownership
 
-`docs/codebase-map.md` is the quick map of the current source structure. Read it before doing discovery-heavy work.
+- The supported app scheme is `Dusk-macOS`: Apple silicon, macOS 26+.
+- `project.yml` is the source of truth; XcodeGen produces `Dusk.xcodeproj`.
+- `App/` owns app lifetime and sidebar navigation; `Features/Player/` owns the
+  native player controls; `Playback/` owns AVPlayer and desktop VLCKit engines.
+- Maintain native Mac behavior, keyboard/pointer interaction, resizable windows,
+  fullscreen, and Local Network permission handling.
+- Mobile targets, simulator helpers, TV extensions, and mobile VLC frameworks
+  have been removed. Do not reintroduce them when merging upstream updates.
+- `docs/upstream/` contains historical platform references, not active workflow
+  requirements. Do not apply archived mobile verification or publishing steps.
 
-`STYLE.md` is the visual source of truth and must be followed at all times for colors, materials, spacing, and overall UI styling. The short version: **native vibes, not orange.** System controls and Liquid Glass as they ship, a neutral palette, no accent colour or tint for UI state. Sunset Coral (`Color.duskAccent`) is the brand and only appears in the logo/icon, the Supporter page and the App Icon picker.
+## Product and Architecture
 
-`docs/` is the agent-facing implementation guide. Read `docs/README.md` and the relevant topic doc before deep changes, especially when touching Plex data flow, playback, downloads/offline behavior, reusable UI, or project setup.
+- Plex is the source of truth for metadata, watch state, libraries, and server
+  identity. Persistence is limited to Keychain auth, UserDefaults preferences,
+  documented caches, downloads, and pending offline sync.
+- Views use `@Observable` view models; view models call `PlexService`. Use
+  async/await. Keep Plex-specific code; no provider abstraction until a second
+  backend is actually implemented.
+- Connect every enabled server and keep failures per server. Rating keys are
+  not globally unique: use `PlexItemID` (server ID + rating key).
+- Playback starts direct, except for documented unsupported-format, remux, and
+  local-download routes. Failed online direct play may fall back to Plex HLS.
+  Manual transcoding is a per-session Quality action; never persist a startup
+  quality default that automatically re-encodes future playback.
+- Both engines conform to `PlaybackEngine`. Resolver decisions belong in
+  `StreamResolver`; orchestration belongs in `PlaybackCoordinator`.
+- Minimal dependencies: desktop VLCKit and DuskDovi. New Rust dependencies need
+  notices in `Dusk/Resources/ThirdPartyNotices.txt` and the native license list.
+- Never log tokens or raw token-bearing media/artwork URLs.
 
-## Essential Context
+## Style
 
-- **Hybrid playback engine**: AVPlayer for MP4/MOV with standard codecs, VLCKit for everything else (MKV, DTS, PGS subs, etc.). Both conform to `PlaybackEngine` protocol. `StreamResolver` picks which engine to use based on stream metadata.
-- **Plex is the source of truth**: App is stateless beyond auth token (Keychain) and user preferences (UserDefaults). All metadata, watch state, and library data is fetched from Plex.
-- **No premature abstraction**: No `MediaProvider` protocol. Plex-specific code is fine. Keep it in `PlexService` but don't abstract until a second backend exists.
-- **SwiftUI, multi-platform**: iOS/iPadOS and tvOS are project targets. Share as much UI as possible, use `#if os(tvOS)` for platform differences.
-- **VLCKit is vendored, fetched not committed**: No CocoaPods. Pinned stable-line `MobileVLCKit.xcframework` (iOS) and `TVVLCKit.xcframework` (tvOS) binaries — Dusk's own build of VLCKit 3.7.3 with ffmpeg's TrueHD/MLP decoders re-enabled (`ci_scripts/build_vlckit.sh`, a deliberate Dolby-licensing decision; see `docs/playback.md` → "Dolby TrueHD decoding"), arm64 only, hosted as release assets in the PRIVATE repo `marvinvr/dusk-vlckit` (needs `gh` access; without it the installer falls back to VideoLAN's stock 3.7.3 and TrueHD goes through Plex) — are downloaded into `Frameworks/` by `ci_scripts/install_vlckit.sh` and linked dynamically for LGPL compliance. The `.xcframework` binaries are git-ignored (~140 MB); CI fetches them automatically via `ci_scripts/ci_post_clone.sh`, and you must run the script once locally after cloning. Only the license and `Frameworks/VLCKit-VERSION.txt` are tracked.
-- **Direct play first**: Playback starts with direct play unless the resolver flags the media as locally unplayable (e.g. Dolby Vision profile 5), a local download is used, or the file qualifies for the Dolby Atmos / spatial-audio or HDR remux (a lossless Plex copy into HLS for AVPlayer — Atmos, HDR10/HDR10+/HLG, real Dolby Vision 8.1/8.4, and Dolby Vision 7 converted to 8.1 on device through a loopback proxy (`DolbyVision7HLSProxy` + DuskDovi; a failed conversion retries the same remux unconverted as its HDR10 base layer) — only accepted when Plex confirms video and audio are copied; see `docs/playback.md`). When an online direct-play attempt fails, the coordinator automatically falls back to a Plex server stream (HLS with `directStream=1`, video copied without re-encoding when possible). Manual transcoding remains a per-session player Quality action and must never become an automatic startup *quality* default.
+`STYLE.md` is the visual source of truth: native Mac controls, system materials
+and Liquid Glass, neutral palette, no app-wide color tint. Sunset Coral is
+reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
 
-## Code Style
+## Setup and Verification
 
-- SwiftUI views backed by `@Observable` ViewModels
-- ViewModels call `PlexService`, views never touch the network directly
-- Async/await throughout, no Combine unless wrapping VLCKit callbacks
-- Minimal dependencies: VLCKit plus DuskDovi (`Native/DuskDovi`, a small Rust wrapper over quietvoid's MIT `dolby_vision` crate for Dolby Vision 7 → 8.1 conversion) are the only third-party code. New crates need a license entry in `Dusk/Resources/ThirdPartyNotices.txt`
-
-## Documentation Maintenance
-
-- Keep `docs/` concise but operational. Document responsibilities, data/control flow, extension points, invariants, traps, and verification steps; do not mirror every method or produce giant files.
-- Preserve the structure described in `docs/README.md`: an index, a codebase map, and focused topic docs so no single file becomes the whole architecture manual.
-- Update the matching doc in the same change when modifying a meaningful flow, boundary, reusable component, setting, setup step, or verification expectation.
-- Prefer linking new behavior to the existing topic file over creating a new doc. Add a new doc only when a component has a distinct owner and the existing files would become noisy.
-- If a doc and source disagree, treat the source as truth, fix the stale doc, and mention that in your final summary.
-
-## Project Setup
-
-The Xcode project is generated via [xcodegen](https://github.com/yonaskolb/XcodeGen). `project.yml` remains the source of truth; regenerate `Dusk.xcodeproj` when project settings change.
-
-After making code changes, run a compile-only verification build before finishing. Use `xcodebuild` for the relevant app target or scheme, but do not run tests and do not launch the app or simulator. Treat this as a quick sanity check to catch Swift compile errors like invalid bindings, missing references, or bad signatures.
-
-For iOS app verification in this repo, prefer:
-
-```bash
-xcodebuild -project Dusk.xcodeproj -scheme Dusk -configuration Debug -destination 'generic/platform=iOS Simulator' ARCHS=arm64 ONLY_ACTIVE_ARCH=YES build
-```
-
-The vendored iOS `MobileVLCKit.xcframework` is thinned to arm64 (device and simulator), so generic simulator builds without the arm64 override can fail at link time even when the Swift code is otherwise valid.
-
-Important: if you add, remove, or rename any source file under `Dusk/Sources`, run `xcodegen generate` before finishing. The checked-in `Dusk.xcodeproj` can otherwise be stale, which causes new Swift files to appear as "Cannot find in scope" even though they exist on disk.
-
-```bash
-# 1. Generate the Xcode project
-brew install xcodegen  # if not already installed
-xcodegen generate
-
-# 2. Open in Xcode
-open Dusk.xcodeproj
-```
-
-The iOS/tvOS VLCKit binaries are **not committed** to git, so fetch them into
-`Frameworks/` after cloning (this is also how you refresh the pinned version).
-CI does this automatically via `ci_scripts/ci_post_clone.sh`; the script is
-idempotent and a no-op once the pinned version is present:
+Install Xcode, XcodeGen, rustup, and the Metal toolchain. The desktop framework
+and native converter are fetched/built locally and are never committed:
 
 ```bash
-./ci_scripts/install_vlckit.sh
+./scripts/build_macos.sh
 ```
 
-`Frameworks/DuskDovi.xcframework` (static, Dolby Vision 7 → 8.1) is likewise
-not committed; it is built from `Native/DuskDovi` with a pinned Rust toolchain
-(needs [rustup](https://rustup.rs); never Homebrew's `cargo`). Run once after
-cloning; it is a no-op until the crate changes. See
-`docs/development-workflow.md` → DuskDovi Bootstrap.
+After code changes, complete this signed, compile-only Mac build before
+finishing. It verifies nested signatures and the embedded VLC binary. Do not
+run tests or launch the app unless the user explicitly asks.
+
+For a compiler check after bootstrap only:
 
 ```bash
-./ci_scripts/install_dusk_dovi.sh
+xcodebuild -project Dusk.xcodeproj -scheme Dusk-macOS -configuration Debug \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath .build/macos/DerivedData CODE_SIGNING_ALLOWED=NO build
 ```
 
-## Important
-- Read AGENTS.local.md at the beginning of every thread if it exists.
+Do not deliver that unsigned compiler-check product for runtime use. The normal
+build script signs the complete bundle with its network sandbox entitlements.
+Keep `ENABLE_DEBUG_DYLIB=NO`: macOS uses executable identity/UUID and signing to
+track Local Network permission. See `docs/development-workflow.md`.
+
+Run `xcodegen generate` after changing `project.yml` or adding, removing, or
+renaming source files. Never hand-edit the generated Xcode project. Use the
+pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
+
+## Git and Documentation
+
+- Check `git status --short` before editing and finishing. Preserve unrelated
+  changes; do not revert, stage, or publish another contributor's work.
+- `origin` is `kenkenchu/dusk-player-mac`; `upstream` is `marvinvr/dusk-player`.
+  Commit and push fork work to `origin` on the current branch unless directed
+  otherwise. Never force-push shared `main` or push fork changes to `upstream`.
+- Review incoming upstream changes, resolve conflicts deliberately, regenerate
+  the project, and verify the Mac build before pushing a merge.
+- Keep focused docs operational: responsibilities, flow, invariants, extension
+  points, traps, and verification. Update matching docs with meaningful changes.
+- Docs-only changes need link/reference and diff checks, not a build. If docs
+  disagree with source, fix them and mention the correction in the summary.
+- User instructions override local skill guidelines and workflow defaults.

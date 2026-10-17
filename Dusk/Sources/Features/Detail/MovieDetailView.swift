@@ -40,7 +40,7 @@ struct MovieDetailView: View {
                 contentView(details)
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
@@ -68,18 +68,10 @@ struct MovieDetailView: View {
     private func contentView(_ details: PlexMediaDetails) -> some View {
         GeometryReader { geometry in
             let heroBackgroundWidth: CGFloat = {
-                #if os(tvOS)
-                geometry.size.width + geometry.safeAreaInsets.leading + geometry.safeAreaInsets.trailing
-                #else
                 geometry.size.width
-                #endif
             }()
             let heroBackgroundLeadingInset: CGFloat = {
-                #if os(tvOS)
-                geometry.safeAreaInsets.leading
-                #else
                 0
-                #endif
             }()
 
             ScrollView {
@@ -91,11 +83,6 @@ struct MovieDetailView: View {
                         containerHeight: geometry.size.height,
                         backgroundLeadingInset: heroBackgroundLeadingInset
                     )
-#if os(tvOS)
-                    .focusSection()
-#endif
-                    // On iPad the synopsis lives in the hero's right column; the
-                    // centered iPhone hero (and tvOS) keep it as a section below.
                     if detailShowsSynopsisBelowHero(for: sizeClass), let summary = details.summary, !summary.isEmpty {
                         summarySection(summary)
                             .padding(.horizontal, horizontalPadding)
@@ -124,10 +111,7 @@ struct MovieDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .scrollIndicators(.hidden)
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
-            .duskTVOSPageBackground()
+
         }
     }
 
@@ -173,7 +157,7 @@ struct MovieDetailView: View {
 
         if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
-                .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                 .foregroundStyle(Color.primary.opacity(0.78))
         }
     }
@@ -182,7 +166,7 @@ struct MovieDetailView: View {
     private func heroMetadata(_ details: PlexMediaDetails) -> some View {
         if let genres = viewModel.genreText {
             Text(genres)
-                .font(DuskFont.caption(ios: .caption))
+                .font(DuskFont.caption(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.72))
         }
 
@@ -205,13 +189,13 @@ struct MovieDetailView: View {
 
         if let director = viewModel.directorText {
             Text("Directed by \(director)")
-                .font(DuskFont.caption(ios: .caption))
+                .font(DuskFont.caption(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.72))
         }
 
         if let studio = details.studio {
             Text(studio)
-                .font(DuskFont.caption(ios: .caption))
+                .font(DuskFont.caption(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.72))
         }
     }
@@ -219,10 +203,10 @@ struct MovieDetailView: View {
     private func ratingBadge(icon: String, value: String, color: Color) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(DuskFont.glyphSmall(ios: .caption2))
+                .font(DuskFont.glyphSmall(style: .caption2))
                 .foregroundStyle(color)
             Text(value)
-                .font(DuskFont.metadata(ios: .subheadline).monospacedDigit())
+                .font(DuskFont.metadata(style: .subheadline).monospacedDigit())
                 .foregroundStyle(Color.primary.opacity(0.84))
         }
     }
@@ -231,14 +215,6 @@ struct MovieDetailView: View {
 
     @ViewBuilder
     private func actionButtons(_ details: PlexMediaDetails) -> some View {
-        #if os(tvOS)
-        HStack(spacing: detailHeroActionSpacing) {
-            playButton(details)
-            downloadButton(details)
-            subtitleSearchButton()
-            watchedButton()
-        }
-        #else
         // Primary fills the stack width; secondary row is centered beneath it.
         VStack(alignment: .center, spacing: detailHeroActionSpacing) {
             playButton(details)
@@ -248,8 +224,7 @@ struct MovieDetailView: View {
                 watchedButton()
             }
         }
-        .detailHeroActionStackFrame(isCompactPhone: usesFullWidthActionButtons)
-        #endif
+        .detailHeroActionStackFrame(isCompactLayout: usesFullWidthActionButtons)
     }
 
     private func playButton(_ details: PlexMediaDetails) -> some View {
@@ -286,7 +261,6 @@ struct MovieDetailView: View {
                 }
             }
 
-            #if !os(tvOS)
             if viewModel.canDownloadSubtitles {
                 Button {
                     showSubtitleSearch = true
@@ -294,7 +268,6 @@ struct MovieDetailView: View {
                     Label("Download Subtitles", systemImage: "arrow.down.circle")
                 }
             }
-            #endif
         }
     }
 
@@ -306,23 +279,9 @@ struct MovieDetailView: View {
         )
     }
 
-    /// Secondary hero action on tvOS only; iOS reaches the same flow from the
-    /// Play button's context menu so it does not compete with Play.
     @ViewBuilder
     private func subtitleSearchButton() -> some View {
-        #if os(tvOS)
-        if viewModel.canDownloadSubtitles {
-            Button {
-                showSubtitleSearch = true
-            } label: {
-                DetailHeroSecondaryIconLabel(systemImage: "captions.bubble")
-            }
-            .detailHeroNativeSecondaryButtonStyle()
-            .accessibilityLabel("Download Subtitles")
-        }
-        #else
         EmptyView()
-        #endif
     }
 
     private func watchedButton() -> some View {
@@ -339,14 +298,8 @@ struct MovieDetailView: View {
         usesFullWidthDetailActionButtons(for: sizeClass)
     }
 
-    // The primary label fills its container on all iOS layouts (the action stack
-    // owns the final width); tvOS keeps content-sized buttons in an inline row.
     private var fillsActionWidth: Bool {
-        #if os(tvOS)
-        false
-        #else
         true
-        #endif
     }
 
     // MARK: - Summary
@@ -355,11 +308,11 @@ struct MovieDetailView: View {
     private func summarySection(_ summary: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Synopsis")
-                .font(DuskFont.sectionHeader(ios: .headline))
+                .font(DuskFont.sectionHeader(style: .headline))
                 .foregroundStyle(Color.primary)
 
             Text(summary)
-                .font(DuskFont.body(ios: .body))
+                .font(DuskFont.body(style: .body))
                 .foregroundStyle(Color.primary.opacity(0.76))
                 .lineSpacing(4)
         }
@@ -372,11 +325,11 @@ struct MovieDetailView: View {
         if let info = viewModel.mediaInfo {
             VStack(alignment: .leading, spacing: 8) {
                 Text("Media")
-                    .font(DuskFont.sectionHeader(ios: .headline))
+                    .font(DuskFont.sectionHeader(style: .headline))
                     .foregroundStyle(Color.primary)
 
                 Text(info)
-                    .font(DuskFont.metadata(ios: .subheadline).monospaced())
+                    .font(DuskFont.metadata(style: .subheadline).monospaced())
                     .foregroundStyle(Color.primary.opacity(0.76))
             }
         }

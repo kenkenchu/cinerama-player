@@ -1,8 +1,5 @@
 import Foundation
 import OSLog
-#if canImport(UIKit)
-import UIKit
-#endif
 
 private let plexPlaybackLogger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Dusk",
@@ -686,21 +683,6 @@ private extension PlexService {
             )
         }
 
-        // Surround survival on the server-side rungs. With only the Generic
-        // profile's lone AAC target declared, Plex downmixes every 5.1/7.1
-        // source to 2-channel AAC — which is what the direct-stream fallback
-        // and every TrueHD title (undecodable in stock VLCKit, so routed
-        // through the server before Dusk's own build decoded it) had been
-        // getting. AC-3/E-AC-3 in
-        // HLS/mpegts is decoded natively by AVPlayer on tvOS and iOS, so
-        // offering them keeps discrete channels intact instead of handing the
-        // player a pre-folded stereo mix.
-        //
-        // Deliberately NOT applied to `.airPlay`: that rung targets whatever
-        // receiver the user picked, which is not necessarily AC-3 capable, and
-        // its current behaviour is known-good. Deliberately no `aac` channel
-        // limitation either — capping it would fight Plex's own decision
-        // engine rather than simply widening what we accept.
         let allowsSurroundAudioTargets: Bool
         switch mode {
         case .manualTranscode, .directStreamFallback, .spatialAudioRemux: allowsSurroundAudioTargets = true
@@ -729,31 +711,17 @@ private extension PlexService {
     // MARK: - Honest client identity
 
     static var transcodeClientPlatform: String {
-        #if os(macOS)
         "macOS"
-        #elseif os(tvOS)
-        "tvOS"
-        #else
-        "iOS"
-        #endif
     }
 
     @MainActor
     static var transcodeClientPlatformVersion: String {
-        #if canImport(UIKit)
-        UIDevice.current.systemVersion
-        #else
         ProcessInfo.processInfo.operatingSystemVersionString
-        #endif
     }
 
     @MainActor
     static var transcodeClientDevice: String {
-        #if canImport(UIKit)
-        UIDevice.current.model
-        #else
         "Mac"
-        #endif
     }
 
     static func sanitizedPlaybackURLString(for url: URL) -> String {

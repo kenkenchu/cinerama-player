@@ -101,7 +101,6 @@ private func loadHomeContinueWatching(
 @MainActor @Observable
 final class HomeViewModel {
     private var maxRecentlyAddedItems = 10
-    /// Upper bound on cinematic hero slides. tvOS only — see `heroItems()`.
     private let heroItemLimit = 10
 
     private(set) var hubs: [PlexHub] = []
@@ -520,9 +519,6 @@ final class HomeViewModel {
             updates()
         }
 
-        #if os(tvOS)
-        TopShelfPublisher.shared.publish(continueWatching: newContinueWatching, plexService: plexService)
-        #endif
     }
 
     func setWatched(_ watched: Bool, for item: PlexItem) async {
@@ -597,16 +593,7 @@ final class HomeViewModel {
         // the Videos tab's Continue Watching row.
         let items = continueWatching.filter { !$0.isClip }
 
-        #if os(tvOS)
-        // The tvOS hero is full-bleed, so every backdrop is fetched and decoded
-        // at the full display resolution (1920×1080) and the whole set is
-        // prefetched eagerly. Cap the rotation so a long continue-watching list
-        // cannot pin dozens of full-screen bitmaps in memory. iOS keeps the
-        // unbounded list — its backdrops are banner-sized.
-        return Array(items.prefix(heroItemLimit))
-        #else
         return items
-        #endif
     }
 
     func heroEpisodeTitle(for item: PlexItem) -> String? {

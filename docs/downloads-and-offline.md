@@ -6,8 +6,8 @@ Core state is in `Dusk/Sources/Downloads/`; UI is in
 `Dusk/Sources/Features/Downloads/`. Detail screens consume injected
 `DownloadManager` and `OfflinePlaybackSyncManager`; they should not touch files
 directly. Playback stays in `PlaybackCoordinator`; offline playback swaps only
-the URL/source and timeline reporting path. Plex remains the source of truth,
-and `DownloadsFeature.isVisible` hides downloads on tvOS.
+the URL/source and timeline reporting path. Plex remains the source of truth.
+The Mac sidebar keeps Downloads available even when empty.
 
 ## DownloadManager Responsibilities
 
@@ -108,11 +108,10 @@ validation must leave the record `failed`, not `completed`.
 
 ## Background Transfers
 
-`DownloadTransferController` owns `URLSessionDownloadDelegate`. iOS uses
-background session id `com.dusk-player.app.downloads.background`; `DuskAppDelegate`
-stores completion handlers in `DownloadBackgroundSessionRegistry`, and
-`urlSessionDidFinishEvents` calls them. Other platforms, including native macOS, use a default session; Mac downloads
-run while the app is open and do not claim iOS background-transfer behavior.
+`DownloadTransferController` owns `URLSessionDownloadDelegate`. Native macOS
+uses a default session. Transfers run while the app is open; there is no mobile
+background-session delegate or mobile background-transfer promise.
+
 Progress is throttled in the delegate and persisted less frequently by
 `DownloadManager`. Pause uses `cancel(byProducingResumeData:)`; resume data is
 saved under `ResumeData/` and deleted after reuse. Task descriptions carry the
@@ -201,9 +200,10 @@ queue-sheet-only idle timer hold while active downloads exist. Queue rows
 dismiss the sheet before appending the media destination to the Downloads tab
 navigation path, so detail screens are shown in the full tab stack rather than
 inside the sheet.
-`MainTabView` shows the Downloads tab only when visible and records exist.
-`SettingsIOSView` owns quality, Wi-Fi Only, concurrency, storage reserve, usage,
-manual sync, and delete-all. `MediaDetailDestinationView` passes managers into
+`MainTabView` always offers Downloads in the Mac sidebar. `SettingsMacView`
+exposes resolution and network constraints; queue operations remain in the
+downloads screen/manager. Other persisted manager preferences do not imply
+existing settings controls. `MediaDetailDestinationView` passes managers into
 detail view models and marks routes from Downloads with
 `prefersOfflineAvailability`.
 

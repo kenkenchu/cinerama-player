@@ -3,11 +3,7 @@ import Foundation
 import Metal
 import QuartzCore
 import SwiftUI
-#if os(macOS)
 import AppKit
-#else
-import UIKit
-#endif
 import simd
 
 @MainActor
@@ -141,25 +137,6 @@ final class VideoEnhancementRenderer {
         return view
     }
 
-    /// Colorspace to declare on the drawable.
-    ///
-    /// `CAMetalLayer.colorspace` defaults to nil, which per its header means "no
-    /// colormatching occurs" — the rendered values are handed to the display's
-    /// context untouched. That is only harmless when the display context happens
-    /// to be the same space the frames are in. On an Apple TV pinned to a Dolby
-    /// Vision/HDR output format it is not: BT.709 SDR code values get consumed as
-    /// if they were already in the display's HDR space, which lifts the black
-    /// floor and flattens saturation.
-    ///
-    /// libvlc has already converted the stream's YUV to RGB using the BT.709
-    /// matrix with limited->full range expansion (`matrix_bt709_tv2full` in
-    /// `modules/video_output/opengl/fragment_shaders.c`), so BT.709 is an
-    /// accurate declaration and lets CoreAnimation colormatch properly.
-    ///
-    /// HDR sources stay untagged: this path is 8-bit BGRA, so libvlc has already
-    /// flattened any PQ/HLG source into it, and claiming BT.709 for those frames
-    /// would be a second wrong answer rather than a fix. Auto mode skips HDR
-    /// entirely; only an explicit "On" reaches here with HDR.
     private var outputColorSpace: CGColorSpace? {
         guard !request.isHDR else { return nil }
         return CGColorSpace(name: CGColorSpace.itur_709)
@@ -564,81 +541,6 @@ final class VideoEnhancementRenderer {
     }
 }
 
-#if !os(macOS)
-@MainActor
-final class VideoEnhancementMetalView: UIView {
-    private weak var renderer: VideoEnhancementRenderer?
-
-    override class var layerClass: AnyClass {
-        CAMetalLayer.self
-    }
-
-    var metalLayer: CAMetalLayer {
-        layer as! CAMetalLayer
-    }
-
-    init(renderer: VideoEnhancementRenderer, device: MTLDevice, colorSpace: CGColorSpace?) {
-        self.renderer = renderer
-        super.init(frame: .zero)
-        backgroundColor = .black
-        isOpaque = true
-        metalLayer.device = device
-        metalLayer.pixelFormat = .bgra8Unorm
-        metalLayer.framebufferOnly = true
-        metalLayer.colorspace = colorSpace
-        metalLayer.contentsScale = currentDisplayScale
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func didMoveToWindow() {
-        super.didMoveToWindow()
-        updateDrawableSize()
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        updateDrawableSize()
-        renderer?.renderCurrentFrame()
-    }
-
-    private func updateDrawableSize() {
-        let scale = currentDisplayScale
-        metalLayer.contentsScale = scale
-        metalLayer.drawableSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
-    }
-
-    /// Pixels-per-point of the physical display, which is what the drawable must
-    /// match. This is `nativeScale`, not `scale`: on an Apple TV 4K `scale` is
-    /// 1.0 (the UI is laid out on a 1920x1080 point grid) while `nativeScale` is
-    /// 2.0, so reading `scale` capped the upscaler's output at 1920x1080 and
-    /// handed tvOS a 1080p image to stretch to the panel. Apple's Metal Best
-    /// Practices guide is explicit that drawables should be sized from
-    /// `nativeScale`/`nativeBounds`.
-    private var currentDisplayScale: CGFloat {
-        if let scale = window?.screen.nativeScale, scale > 0 {
-            return scale
-        }
-
-        let traitScale = traitCollection.displayScale
-        return traitScale > 0 ? traitScale : 1
-    }
-}
-
-struct VideoEnhancementRepresentable: UIViewRepresentable {
-    let renderer: VideoEnhancementRenderer
-
-    func makeUIView(context: Context) -> VideoEnhancementMetalView {
-        renderer.makeView()
-    }
-
-    func updateUIView(_ uiView: VideoEnhancementMetalView, context: Context) {}
-}
-
-#else
 @MainActor
 final class VideoEnhancementMetalView: NSView {
     private weak var renderer: VideoEnhancementRenderer?
@@ -675,4 +577,3 @@ struct VideoEnhancementRepresentable: NSViewRepresentable {
     func makeNSView(context: Context) -> VideoEnhancementMetalView { renderer.makeView() }
     func updateNSView(_ view: VideoEnhancementMetalView, context: Context) {}
 }
-#endif

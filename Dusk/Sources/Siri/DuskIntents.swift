@@ -108,11 +108,7 @@ struct PlayTitleIntent: AppIntent {
     static let description = IntentDescription(
         "Plays a movie, or the next episode of a show, from your Plex libraries."
     )
-    #if os(tvOS)
-    static let supportedModes: IntentModes = .foreground(.immediate)
-    #else
     static let openAppWhenRun = true
-    #endif
 
     @Parameter(title: "Title", requestValueDialog: "What would you like to watch?")
     var title: PlexTitleEntity
@@ -171,12 +167,9 @@ struct PlayInDuskIntent: PlayVideoIntent {
         }
     }
 
-    /// Siri reads the matches out and plays the one picked. Before iOS 26
-    /// there is no choice prompt, so the best-ranked match plays. Not on the
-    /// main actor: the choice options are not Sendable.
     private func choose(among candidates: [SiriTitleCandidate]) async throws -> SiriTitleCandidate {
         guard let first = candidates.first else { throw $term.needsValueError() }
-        guard #available(iOS 26.0, tvOS 26.0, *) else { return first }
+
 
         let options = candidates.map { IntentChoiceOption(title: "\($0.choiceLabel)") }
         let choice = try await requestChoice(

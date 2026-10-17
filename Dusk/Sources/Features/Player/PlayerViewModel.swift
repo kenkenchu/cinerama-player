@@ -58,12 +58,6 @@ final class PlayerViewModel {
     /// 2× boost, which overrides it while held and restores it on release.
     /// Reset per session, because the engine is rebuilt with the session.
     var playbackRate: Float = 1
-    #if os(tvOS)
-    /// tvOS routes every HUD reveal through `PlayerTVHUDController`. Set while
-    /// the controller performs an action that must not raise the HUD — a
-    /// Skip Intro activation from the hidden state.
-    @ObservationIgnored var suppressControlsReveal = false
-    #endif
 
     let engine: any PlaybackEngine
     /// The engine's rendering view. Refreshed from `sync()` when the engine

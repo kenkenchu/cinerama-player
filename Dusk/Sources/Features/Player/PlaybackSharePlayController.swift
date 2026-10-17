@@ -4,9 +4,6 @@ import Foundation
 import GroupActivities
 import Observation
 import OSLog
-#if canImport(UIKit)
-import UIKit
-#endif
 
 private let sharePlayLogger = Logger(
     subsystem: Bundle.main.bundleIdentifier ?? "Dusk",
@@ -29,9 +26,6 @@ final class PlaybackSharePlayController {
     private var isJoining = false
     private(set) var participantCount = 0
     var errorMessage: String?
-    #if os(iOS)
-    var invitation: SharePlayInvitation?
-    #endif
 
     @ObservationIgnored weak var playbackCoordinator: PlaybackCoordinator?
     @ObservationIgnored private let groupStateObserver = GroupStateObserver()
@@ -46,9 +40,6 @@ final class PlaybackSharePlayController {
     @ObservationIgnored private var connectedItemIdentifier: String?
 
     var isStarting: Bool {
-        #if os(iOS)
-        if invitation != nil { return true }
-        #endif
         return isActivating || isJoining
     }
 
@@ -84,24 +75,14 @@ final class PlaybackSharePlayController {
         defer { isActivating = false }
 
         do {
-            // activate() requires an eligible conversation. Outside a call,
-            // iPhone/iPad must present Apple's participant/invitation picker.
             guard groupStateObserver.isEligibleForGroupSession else {
-                #if os(iOS)
-                invitation = SharePlayInvitation(
-                    controller: try GroupActivitySharingController(activity)
-                )
-                #else
-                presentError("Start or join a FaceTime call on your Apple TV, or start SharePlay in Dusk on your iPhone or iPad and continue on Apple TV.")
-                #endif
+                presentError("Start or join a FaceTime call on this Mac before using SharePlay.")
                 return
             }
 
             let activated = try await activity.activate()
             if !activated, groupSession == nil {
-                // false also covers handing the activity off to Apple TV;
-                // it does not necessarily mean activation failed everywhere.
-                presentError("No SharePlay session started on this device. If you moved SharePlay to Apple TV, continue there; otherwise, try again.")
+                presentError("No SharePlay session started on this Mac. Please try again.")
             }
         } catch {
             sharePlayLogger.error(
@@ -138,9 +119,6 @@ final class PlaybackSharePlayController {
     }
 
     func leave() {
-        #if os(iOS)
-        invitation = nil
-        #endif
         groupSession?.leave()
         tearDownSession(leaveCurrentSession: false)
     }

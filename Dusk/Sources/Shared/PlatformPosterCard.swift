@@ -13,49 +13,8 @@ struct PosterNavigationCard<ContextMenuContent: View>: View {
     var isDimmed = false
     var isWatched = false
     @ViewBuilder let contextMenuContent: () -> ContextMenuContent
-    #if os(tvOS)
-    @FocusState private var isFocused: Bool
-    #endif
 
     var body: some View {
-        #if os(tvOS)
-        let artworkShape = RoundedRectangle(
-            cornerRadius: PosterArtwork.cornerRadius,
-            style: .continuous
-        )
-
-        VStack(alignment: .leading, spacing: DuskPosterMetrics.cardSpacing) {
-            NavigationLink(value: route) {
-                PosterArtwork(
-                    imageURL: imageURL,
-                    progress: progress,
-                    width: width,
-                    imageAspectRatio: imageAspectRatio,
-                    showsPlayOverlay: showsPlayOverlay,
-                    availabilityBadge: availabilityBadge,
-                    isDimmed: isDimmed
-                )
-                .contentShape(.contextMenuPreview, artworkShape)
-            }
-            .duskSuppressTVOSButtonChrome()
-            .focused($isFocused)
-            .carouselLeadingFocusTarget()
-            .duskTVOSFocusEffectShape(artworkShape, scales: false)
-            .contextMenu {
-                contextMenuContent()
-            }
-
-            PosterCardText(
-                title: title,
-                subtitle: subtitle,
-                width: width,
-                isWatched: isWatched
-            )
-        }
-        .frame(width: width, alignment: .topLeading)
-        .duskTVOSFocusedScale(isFocused)
-        .zIndex(isFocused ? 1 : 0)
-        #else
         NavigationLink(value: route) {
             PosterCard(
                 imageURL: imageURL,
@@ -72,11 +31,10 @@ struct PosterNavigationCard<ContextMenuContent: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
-        .duskSuppressTVOSButtonChrome()
+
         .contextMenu {
             contextMenuContent()
         }
-        #endif
     }
 }
 
@@ -121,48 +79,8 @@ struct PosterActionCard<ContextMenuContent: View>: View {
     var availabilityBadge: String? = nil
     var isDimmed = false
     @ViewBuilder let contextMenuContent: () -> ContextMenuContent
-    #if os(tvOS)
-    @FocusState private var isFocused: Bool
-    #endif
 
     var body: some View {
-        #if os(tvOS)
-        let artworkShape = RoundedRectangle(
-            cornerRadius: PosterArtwork.cornerRadius,
-            style: .continuous
-        )
-
-        VStack(alignment: .leading, spacing: DuskPosterMetrics.cardSpacing) {
-            Button(action: action) {
-                PosterArtwork(
-                    imageURL: imageURL,
-                    progress: progress,
-                    width: width,
-                    imageAspectRatio: imageAspectRatio,
-                    showsPlayOverlay: showsPlayOverlay,
-                    availabilityBadge: availabilityBadge,
-                    isDimmed: isDimmed
-                )
-                .contentShape(.contextMenuPreview, artworkShape)
-            }
-            .duskSuppressTVOSButtonChrome()
-            .focused($isFocused)
-            .carouselLeadingFocusTarget()
-            .duskTVOSFocusEffectShape(artworkShape, scales: false)
-            .contextMenu {
-                contextMenuContent()
-            }
-
-            PosterCardText(
-                title: title,
-                subtitle: subtitle,
-                width: width
-            )
-        }
-        .frame(width: width, alignment: .topLeading)
-        .duskTVOSFocusedScale(isFocused)
-        .zIndex(isFocused ? 1 : 0)
-        #else
         Button(action: action) {
             PosterCard(
                 imageURL: imageURL,
@@ -177,11 +95,10 @@ struct PosterActionCard<ContextMenuContent: View>: View {
             )
         }
         .buttonStyle(.plain)
-        .duskSuppressTVOSButtonChrome()
+
         .contextMenu {
             contextMenuContent()
         }
-        #endif
     }
 }
 

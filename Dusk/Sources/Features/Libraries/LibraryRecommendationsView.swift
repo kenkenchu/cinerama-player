@@ -1,7 +1,4 @@
 import SwiftUI
-#if os(iOS)
-import UIKit
-#endif
 
 struct LibraryRecommendationsView: View {
     @Environment(PlaybackCoordinator.self) private var playback
@@ -67,31 +64,13 @@ struct LibraryRecommendationsView: View {
             guard newPhase == .active, viewModel.hasLoadedOnce else { return }
             Task { await viewModel.load(maxRecentlyAddedItems: recentlyAddedInlineItemLimit) }
         }
-        #if os(iOS)
-        .toolbar {
-            ToolbarItemGroup(placement: .topBarTrailing) {
-                SearchToolbarLink()
-
-                browseLibraryButton(labelText: "Browse Library")
-            }
-        }
-        #endif
         .duskNavigationTitle(navigationTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
     }
 
     private var contentView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                #if os(tvOS)
-                HStack {
-                    Spacer()
-                    browseLibraryButton(labelText: "Browse")
-                }
-                .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
-                .padding(.top, DuskPosterMetrics.carouselHeaderSpacing)
-                .padding(.bottom, DuskPosterMetrics.carouselHeaderSpacing)
-                #endif
 
                 if let error = viewModel.error,
                    !viewModel.hasAnyContent {
@@ -164,10 +143,7 @@ struct LibraryRecommendationsView: View {
         .refreshable {
             await viewModel.load(maxRecentlyAddedItems: recentlyAddedInlineItemLimit)
         }
-        #if os(tvOS)
-        .scrollClipDisabled()
-        #endif
-        .duskTVOSPageBackground()
+
     }
 
     /// One library: browse it. Several: open the list of them, because there
@@ -191,27 +167,14 @@ struct LibraryRecommendationsView: View {
 
     @ViewBuilder
     private func browseLabel(_ labelText: String) -> some View {
-        #if os(tvOS)
-        Text(labelText)
-            .font(DuskFont.buttonLabel(ios: .subheadline.weight(.semibold)))
-        #else
         Label(labelText, systemImage: "square.grid.2x2")
             .font(.subheadline.weight(.semibold))
-        #endif
     }
 
     @ViewBuilder
     private func styledBrowseLink(_ link: some View) -> some View {
-        #if os(tvOS)
-        link
-            .controlSize(.small)
-            .buttonBorderShape(.capsule)
-            .buttonStyle(.glass)
-            .tint(Color.primary)
-        #else
         link
             .buttonStyle(.plain)
-        #endif
     }
 
     private var continueWatchingSection: some View {
@@ -369,11 +332,7 @@ struct LibraryRecommendationsView: View {
     }
 
     private var recentlyAddedInlineItemLimit: Int {
-        #if os(iOS)
-        UIDevice.current.userInterfaceIdiom == .pad ? 22 : 15
-        #else
         15
-        #endif
     }
 
     private func play(_ item: PlexItem) {

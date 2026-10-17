@@ -1,7 +1,4 @@
 import SwiftUI
-#if os(iOS)
-import UIKit
-#endif
 
 struct SearchView: View {
     @Binding var path: NavigationPath
@@ -14,8 +11,6 @@ struct SearchView: View {
     }
 }
 
-/// The search screen without its own `NavigationStack`, usable both as the
-/// tvOS Search tab root and as an iPhone/iPad toolbar destination.
 struct SearchRootContent: View {
     @Environment(PlexService.self) private var plexService
     @Environment(SeerrService.self) private var seerrService
@@ -33,20 +28,13 @@ struct SearchRootContent: View {
             }
         }
         .duskNavigationTitle("Search")
-        .duskNavigationBarTitleDisplayModeLarge()
+
         .onAppear {
             if viewModel == nil {
                 viewModel = SearchViewModel(
                     plexService: plexService,
                     seerrService: seerrService
                 )
-                #if DEBUG && !os(macOS)
-                if let query = ScreenshotMode.searchQuery, let viewModel {
-                    viewModel.query = query
-                    viewModel.searchDebounced()
-                    ScreenshotMode.presentSearchField($isSearchPresented)
-                }
-                #endif
             }
         }
     }
@@ -65,32 +53,12 @@ struct SearchRootContent: View {
             }
     }
 
-    /// Picks the result layout that feels native to each platform:
-    /// - tvOS and iPad (regular width) render the same poster carousels the Home
-    ///   screen uses for hubs.
-    /// - iPhone (compact width) renders a poster grid, matching the library grid
-    ///   and how media apps present search on a narrow screen.
     @ViewBuilder
     private func platformResults(_ vm: SearchViewModel) -> some View {
         @Bindable var vm = vm
 
-        #if os(tvOS) || os(macOS)
         carouselResults(vm)
             .searchable(text: $vm.query, prompt: searchPrompt)
-        #else
-        if DuskPlatform.usesWideLayout {
-            carouselResults(vm)
-                .searchable(
-                    text: $vm.query,
-                    isPresented: $isSearchPresented,
-                    placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: searchPrompt
-                )
-        } else {
-            gridResults(vm)
-                .searchable(text: $vm.query, isPresented: $isSearchPresented, prompt: searchPrompt)
-        }
-        #endif
     }
 }
 
@@ -144,9 +112,6 @@ private extension SearchRootContent {
         }
     }
 
-    /// Poster carousels, one per Plex search hub. Used by tvOS and iPad. Plex
-    /// `/hubs/search` caps each type at 10 items, so a group maps onto a single
-    /// focusable carousel row.
     @ViewBuilder
     func carouselResults(_ vm: SearchViewModel) -> some View {
         searchResults(vm) {
@@ -187,97 +152,8 @@ private extension SearchRootContent {
                 .padding(.top, DuskPosterMetrics.pageSectionSpacing)
                 .padding(.bottom, DuskPosterMetrics.pageBottomPadding)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                #if os(tvOS)
-                .focusSection()
-                #endif
             }
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
             .scrollIndicators(.hidden)
         }
     }
 }
-
-// MARK: - iPhone Grid Results
-
-#if os(iOS)
-private extension SearchRootContent {
-    /// Poster grid, one titled section per search hub. Used on iPhone, where a
-    /// grid reads more naturally than carousels on a narrow screen and matches
-    /// the library grid.
-    @ViewBuilder
-    func gridResults(_ vm: SearchViewModel) -> some View {
-        searchResults(vm) {
-            GeometryReader { geometry in
-                let layout = AdaptivePosterGridLayout.make(
-                    containerWidth: geometry.size.width,
-                    horizontalPadding: DuskPosterMetrics.gridHorizontalPadding,
-                    gridSpacing: DuskPosterMetrics.gridSpacing,
-                    preferredPosterWidth: DuskPosterMetrics.gridPreferredWidth,
-                    minimumColumnCount: 3
-                )
-                // All-clip groups use the wider 16:9 video layout that matches
-                // the video library grid (~2 columns on iPhone).
-                let videoLayout = AdaptivePosterGridLayout.make(
-                    containerWidth: geometry.size.width,
-                    horizontalPadding: DuskPosterMetrics.gridHorizontalPadding,
-                    gridSpacing: DuskPosterMetrics.gridSpacing,
-                    preferredPosterWidth: DuskPosterMetrics.videoGridPreferredWidth,
-                    minimumColumnCount: 2
-                )
-
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 28) {
-                        ServerOutageNote(
-                            offlineServerNames: plexService.pool.availability.offlineServerNames
-                        )
-                        .padding(.horizontal, DuskPosterMetrics.gridHorizontalPadding)
-
-                        ForEach(vm.results) { group in
-                            let isVideoGroup = group.isAllClips
-
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(group.title)
-                                    .font(.title3.bold())
-                                    .foregroundStyle(Color.primary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                                let activeLayout = isVideoGroup ? videoLayout : layout
-                                let aspectRatio = isVideoGroup ? 16.0 / 9.0 : 2.0 / 3.0
-
-                                LazyVGrid(
-                                    columns: activeLayout.columns,
-                                    alignment: .leading,
-                                    spacing: DuskPosterMetrics.gridRowSpacing
-                                ) {
-                                    ForEach(group.items) { item in
-                                        PosterNavigationCard(
-                                            route: item.route,
-                                            imageURL: vm.imageURL(
-                                                for: item,
-                                                width: Int(activeLayout.posterWidth * 2),
-                                                height: Int(activeLayout.posterWidth / aspectRatio * 2)
-                                            ),
-                                            title: item.title,
-                                            subtitle: item.subtitle,
-                                            progress: item.progress,
-                                            width: activeLayout.posterWidth,
-                                            imageAspectRatio: aspectRatio,
-                                            availabilityBadge: vm.availabilityBadge(for: item)
-                                        )
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, DuskPosterMetrics.gridHorizontalPadding)
-                        }
-                    }
-                    .padding(.top, 12)
-                    .padding(.bottom, 24)
-                }
-                .scrollIndicators(.hidden)
-            }
-        }
-    }
-}
-#endif

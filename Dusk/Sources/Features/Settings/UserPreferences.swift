@@ -44,12 +44,6 @@ final class UserPreferences {
         static let downloadsWifiOnly = "downloadsWifiOnly"
         static let maximumActiveDownloads = "maximumActiveDownloads"
         static let downloadFreeSpaceReserve = "downloadFreeSpaceReserve"
-        static let firstLaunchDate = "firstLaunchDate"
-        static let usageDayCount = "usageDayCount"
-        static let lastUsageDay = "lastUsageDay"
-        static let supporterPromptCount = "supporterPromptCount"
-        static let supporterLastPromptDate = "supporterLastPromptDate"
-        static let supporterLastPromptUsageDayCount = "supporterLastPromptUsageDayCount"
         static let analyticsEnabled = "analyticsEnabled"
     }
 
@@ -114,9 +108,6 @@ final class UserPreferences {
         didSet { UserDefaults.standard.set(playerDoubleTapSeekEnabled, forKey: Keys.playerDoubleTapSeekEnabled) }
     }
 
-    /// Previous / Next Episode buttons beside Play in the iOS player. Opt-in so
-    /// the default HUD stays clean; tvOS always offers Next Episode in its
-    /// action row and has no toggle.
     var playerEpisodeButtonsEnabled: Bool {
         didSet { UserDefaults.standard.set(playerEpisodeButtonsEnabled, forKey: Keys.playerEpisodeButtonsEnabled) }
     }
@@ -183,17 +174,10 @@ final class UserPreferences {
         }
     }
 
-    /// Play Dolby Atmos (and, on iPhone/iPad, multichannel Dolby) from files
-    /// only VLCKit could direct play through a lossless Plex remux into
-    /// AVPlayer, so Atmos reaches HDMI and AirPods get spatial audio.
     var spatialAudioRemuxEnabled: Bool {
         didSet { UserDefaults.standard.set(spatialAudioRemuxEnabled, forKey: Keys.spatialAudioRemuxEnabled) }
     }
 
-    /// Play HDR files only VLCKit could direct play (HDR10, HDR10+, HLG,
-    /// Dolby Vision 7/8) through a lossless Plex remux into AVPlayer, which
-    /// shows real HDR and applies Dolby Vision 8.1/8.4 metadata. VLCKit
-    /// renders into an 8-bit SDR surface on iOS/tvOS.
     var hdrVideoRemuxEnabled: Bool {
         didSet { UserDefaults.standard.set(hdrVideoRemuxEnabled, forKey: Keys.hdrVideoRemuxEnabled) }
     }
@@ -296,75 +280,11 @@ final class UserPreferences {
         didSet { UserDefaults.standard.set(downloadFreeSpaceReserve.rawValue, forKey: Keys.downloadFreeSpaceReserve) }
     }
 
-    /// First launch on this device — or, for users who installed before this
-    /// key existed, the first launch after updating. The supporter prompt's
-    /// first-ask clock counts from here (`SupporterPromptSchedule`).
-    private(set) var firstLaunchDate: Date
-
-    /// Number of distinct calendar days the app has been used, fed by
-    /// `registerUsageDay()`. Gates the supporter prompt so it only reaches
-    /// people who actually use the app.
-    private(set) var usageDayCount: Int {
-        didSet { UserDefaults.standard.set(usageDayCount, forKey: Keys.usageDayCount) }
-    }
-
-    /// Day key ("yyyy-MM-dd") of the last counted usage day.
-    private var lastUsageDay: String {
-        didSet { UserDefaults.standard.set(lastUsageDay, forKey: Keys.lastUsageDay) }
-    }
-
-    /// How many supporter prompts have been shown on this device.
-    private(set) var supporterPromptCount: Int {
-        didSet { UserDefaults.standard.set(supporterPromptCount, forKey: Keys.supporterPromptCount) }
-    }
-
-    /// When the most recent supporter prompt was shown; the schedule's
-    /// growing gaps count from here.
-    private(set) var supporterLastPromptDate: Date? {
-        didSet { UserDefaults.standard.set(supporterLastPromptDate, forKey: Keys.supporterLastPromptDate) }
-    }
-
-    /// Usage-day count when the most recent supporter prompt was shown. Later
-    /// prompts use the delta to avoid asking people who barely use the app.
-    private(set) var supporterLastPromptUsageDayCount: Int {
-        didSet {
-            UserDefaults.standard.set(
-                supporterLastPromptUsageDayCount,
-                forKey: Keys.supporterLastPromptUsageDayCount
-            )
-        }
-    }
-
     /// Whether Dusk may report anonymous product events. Defaults to on and is
     /// turned off in Settings; `AnalyticsClient` checks this before every send
     /// and drops its install identifier when it flips off.
     var analyticsEnabled: Bool {
         didSet { UserDefaults.standard.set(analyticsEnabled, forKey: Keys.analyticsEnabled) }
-    }
-
-    /// Records that a supporter prompt was presented.
-    func registerSupporterPrompt(now: Date = .now) {
-        supporterPromptCount += 1
-        supporterLastPromptDate = now
-        supporterLastPromptUsageDayCount = usageDayCount
-    }
-
-    /// Counts today as a usage day if it hasn't been counted yet.
-    func registerUsageDay(now: Date = .now) {
-        let day = Self.usageDayKey(for: now)
-        guard day != lastUsageDay else { return }
-        lastUsageDay = day
-        usageDayCount += 1
-    }
-
-    private static func usageDayKey(for date: Date) -> String {
-        let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
-        return String(
-            format: "%04d-%02d-%02d",
-            components.year ?? 0,
-            components.month ?? 0,
-            components.day ?? 0
-        )
     }
 
     // MARK: - Init
@@ -454,13 +374,7 @@ final class UserPreferences {
            let mode = AppearanceMode(rawValue: raw) {
             appearanceMode = mode
         } else {
-            // tvOS's Light appearance is unpleasant for this app, so default to Dark
-            // there. Other platforms still follow the system setting by default.
-            #if os(tvOS)
-            appearanceMode = .dark
-            #else
             appearanceMode = .system
-            #endif
         }
         let libraryTabOrder = Self.storedLibraryTabOrder(defaults: defaults)
         let hiddenLibraryTabs = Self.storedHiddenLibraryTabs(defaults: defaults)
@@ -497,33 +411,8 @@ final class UserPreferences {
         self.maximumActiveDownloads = maximumActiveDownloads
         self.downloadFreeSpaceReserve = downloadFreeSpaceReserve
 
-        if let storedFirstLaunch = defaults.object(forKey: Keys.firstLaunchDate) as? Date {
-            self.firstLaunchDate = storedFirstLaunch
-        } else {
-            let now = Date()
-            defaults.set(now, forKey: Keys.firstLaunchDate)
-            self.firstLaunchDate = now
-        }
-        self.usageDayCount = defaults.integer(forKey: Keys.usageDayCount)
-        self.lastUsageDay = defaults.string(forKey: Keys.lastUsageDay) ?? ""
         self.analyticsEnabled = defaults.object(forKey: Keys.analyticsEnabled) as? Bool ?? true
-        self.supporterPromptCount = defaults.integer(forKey: Keys.supporterPromptCount)
-        self.supporterLastPromptDate = defaults.object(forKey: Keys.supporterLastPromptDate) as? Date
-        if defaults.object(forKey: Keys.supporterLastPromptUsageDayCount) != nil {
-            self.supporterLastPromptUsageDayCount = defaults.integer(
-                forKey: Keys.supporterLastPromptUsageDayCount
-            )
-        } else {
-            // Existing installs have no historical usage snapshot. Start from
-            // today's total so the first annual prompt still requires 12 new
-            // usage days instead of treating all past activity as recent.
-            let currentUsageDayCount = defaults.integer(forKey: Keys.usageDayCount)
-            self.supporterLastPromptUsageDayCount = currentUsageDayCount
-            defaults.set(
-                currentUsageDayCount,
-                forKey: Keys.supporterLastPromptUsageDayCount
-            )
-        }
+
     }
 
     private static func storedSeekInterval(
@@ -786,16 +675,10 @@ enum MaxResolution: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Playback target used when selecting among multiple Plex media versions.
-    /// Auto prefers 4K on Apple TV and 1080p everywhere else.
     var selectionTargetMaxHeight: Int {
         switch self {
         case .auto:
-            #if os(tvOS)
-            2160
-            #else
             1080
-            #endif
         case .fourK:
             2160
         case .tenEightyP:

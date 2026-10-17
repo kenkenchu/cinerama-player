@@ -14,7 +14,7 @@ struct LiveTVHomeShelf: View {
             if !currentPrograms.isEmpty {
                 VStack(alignment: .leading, spacing: DuskPosterMetrics.carouselSectionSpacing) {
                     Text("Live TV")
-                        .font(DuskFont.sectionHeader(ios: .title2.bold()))
+                        .font(DuskFont.sectionHeader(style: .title2.bold()))
                         .foregroundStyle(Color.duskTextPrimary)
                         .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
 
@@ -39,17 +39,14 @@ struct LiveTVHomeShelf: View {
                                     )
                                 }
                                 .buttonStyle(.plain)
-                                .duskTVOSFocusEffectShape(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                )
-                                .carouselLeadingFocusTarget()
-                                .carouselItemFocusLock(isLeadingItem: program.id == currentPrograms.first?.1.id)
+
+
                             }
                         }
                         .padding(.horizontal, DuskPosterMetrics.carouselHorizontalPadding)
                     }
                     .scrollIndicators(.hidden)
-                    .carouselLeadingFocusLock(leadingInset: DuskPosterMetrics.carouselHorizontalPadding)
+
                 }
             }
         }

@@ -1,17 +1,5 @@
 import SwiftUI
 
-/// Orders the account's Plex servers and turns individual ones off.
-///
-/// Dusk connects to every enabled server at once and merges what they return,
-/// so this screen answers two questions: which server plays a title that exists
-/// on several (the highest one), and which servers Dusk should ignore
-/// completely. Edits are written straight to `ServerPriorityStore`.
-///
-/// The editors differ per platform because the input models do. iOS/iPadOS use
-/// native list editing (`EditButton` + `onMove`). tvOS uses per-row position
-/// menus — the same pattern as Library Order. **Do not replace the tvOS menus
-/// with a focus-driven pick-up**: see the warning at the top of
-/// `LibraryOrderSettingsView`.
 struct ServerPrioritySettingsView: View {
     @Environment(PlexService.self) private var plexService
     @Environment(ServerConnectionCoordinator.self) private var connections
@@ -21,7 +9,7 @@ struct ServerPrioritySettingsView: View {
         content
             .background(Color.duskBackground.ignoresSafeArea())
             .duskNavigationTitle("Server Priority")
-            .duskNavigationBarTitleDisplayModeInline()
+
             .task {
                 let model = viewModel ?? ServerPrioritySettingsViewModel(
                     plexService: plexService,
@@ -56,17 +44,11 @@ struct ServerPrioritySettingsView: View {
 
     @ViewBuilder
     private func editor(_ viewModel: ServerPrioritySettingsViewModel) -> some View {
-        #if os(tvOS)
-        tvEditor(viewModel)
-        #else
-        iosEditor(viewModel)
-        #endif
+        listEditor(viewModel)
     }
 
-    // MARK: - iOS
 
-    #if !os(tvOS)
-    private func iosEditor(_ viewModel: ServerPrioritySettingsViewModel) -> some View {
+    private func listEditor(_ viewModel: ServerPrioritySettingsViewModel) -> some View {
         List {
             if !viewModel.hasEnabledServer {
                 Section {
@@ -107,7 +89,7 @@ struct ServerPrioritySettingsView: View {
                     }
                 }
                 .disabled(viewModel.isRefreshing)
-                .duskSuppressTVOSButtonChrome()
+
             } footer: {
                 if let accountError = viewModel.accountError {
                     Text(accountError)
@@ -123,126 +105,9 @@ struct ServerPrioritySettingsView: View {
         .duskScrollContentBackgroundHidden()
         .toolbar {
             if !viewModel.isSingleServer {
-                #if os(iOS)
-                EditButton()
-                #endif
             }
         }
     }
-    #endif
-
-    // MARK: - tvOS
-
-    #if os(tvOS)
-    private func tvEditor(_ viewModel: ServerPrioritySettingsViewModel) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: TVSettingsMetrics.sectionSpacing) {
-                if !viewModel.hasEnabledServer {
-                    Text(Self.nothingEnabledMessage)
-                        .font(.footnote)
-                        .foregroundStyle(Color.duskTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.horizontal, TVSettingsMetrics.contentInset)
-                }
-
-                ForEach(viewModel.rows) { row in
-                    TVSettingsSection(title: row.name) {
-                        HStack(spacing: 20) {
-                            Text(row.ownership)
-                                .font(.headline)
-                                .foregroundStyle(Color.duskTextPrimary)
-
-                            Spacer(minLength: 24)
-
-                            HStack(spacing: 12) {
-                                ConnectionStatusDot(tone: row.tone, size: 14)
-                                Text(row.status)
-                                    .foregroundStyle(Color.duskTextSecondary)
-                            }
-                        }
-                        .frame(minHeight: 72)
-
-                        if !viewModel.isSingleServer {
-                            tvRowDivider
-
-                            TVSettingsMenuRow(
-                                title: "Position",
-                                options: Array(viewModel.rows.indices),
-                                selection: positionBinding(viewModel, for: row.id),
-                                selectedTitle: ServerPriorityPositionName.label(
-                                    for: viewModel.position(of: row.id)
-                                )
-                            ) {
-                                ServerPriorityPositionName.label(for: $0)
-                            }
-                        }
-
-                        tvRowDivider
-
-                        TVSettingsToggleRow(
-                            title: "Use This Server",
-                            isOn: enabledBinding(viewModel, for: row.id, isEnabled: row.isEnabled)
-                        )
-                    }
-                }
-
-                TVSettingsSection(
-                    title: "All Servers",
-                    footer: Self.footerText(isSingleServer: viewModel.isSingleServer)
-                ) {
-                    TVSettingsActionRow(
-                        title: "Check Again",
-                        isLoading: viewModel.isRefreshing
-                    ) {
-                        Task { await viewModel.refresh() }
-                    }
-
-                    if let accountError = viewModel.accountError {
-                        tvRowDivider
-
-                        Text(accountError)
-                            .font(.footnote)
-                            .foregroundStyle(Color.duskTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 16)
-                    }
-                }
-            }
-            .frame(maxWidth: 980, alignment: .leading)
-            .padding(.horizontal, 60)
-            .padding(.top, 48)
-            .padding(.bottom, 88)
-        }
-    }
-
-    private var tvRowDivider: some View {
-        Rectangle()
-            .fill(Color.duskTextSecondary.opacity(0.16))
-            .frame(height: 1)
-    }
-
-    private func positionBinding(
-        _ viewModel: ServerPrioritySettingsViewModel,
-        for serverID: String
-    ) -> Binding<Int> {
-        Binding(
-            get: { viewModel.position(of: serverID) },
-            set: { viewModel.move(serverID, to: $0) }
-        )
-    }
-
-    private func enabledBinding(
-        _ viewModel: ServerPrioritySettingsViewModel,
-        for serverID: String,
-        isEnabled: Bool
-    ) -> Binding<Bool> {
-        Binding(
-            get: { isEnabled },
-            set: { viewModel.setEnabled($0, for: serverID) }
-        )
-    }
-    #endif
 
     // MARK: - Copy
 
@@ -298,9 +163,7 @@ private struct ServerPriorityNotice: View {
     }
 }
 
-// MARK: - iOS row
 
-#if !os(tvOS)
 private struct ServerPriorityRow: View {
     let row: ServerPrioritySettingsViewModel.Row
     let viewModel: ServerPrioritySettingsViewModel
@@ -346,7 +209,6 @@ private struct ServerPriorityRow: View {
         .padding(.vertical, 4)
     }
 }
-#endif
 
 // MARK: - Status dot
 
@@ -372,23 +234,3 @@ struct ConnectionStatusDot: View {
         }
     }
 }
-
-// MARK: - tvOS position labels
-
-#if os(tvOS)
-/// Ordinal labels for the tvOS position menus. Formatted rather than hardcoded
-/// so the list is not capped at a handful of names. `NumberFormatter` is not
-/// `Sendable`, so the cached instance is pinned to the main actor.
-@MainActor
-private enum ServerPriorityPositionName {
-    private static let formatter: NumberFormatter = {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .ordinal
-        return formatter
-    }()
-
-    static func label(for index: Int) -> String {
-        formatter.string(from: NSNumber(value: index + 1)) ?? "\(index + 1)"
-    }
-}
-#endif

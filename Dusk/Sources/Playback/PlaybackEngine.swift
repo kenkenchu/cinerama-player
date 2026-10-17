@@ -1,8 +1,5 @@
 import AVFoundation
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 /// Which concrete engine to use for playback.
 enum PlaybackEngineType: Sendable {
@@ -23,20 +20,6 @@ enum PlaybackSourceLocality: Sendable {
 enum PlaybackBufferPolicy {
     static let avPlayerForwardBufferDuration: TimeInterval = 20
 
-    /// libvlc caching is NOT just a network buffer: it becomes the input's
-    /// pts_delay, which scales every clock window in the pipeline — the
-    /// initial dejitter offset, the audio output's start deferral after
-    /// open/seek/flush, and the late/early drift thresholds. In practice the
-    /// caching value IS the stretch of silent video that opens every session
-    /// and follows every seek: the first picture renders right away while the
-    /// audio output sits in its deferred start for ~the caching duration (at
-    /// the old flat 1500 ms, every start played ~1.5 s of video before any
-    /// sound; at the pre-migration 8000 ms it was many seconds). So the value
-    /// is tiered by how much jitter the transport can actually produce, and
-    /// each tier sits as low as that transport safely allows: a downloaded
-    /// file has none (300 ms is VLC's own file-access default), a LAN server
-    /// very little, and only remote/relay streams keep the protective
-    /// headroom (VLC-iOS ships 999 ms as its blanket network default).
     static func vlcCachingMilliseconds(for locality: PlaybackSourceLocality) -> Int {
         switch locality {
         case .localFile: 300
@@ -84,9 +67,6 @@ protocol PlaybackEngine: AnyObject {
     func pause()
     func stop()
     func seek(to position: TimeInterval)
-    /// Changes the rate of active playback without changing the paused/playing
-    /// state. The player UI uses this for its temporary iOS/iPadOS hold-to-2x
-    /// interaction and restores the normal `1` rate when the hold ends.
     func setPlaybackRate(_ rate: Float)
 
     // MARK: - Coordinated playback
@@ -113,10 +93,6 @@ protocol PlaybackEngine: AnyObject {
     /// Engines should restore their video rendering pipeline here.
     func handleReturnToForeground()
 
-    /// Toggles how the video fills its container. `false` letterboxes the video
-    /// to fit (aspect fit); `true` zooms it to fill the container, cropping the
-    /// overflow (aspect fill). Driven by the iOS/iPadOS player zoom control;
-    /// tvOS does not call this.
     func setVideoFillEnabled(_ enabled: Bool)
 
     /// Applies the user's subtitle size preference. The coordinator calls this
@@ -184,11 +160,6 @@ protocol PlaybackEngine: AnyObject {
 
     // MARK: - Audio session
 
-    /// Whether this engine wants the rich `.moviePlayback` audio session, which
-    /// lets iOS spatialize audio for AirPods. AVPlayer feeds that spatializer
-    /// natively and smoothly; VLCKit's raw audio output does not, and on a
-    /// Bluetooth route it underruns and stutters, so it opts out for a plain,
-    /// unprocessed session. iOS only — consumed by `PlaybackNowPlayingController`.
     var prefersSpatializedAudioSession: Bool { get }
 
     // MARK: - External playback
@@ -213,8 +184,6 @@ protocol PlaybackEngine: AnyObject {
 
     // MARK: - Picture in Picture
 
-    /// Whether Picture in Picture can be started (or, for VLCKit's on-demand
-    /// support mode, prepared) right now. iOS only.
     var isPictureInPicturePossible: Bool { get }
 
     /// Whether a Picture in Picture window is currently active.
@@ -270,8 +239,6 @@ extension PlaybackEngine {
     var supportsExternalPlayback: Bool { false }
     var isExternalPlaybackActive: Bool { false }
 
-    // Picture in Picture is iOS-only and opt-in per engine; tvOS engines and
-    // the Metal video-enhancement render path fall back to these no-ops.
     var isPictureInPicturePossible: Bool { false }
     var isPictureInPictureActive: Bool { false }
     func setPictureInPictureDelegate(_ delegate: (any PlaybackPictureInPictureDelegate)?) {}
@@ -320,14 +287,7 @@ enum SubtitleFontSize: String, CaseIterable, Identifiable, Sendable {
 enum PlaybackSubtitleStyle {
     /// The Medium baseline, in percent of the renderer's default size.
     static var baseAVPlayerRelativeFontSize: Int {
-        #if os(macOS)
         return 75
-        #else
-        switch UIDevice.current.userInterfaceIdiom {
-        case .pad, .mac: return 75
-        default: return 100
-        }
-        #endif
     }
 
     static func avPlayerRelativeFontSize(for size: SubtitleFontSize) -> Int {

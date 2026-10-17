@@ -1,4 +1,3 @@
-#if !os(tvOS)
 import SwiftUI
 
 struct ShowDetailView: View {
@@ -46,7 +45,7 @@ struct ShowDetailView: View {
                 contentView(details)
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
@@ -77,7 +76,7 @@ struct ShowDetailView: View {
 
                     if detailShowsSynopsisBelowHero(for: sizeClass), let summary = details.summary, !summary.isEmpty {
                         Text(summary)
-                            .font(DuskFont.body(ios: .body))
+                            .font(DuskFont.body(style: .body))
                             .foregroundStyle(Color.primary.opacity(0.76))
                             .lineSpacing(4)
                             .padding(.horizontal, horizontalPadding)
@@ -150,7 +149,7 @@ struct ShowDetailView: View {
 
         if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
-                .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                 .foregroundStyle(Color.primary.opacity(0.78))
         }
     }
@@ -159,7 +158,7 @@ struct ShowDetailView: View {
     private func heroMetadata(_ details: PlexMediaDetails) -> some View {
         if let genres = viewModel.genreText {
             Text(genres)
-                .font(DuskFont.caption(ios: .caption))
+                .font(DuskFont.caption(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.72))
         }
 
@@ -183,7 +182,7 @@ struct ShowDetailView: View {
 
         if let studio = details.studio {
             Text(studio)
-                .font(DuskFont.caption(ios: .caption))
+                .font(DuskFont.caption(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.72))
         }
     }
@@ -191,11 +190,11 @@ struct ShowDetailView: View {
     private func ratingBadge(icon: String, value: String, color: Color) -> some View {
         HStack(spacing: 4) {
             Image(systemName: icon)
-                .font(DuskFont.glyphSmall(ios: .caption2))
+                .font(DuskFont.glyphSmall(style: .caption2))
                 .foregroundStyle(color)
 
             Text(value)
-                .font(DuskFont.metadata(ios: .subheadline).monospacedDigit())
+                .font(DuskFont.metadata(style: .subheadline).monospacedDigit())
                 .foregroundStyle(Color.primary.opacity(0.84))
         }
     }
@@ -211,7 +210,7 @@ struct ShowDetailView: View {
                 watchedButton()
             }
         }
-        .detailHeroActionStackFrame(isCompactPhone: usesFullWidthActionButtons)
+        .detailHeroActionStackFrame(isCompactLayout: usesFullWidthActionButtons)
     }
 
     @ViewBuilder
@@ -303,7 +302,7 @@ struct ShowDetailView: View {
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Seasons")
-                    .font(DuskFont.sectionHeader(ios: .headline))
+                    .font(DuskFont.sectionHeader(style: .headline))
                     .foregroundStyle(Color.primary)
                     .padding(.horizontal, horizontalPadding)
 
@@ -376,4 +375,3 @@ struct ShowDetailView: View {
         }
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if !os(tvOS)
 import SwiftUI
 
 struct EpisodeDetailView: View {
@@ -39,7 +38,7 @@ struct EpisodeDetailView: View {
                 contentView(details)
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
@@ -124,9 +123,6 @@ struct EpisodeDetailView: View {
             topInset: topInset,
             containerWidth: containerWidth,
             heroBaseHeight: heroBase,
-            // The season·episode marker rides directly under the title (so on iPad
-            // it heads the right column), while the rest of the metadata stays in
-            // the left column with the show logo and the actions.
             titleAccessory: AnyView(
                 episodeMarkerRow()
                     .multilineTextAlignment(detailHeroTextAlignment(for: sizeClass))
@@ -204,8 +200,6 @@ struct EpisodeDetailView: View {
             .foregroundStyle(Color.primary.opacity(0.56))
     }
 
-    // On iPad the season·episode marker sits under the episode title in the
-    // right column as a quiet subtitle, so it reads smaller and greyer there.
     private var usesQuietMarker: Bool {
         sizeClass == .regular
     }
@@ -213,7 +207,7 @@ struct EpisodeDetailView: View {
     private var markerFont: Font {
         usesQuietMarker
             ? .footnote.weight(.medium)
-            : DuskFont.metadata(ios: .subheadline.weight(.medium))
+            : DuskFont.metadata(style: .subheadline.weight(.medium))
     }
 
     private var markerColor: Color {
@@ -229,7 +223,7 @@ struct EpisodeDetailView: View {
 
         if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
-                .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                 .foregroundStyle(Color.primary.opacity(0.78))
         }
     }
@@ -238,17 +232,17 @@ struct EpisodeDetailView: View {
     private func heroMetadata(_ details: PlexMediaDetails) -> some View {
         if let originalDate = MediaTextFormatter.localizedAirDate(details.originallyAvailableAt) {
             Text(originalDate)
-                .font(DuskFont.caption(ios: .caption))
+                .font(DuskFont.caption(style: .caption))
                 .foregroundStyle(Color.primary.opacity(0.72))
         }
 
         if let rating = details.rating {
             HStack(spacing: 4) {
                 Image(systemName: "star.fill")
-                    .font(DuskFont.glyphSmall(ios: .caption2))
+                    .font(DuskFont.glyphSmall(style: .caption2))
                     .foregroundStyle(.yellow)
                 Text(String(format: "%.1f", rating))
-                    .font(DuskFont.metadata(ios: .subheadline).monospacedDigit())
+                    .font(DuskFont.metadata(style: .subheadline).monospacedDigit())
                     .foregroundStyle(Color.primary.opacity(0.84))
             }
         }
@@ -265,7 +259,7 @@ struct EpisodeDetailView: View {
                 watchedButton()
             }
         }
-        .detailHeroActionStackFrame(isCompactPhone: usesFullWidthActionButtons)
+        .detailHeroActionStackFrame(isCompactLayout: usesFullWidthActionButtons)
     }
 
     private func playButton(_ details: PlexMediaDetails) -> some View {
@@ -335,4 +329,3 @@ struct EpisodeDetailView: View {
     }
 
 }
-#endif

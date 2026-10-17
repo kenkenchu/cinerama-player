@@ -29,7 +29,7 @@ struct SeerrMediaDetailView: View {
                 content
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task { await viewModel.load() }
@@ -53,18 +53,10 @@ struct SeerrMediaDetailView: View {
     private var content: some View {
         GeometryReader { geometry in
             let backgroundWidth: CGFloat = {
-                #if os(tvOS)
-                geometry.size.width + geometry.safeAreaInsets.leading + geometry.safeAreaInsets.trailing
-                #else
                 geometry.size.width
-                #endif
             }()
             let leadingInset: CGFloat = {
-                #if os(tvOS)
-                geometry.safeAreaInsets.leading
-                #else
                 0
-                #endif
             }()
 
             ScrollView {
@@ -75,17 +67,14 @@ struct SeerrMediaDetailView: View {
                         containerHeight: geometry.size.height,
                         leadingInset: leadingInset
                     )
-                    #if os(tvOS)
-                    .focusSection()
-                    #endif
 
                     if detailShowsSynopsisBelowHero(for: sizeClass),
                        let overview = viewModel.overview?.nilIfEmpty {
                         VStack(alignment: .leading, spacing: 10) {
                             Text("Synopsis")
-                                .font(DuskFont.sectionHeader(ios: .title3.bold()))
+                                .font(DuskFont.sectionHeader(style: .title3.bold()))
                             Text(overview)
-                                .duskFont(tvOnly: DuskFont.TV.body)
+
                                 .foregroundStyle(Color.duskTextSecondary)
                                 .fixedSize(horizontal: false, vertical: true)
                         }
@@ -116,9 +105,6 @@ struct SeerrMediaDetailView: View {
                         }
                         .padding(.top, 40)
                         .padding(.bottom, 56)
-                        #if os(tvOS)
-                        .focusSection()
-                        #endif
                     } else {
                         Spacer(minLength: 56)
                     }
@@ -130,10 +116,7 @@ struct SeerrMediaDetailView: View {
             .refreshable {
                 try? await viewModel.refresh()
             }
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
-            .duskTVOSPageBackground()
+
         }
     }
 
@@ -160,18 +143,18 @@ struct SeerrMediaDetailView: View {
                     viewModel.mediaType == .tv ? "TV Show" : "Movie",
                 ].compactMap { $0 }
                 Text(metadata.joined(separator: " · "))
-                    .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                    .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                     .foregroundStyle(Color.primary.opacity(0.78))
 
                 if let genres = viewModel.genreText {
                     Text(genres)
-                        .font(DuskFont.caption(ios: .caption))
+                        .font(DuskFont.caption(style: .caption))
                         .foregroundStyle(Color.primary.opacity(0.72))
                 }
 
                 if let rating = viewModel.rating, rating > 0 {
                     Label(String(format: "%.1f", rating), systemImage: "star.fill")
-                        .font(DuskFont.caption(ios: .caption))
+                        .font(DuskFont.caption(style: .caption))
                         .foregroundStyle(Color.primary.opacity(0.78))
                 }
             }

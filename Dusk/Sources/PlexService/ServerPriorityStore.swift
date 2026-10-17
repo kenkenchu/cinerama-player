@@ -110,13 +110,11 @@ final class ServerPriorityStore {
         commit()
     }
 
-    /// iOS list reordering (`onMove`).
     func move(fromOffsets source: IndexSet, toOffset destination: Int) {
         entries.move(fromOffsets: source, toOffset: destination)
         commit()
     }
 
-    /// tvOS reordering, which has no drag gesture and moves one row at a time.
     func move(_ machineIdentifier: String, to destination: Int) {
         guard let index = entries.firstIndex(where: { $0.machineIdentifier == machineIdentifier }) else {
             return

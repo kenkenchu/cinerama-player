@@ -87,18 +87,6 @@ extension PlaybackCoordinator {
             return nil
         }
 
-        #if os(tvOS)
-        // Enhanced SDR subtitles take priority over an optional Atmos copy
-        // remux. Never veto a remux needed to decode audio or preserve HDR/DV.
-        if !convertsAudio, StreamResolver.evaluateForDirectPlayback(
-            media: media,
-            part: part,
-            enhancementMode: preferences.videoEnhancementMode,
-            selectedSubtitleStreamID: subtitleStreamID
-        ).usesEnhancedSubtitleRenderer {
-            return nil
-        }
-        #endif
 
         let blocker: String?
         // Which of the two non-DV5 reasons qualified, for the session reason.

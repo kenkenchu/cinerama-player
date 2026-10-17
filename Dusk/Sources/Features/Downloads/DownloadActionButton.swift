@@ -2,11 +2,7 @@ import SwiftUI
 
 enum DownloadsFeature {
     static var isVisible: Bool {
-        #if os(tvOS)
-        false
-        #else
         true
-        #endif
     }
 }
 
@@ -24,8 +20,6 @@ struct DownloadActionButton: View {
     /// `.downloadedVideo` routing.
     var isClip = false
     var fillsWidth = false
-    /// Icon-only rendering for the iOS detail hero secondary row (the state icon
-    /// already conveys download status, so the text label is dropped).
     var iconOnly = false
 
     @ViewBuilder

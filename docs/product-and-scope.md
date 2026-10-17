@@ -1,100 +1,71 @@
-# Product And Scope
-
-This is the long-lived product context for Dusk. Keep implementation details in
-the focused topic docs and keep this file to intent, constraints, and non-goals.
+# Product and Scope
 
 ## Product Shape
 
-Dusk is a native Swift/SwiftUI Plex client for Apple platforms. It is built for
-people who run their own Plex servers and want a focused client for browsing and
-playing their libraries without promoted content or extra service layers.
+Dusk Player for Mac is a native SwiftUI/AppKit Plex client maintained in
+`kenkenchu/dusk-player-mac`, forked from `marvinvr/dusk-player`. It is a
+macOS-only project for people who want focused access to their own Plex
+libraries without promoted content or extra service layers.
 
-This is a personal/small-audience project. Favor straightforward, maintainable
-code over enterprise abstractions, broad plugin systems, or premature provider
-boundaries.
+The supported app target is `Dusk-macOS`, currently **macOS 26+ on Apple silicon
+(arm64)**. `project.yml` is authoritative. The fork has no mobile app or TV app
+targets, no mobile framework requirement, and no Mac App Store release.
 
 ## Core Principles
 
-- Plex is the source of truth for metadata, watch state, library contents, and
-  server identity.
-- Persistence is limited to auth tokens, user preferences, explicit
-  downloads/offline state, and caches that are documented in the relevant topic
-  doc. Cross-device settings that Plex itself models (library order) are stored
-  in the Plex account, not in a Dusk-private sync store.
-- Playback starts direct when using Plex-hosted media. Manual transcoding is a
-  per-session player Quality action only; no stored quality setting may start
-  video transcoding automatically. An explicitly selected AirPlay route may use
-  Plex HLS to satisfy the receiver's format constraints; this is an output-route
-  requirement, not a persisted playback-quality default.
-- SwiftUI UI should be shared where practical and platform-aware where needed.
-- Plex-specific service code is acceptable. Do not introduce generic provider
-  abstractions until a second backend is actually being implemented.
-- Dependencies should stay minimal. VLCKit is vendored manually; system
-  frameworks and URLSession are preferred elsewhere.
-
-## Platform Targets
-
-`project.yml` is authoritative for build targets and deployment versions:
-
-- `Dusk`: iOS/iPadOS app target, currently iOS 18.0 minimum.
-- `Dusk-tvOS`: tvOS app target, currently tvOS 26.0 minimum.
-- `Dusk-macOS`: native macOS 26.0 app target, Apple silicon (arm64).
-
-The Mac target uses SwiftUI and AppKit, with a desktop VLCKit framework; it
-does not depend on the iOS app or Mac Catalyst. Local compile verification is
-not a claim of playback validation or Mac App Store availability.
+- Plex owns metadata, libraries, watch state, and server identity.
+- Store auth in Keychain; preferences in UserDefaults. Downloads, offline sync,
+  and caches are explicit, documented exceptions to otherwise stateless use.
+- Library order belongs to the Plex account, not a private Dusk sync service.
+- Start playback direct. Remuxes may copy compatible video/audio into HLS;
+  manual transcoding remains a per-session action, never a stored startup rule.
+- Keep view models observable and Plex-specific services straightforward.
+- Use native Mac navigation, menus, keyboard/pointer controls, and AppKit bridges
+  where SwiftUI needs a native rendering host. Follow `STYLE.md`.
+- Favor a maintainable personal project over plugin systems and premature
+  backend abstractions.
 
 ## Feature Scope
 
-Current product pillars:
+The Mac app provides Plex authentication and Home profiles, merged multi-server
+Home/library/search data, detail screens, hybrid AVPlayer/VLCKit playback,
+track selection, manual Quality, timeline/watch-state reporting, intro/credits
+skipping, continuous play, downloads/offline sync, Plex Live TV, and optional
+Seerr requests. Availability depends on server capabilities and media.
 
-- Plex sign-in, server discovery, and server switching.
-- Home hubs, library browsing, genre filtering, search, and detail screens.
-- Plex Live TV discovery, program guide browsing, and time-shifted playback.
-- Hybrid playback through AVPlayer and VLCKit.
-- Subtitle and audio track selection.
-- Manual player Quality selection for Plex transcoding.
-- Timeline reporting, scrobble/unscrobble, resume, skip intro/credits,
-  continuous playback, and passout protection.
-- Offline downloads and delayed watch-state sync.
-- Native AirPlay from iPhone/iPad to AirPlay-enabled receivers, with Dusk
-  retaining playback control, Plex timeline reporting, and continuous playback.
-- SharePlay watch-together sessions on iPhone, iPad, and Apple TV for Plex
-  library video, with per-participant local streaming and synchronized transport.
+AVPlayer retains HDR/Atmos remux and DuskDovi conversion paths. The stock desktop
+VLC build does not advertise local TrueHD support; the shared routing can use
+Plex for undecodable audio. HDR/audio output must be verified with actual media,
+display, and audio hardware; compiling does not validate format fidelity.
 
-Future ideas such as Jellyfin, collections, playlists, DVR scheduling,
-broader provider abstractions are not current architecture
-requirements. Do not shape today's code around them without an explicit task.
+The Mac UI has no PiP controls, AirPlay route picker, outgoing SharePlay invites,
+system media-key integration, purchases, or alternate icon picker. App Intents
+are inherited and compile, but Mac Siri/Shortcuts behavior is unverified.
+Broader backends, DVR scheduling, and mobile support are outside current scope.
 
-## Dependency And Licensing Decisions
+## Dependencies and Licensing
 
-- VLCKit is fetched into git-ignored dynamic xcframeworks under `Frameworks/`
-  and linked dynamically for LGPL compliance.
-- XcodeGen owns the generated Xcode project; edit `project.yml`, then regenerate
-  when project structure changes.
-- Image loading uses the app's Plex-aware image pipeline and URL caching rather
-  than a third-party image dependency.
-- Networking uses async/await and URLSession. Avoid Combine unless wrapping
-  callback-driven APIs such as player engines.
+- Desktop VLCKit is checksum-pinned, fetched into git-ignored `Frameworks/`, and
+  dynamically linked for LGPL compliance. No private upstream VLC repo access
+  is needed for the Mac build.
+- DuskDovi is an arm64 macOS static library built from `Native/DuskDovi` with a
+  pinned Rust toolchain. New crates need corresponding license notices.
+- XcodeGen owns project generation. System frameworks and URLSession are
+  preferred elsewhere; artwork uses the existing Plex-aware image pipeline.
 
-## Privacy And Network Boundaries
+## Privacy and Network Boundaries
 
-Dusk must never track users. No advertising identifiers, no third-party
-analytics or crash-reporting SDKs, no profiles, and nothing shared with anyone.
+No advertising identifiers, Plex-derived telemetry, or third-party analytics
+SDKs. The inherited release-build anonymous `app_opened` reporting uses the
+upstream Rybbit endpoint described in `analytics.md`, with a random install ID,
+no retry queue, and a Settings opt-out. Debug builds report nothing. This fork
+does not own the upstream endpoint or its published privacy policy.
 
-The one exception is the anonymous event reporting described in `analytics.md`,
-sent to our own self-hosted Rybbit instance. It is opt-out in Settings and bound
-by hard rules: a closed event vocabulary, no Plex-derived data of any kind, an
-app-generated random identifier rather than anything device- or account-derived,
-and no retry queue on device. Those rules are what keep the published privacy
-policy accurate — treat a change that breaks one of them as a policy change, not
-a code change.
+Network traffic is limited to Plex account/server APIs, media/artwork derived
+from Plex, explicit optional Seerr setup/requests, that documented reporting,
+explicit Group Activities sessions supported by the inherited coordination
+code, and user-requested external links. Never log token-bearing URLs.
 
-Beyond that endpoint, network traffic should be limited to Plex account/server
-APIs, selected Plex servers, artwork and media URLs derived from Plex,
-explicitly initiated Apple Group Activities sessions (which share only the
-selected item's server-scoped identity and display metadata with participants),
-and explicitly requested external links such as project/license pages.
-
-Do not log raw token-bearing URLs. Playback and image URLs often include
-`X-Plex-Token` because AVPlayer and VLCKit load media directly.
+macOS Local Network permission is required for local Plex servers. A usage
+description, sandbox entitlements, and correct signing are necessary build
+pieces; the user still controls the permission in System Settings.

@@ -579,12 +579,7 @@ extension PlaybackCoordinator {
             // screen briefly) overlaps buffering instead of playback.
             let dolbyVisionRemux = remuxDolbyVisionConfiguration(for: media, decision: playbackDecision)
             let dolbyVision7Conversion = remuxDolbyVision7Conversion(for: media, decision: playbackDecision)
-            DisplayModeMatcher.apply(
-                media: media,
-                part: part,
-                decision: playbackDecision,
-                dolbyVision: dolbyVision7Conversion ?? dolbyVisionRemux
-            )
+
             engine = newEngine
             let preferredAudioTrackPosition: Int? = switch playbackDecision {
             case .directPlay, .localDownload:
@@ -804,16 +799,6 @@ extension PlaybackCoordinator {
                     media: media,
                     part: part
                 )
-                #if os(tvOS)
-                // Original restarts a local engine too; retain the choices
-                // used above instead of re-running language preferences.
-                if resolverDecision.usesEnhancedSubtitleRenderer {
-                    pendingExplicitTrackSelection = ExplicitTrackSelection(
-                        audioStreamID: activeAudioStreamID,
-                        subtitleStreamID: activeSubtitleStreamID
-                    )
-                }
-                #endif
                 // Plex session hygiene: returning to Original releases the
                 // server transcoder that fed the previous quality.
                 if let oldTranscodeSessionID = activeTranscodeSessionID {
@@ -972,9 +957,6 @@ extension PlaybackCoordinator {
             scheduleSpatialAudioTrackChange()
             return
         }
-        #if os(tvOS)
-        switchToVLCKitForEnhancedSubtitlesIfNeeded()
-        #endif
         guard isAirPlaySession else { return }
         scheduleAirPlayTransition(isTrackChange: true)
     }
@@ -1169,12 +1151,7 @@ extension PlaybackCoordinator {
         let dolbyVision7Conversion = engineType == .avPlayer
             ? remuxDolbyVision7Conversion(for: media, decision: playbackDecision)
             : nil
-        DisplayModeMatcher.apply(
-            media: media,
-            part: part,
-            decision: playbackDecision,
-            dolbyVision: dolbyVision7Conversion ?? dolbyVisionRemux
-        )
+
         engine = newEngine
         remuxTrackSelection = playbackDecision.isSpatialAudio
             ? ExplicitTrackSelection(audioStreamID: activeAudioStreamID, subtitleStreamID: activeSubtitleStreamID)
@@ -1239,67 +1216,6 @@ extension PlaybackCoordinator {
         }
     }
 
-    #if os(tvOS)
-    /// Reuses the same source/session; only the renderer changes. Once on VLC,
-    /// leave it there for the item so subtitle Off/On never causes more reloads.
-    func switchToVLCKitForEnhancedSubtitlesIfNeeded() {
-        guard !didFinalizeCurrentSession, !isSwitchingQuality, !isPreparingAirPlay,
-              activeLiveTVContext == nil,
-              let details = activeItemDetails, let ratingKey, let debugInfo,
-              debugInfo.engine == .avPlayer,
-              let playbackSource, let currentEngine = engine else { return }
-        switch debugInfo.decision {
-        case .directPlay, .localDownload: break
-        default: return
-        }
-        let decision = StreamResolver.evaluateForDirectPlayback(
-            media: debugInfo.media,
-            part: debugInfo.part,
-            enhancementMode: preferences.videoEnhancementMode,
-            selectedSubtitleStreamID: activeSubtitleStreamID,
-            forceAVPlayer: preferences.forceAVPlayer,
-            forceVLCKit: preferences.forceVLCKit
-        )
-        guard decision.usesEnhancedSubtitleRenderer else { return }
-
-        let audioStreams = debugInfo.part.streams.filter { $0.streamType == .audio }
-        let audioPosition = audioStreams.firstIndex { $0.id == activeAudioStreamID }
-        pendingExplicitTrackSelection = ExplicitTrackSelection(
-            audioStreamID: activeAudioStreamID,
-            subtitleStreamID: activeSubtitleStreamID
-        )
-        // Prefer the live clock, including seeks behind the original resume
-        // offset. A not-yet-ready engine still needs its pending resume offset.
-        let resumePosition = currentEngine.state == .playing || currentEngine.state == .paused
-            ? currentEngine.currentTime
-            : max(currentEngine.currentTime, playbackSource.startPosition ?? 0)
-        let shouldAutoPlay: Bool = switch currentEngine.state {
-        case .playing: true
-        case .paused: false
-        default: playbackSource.shouldAutoPlay
-        }
-        activateReplacementAttempt(
-            transitionLabel: "switching to VLCKit for enhanced SDR subtitles",
-            attemptID: UUID(),
-            details: details,
-            ratingKey: ratingKey,
-            media: debugInfo.media,
-            part: debugInfo.part,
-            playbackURL: playbackSource.url,
-            sanitizedURL: debugInfo.sanitizedPlaybackURL,
-            playbackDecision: debugInfo.decision,
-            engineType: .vlcKit,
-            resolverReason: decision.reason,
-            videoEnhancementRequest: VideoEnhancementRequest.make(
-                mode: preferences.videoEnhancementMode, media: debugInfo.media, part: debugInfo.part
-            ),
-            startPosition: resumePosition,
-            shouldAutoPlay: shouldAutoPlay,
-            audioTrackPositionOverride: audioPosition,
-            audioChannelCountOverride: audioPosition.flatMap { audioStreams[$0].channels }
-        )
-    }
-    #endif
 
     // MARK: - External (sidecar) subtitles
 
@@ -1790,7 +1706,7 @@ extension PlaybackCoordinator {
         nowPlayingController.endSession()
         // Hand the display back to the system mode so the UI is not left running
         // at the content's refresh rate.
-        DisplayModeMatcher.reset()
+
         engine = nil
         // Normally already stopped by finalize; belt-and-braces for paths
         // that clear without finalizing.

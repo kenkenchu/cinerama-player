@@ -44,9 +44,6 @@ struct HomeHeroActionButtonLabel: View {
     let systemImage: String
     var fillsWidth: Bool = false
 
-    #if os(tvOS)
-    private let minimumButtonWidth: CGFloat = 280
-    #endif
 
     var body: some View {
         HStack(spacing: 8) {
@@ -58,58 +55,31 @@ struct HomeHeroActionButtonLabel: View {
                 .lineLimit(1)
         }
         .frame(minHeight: heroButtonMinHeight)
-        #if os(tvOS)
-        .frame(minWidth: minimumButtonWidth)
-        .contentShape(Capsule())
-        #else
         .frame(maxWidth: fillsWidth ? .infinity : nil)
         .contentShape(Capsule())
-        #endif
         .foregroundStyle(labelColor)
     }
 
-    // iOS draws the home hero button as prominent, `Color.primary`-tinted glass,
-    // so its label uses the inverse color for contrast. tvOS keeps translucent
-    // glass where the standard `primary` label already reads correctly.
     private var labelColor: Color {
-        #if os(tvOS)
-        .primary
-        #else
         .duskPrimaryActionLabel
-        #endif
     }
 
     private var heroButtonFont: Font {
-        #if os(tvOS)
-        DuskFont.TV.buttonLabel
-        #else
         .headline.weight(.semibold)
-        #endif
     }
 
     private var heroButtonMinHeight: CGFloat {
-        #if os(tvOS)
-        28
-        #else
         32
-        #endif
     }
 }
 
 struct HomeHeroSecondaryActionButtonLabel: View {
     let title: String
 
-    #if os(tvOS)
-    private let minimumButtonWidth: CGFloat = 280
-    #endif
 
     var body: some View {
         Text(title)
             .font(heroButtonFont)
-            #if os(tvOS)
-            .frame(minWidth: minimumButtonWidth)
-            .contentShape(Capsule())
-            #endif
             .foregroundStyle(Color.primary)
             .padding(.horizontal, horizontalPadding)
             .padding(.vertical, verticalPadding)
@@ -122,27 +92,15 @@ struct HomeHeroSecondaryActionButtonLabel: View {
     }
 
     private var heroButtonFont: Font {
-        #if os(tvOS)
-        DuskFont.TV.buttonLabel
-        #else
         .headline.weight(.semibold)
-        #endif
     }
 
     private var horizontalPadding: CGFloat {
-        #if os(tvOS)
-        18
-        #else
         20
-        #endif
     }
 
     private var verticalPadding: CGFloat {
-        #if os(tvOS)
-        12
-        #else
         14
-        #endif
     }
 }
 
@@ -213,32 +171,6 @@ struct HomeHeroPagerPill: View {
 extension View {
     @ViewBuilder
     func homeHeroNativeButtonStyle() -> some View {
-        #if os(tvOS)
-        // No tint: the tab shell clears it for its content, and an explicit
-        // one (even `Color.primary`) turns the focused glass white-on-white.
         self
-            .buttonStyle(.glass)
-            .controlSize(.regular)
-            .buttonBorderShape(.capsule)
-        #elseif os(iOS)
-        // Prominent glass tinted with a translucent `primary` so the hero CTA
-        // contrasts the artwork (dark in Light mode, light in Dark) while still
-        // reading as liquid glass. `.regular` height keeps it a short, wide pill.
-        if #available(iOS 26.0, *) {
-            self
-                .buttonStyle(.glassProminent)
-                .controlSize(.regular)
-                .buttonBorderShape(.capsule)
-                .tint(Color.duskPrimaryButtonTint)
-        } else {
-            self
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .buttonBorderShape(.capsule)
-                .tint(Color.primary)
-        }
-        #else
-        self
-        #endif
     }
 }

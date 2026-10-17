@@ -32,4 +32,3 @@ enum SeerrCredentialStore {
         KeychainHelper.delete(key: keychainKey)
     }
 }
-

@@ -18,7 +18,6 @@ enum MediaTextFormatter {
         }
     }
 
-    /// "S2 · E8", for tight spots like the tvOS Next Episode tooltip.
     static func compactSeasonEpisodeLabel(season: Int?, episode: Int?) -> String? {
         switch (season, episode) {
         case let (season?, episode?):

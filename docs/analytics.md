@@ -1,8 +1,8 @@
 # Analytics
 
-Dusk reports a short, fixed list of anonymous events to the **self-hosted Rybbit
-instance at `stats.marvinvr.ch`** — the same instance getdusk.app already uses,
-under a separate Rybbit "site" so app and web numbers never mix.
+The Mac fork retains anonymous app-open reporting to the **upstream Rybbit
+instance at `stats.marvinvr.ch`**. This fork does not operate that endpoint or
+getdusk.app. Reporting is disabled in Debug and can be disabled in Mac Settings.
 
 It exists to answer one class of question — *does this feature actually work for
 anyone?* — and nothing else.
@@ -43,9 +43,6 @@ environment. Views read it as an **optional** environment value
 so a view rendered without it in scope silently skips reporting instead of
 trapping. Keep it optional at every view call site.
 
-`SupporterStore` takes it as an optional initializer dependency, because
-purchase outcomes are known there rather than in the view.
-
 ## The Rybbit wire format
 
 `POST https://stats.marvinvr.ch/api/track`, site `e76b9d7b1558`. Traps worth
@@ -59,7 +56,7 @@ knowing, all of them things Rybbit does differently from a normal JSON API:
   hashing IP + User-Agent; passing our own random install identifier means it
   never has to. `app_version`, `platform` and `language` ride along as
   properties on every event.
-- **`user_agent` is sent explicitly** (`Dusk/1.6.0 (iOS 18.0)`) rather than
+- **`user_agent` is sent explicitly** (`Dusk/1.8.0 (macOS …)`) rather than
   letting URLSession's CFNetwork default through, which reads as neither a
   browser nor a known client.
 - **An API key is optional.** Rybbit accepts events from any origin without one.
@@ -73,44 +70,11 @@ without meaning to, and the privacy policy says so.
 
 ## Events
 
-`app_opened` is sent as a **pageview** so Rybbit's built-in users, sessions,
-retention and countries dashboards are driven by it. Everything else is a
-**custom event**. Paths are synthetic — the app has no URLs.
-
-| Event | Type | Path | Properties |
-|---|---|---|---|
-| `app_opened` | pageview | `/app` | — |
-| `supporter_prompt_triggered` | custom | `/supporter` | `milestone` |
-| `supporter_sheet_shown` | custom | `/supporter` | `source`, `milestone` |
-| `supporter_dismissed` | custom | `/supporter` | `control`, `source` |
-| `supporter_purchase_tapped` | custom | `/supporter` | `product`, `source` |
-| `supporter_purchase_completed` | custom | `/supporter` | `product` |
-| `supporter_purchase_cancelled` | custom | `/supporter` | `product` |
-| `supporter_purchase_failed` | custom | `/supporter` | `product` |
-| `supporter_restore_tapped` | custom | `/supporter` | `source` |
-| `supporter_manage_subscription_tapped` | custom | `/supporter` | `source` |
-| `supporter_link_tapped` | custom | `/supporter` | `link`, `source` |
-| `supporter_products_unavailable` | custom | `/supporter` | `source` |
-| `supporter_products_retry_tapped` | custom | `/supporter` | `source` |
-| `supporter_icon_picker_opened` | custom | `/supporter/icons` | — |
-| `supporter_icon_applied` | custom | `/supporter/icons` | `icon` |
-
-Every event also carries `app_version`, `platform` (`ios`/`ipados`/`tvos`/`macos`) and
-`language`. Descriptions live as doc comments on the `AnalyticsEventName` cases.
-
-### The two questions this set was built to answer
-
-1. **Is the supporter prompt reaching anyone?** `supporter_prompt_triggered` vs
-   `supporter_sheet_shown` with `source=prompt`. A gap means the schedule is
-   burning prompts without the sheet ever appearing.
-2. **Can people actually buy?** `supporter_products_unavailable` against
-   `supporter_sheet_shown`. A steady stream means the App Store products are
-   not resolving in production — which local Xcode runs cannot catch, because
-   both schemes attach `Dusk/Support/Dusk.storekit` and serve products from that
-   file instead of App Store Connect.
-
-Conversion is `App Store Connect units ÷ supporter_sheet_shown`. Revenue itself
-is never reported; ASC is the source of truth for that.
+The only reportable Mac event is `app_opened`, sent as a pageview at `/app`.
+It is daily-gated. It includes the existing app version, `platform=macos` and
+language properties, with the same random install identifier and transport.
+Purchase, prompt and icon events were removed with their unsupported UI.
+No Plex-derived data is reported.
 
 ## Adding an event
 
@@ -123,6 +87,6 @@ is never reported; ASC is the source of truth for that.
 
 ## Verification
 
-Reporting is compiled out of debug builds, so a simulator run proves only that
-the call sites compile. To see real traffic, build for Release, or temporarily
-flip `isActive` and watch the Rybbit live view for site `e76b9d7b1558`.
+Reporting is compiled out of Debug. A Mac compile only verifies the call sites;
+it does not prove release reporting. Do not enable or send diagnostic analytics
+as part of routine verification. Preserve opt-out and the no-Plex-data boundary.

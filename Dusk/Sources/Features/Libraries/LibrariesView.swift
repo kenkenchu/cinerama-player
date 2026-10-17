@@ -50,7 +50,7 @@ struct LibrariesRootContent: View {
                 ServerAvailabilityStateView(availability: viewModel.availability)
             }
             .duskNavigationTitle(libraryType.tabTitle)
-            .duskNavigationBarTitleDisplayModeLarge()
+
         } else if viewModel.isLoading && viewModel.libraries.isEmpty {
             loadingView
         } else if let error = viewModel.error, viewModel.libraries.isEmpty {
@@ -80,7 +80,7 @@ struct LibrariesRootContent: View {
             FeatureLoadingView()
         }
         .duskNavigationTitle(libraryType.tabTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
     }
 
     private func errorView(message: String) -> some View {
@@ -91,7 +91,7 @@ struct LibrariesRootContent: View {
             }
         }
         .duskNavigationTitle(libraryType.tabTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
     }
 
     private var emptyView: some View {
@@ -103,7 +103,7 @@ struct LibrariesRootContent: View {
             )
         }
         .duskNavigationTitle(libraryType.tabTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
     }
 }
 
@@ -124,7 +124,7 @@ struct LibraryTypeListView: View {
                     NavigationLink(value: AppNavigationRoute.libraryRecommendations(library)) {
                         LibraryRowContent(library: library, vm: viewModel)
                     }
-                    .duskSuppressTVOSButtonChrome()
+
                 }
             }
             .padding(.horizontal)
@@ -134,7 +134,7 @@ struct LibraryTypeListView: View {
         .scrollIndicators(.hidden)
         .background(Color.duskBackground.ignoresSafeArea())
         .duskNavigationTitle(libraryType.tabTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
     }
 }
 
@@ -167,24 +167,24 @@ private struct LibraryRowContent: View {
                 // Carries the server name only when another library of the same
                 // type has the same title. See `ServerLabeling`.
                 Text(vm.displayTitle(for: library))
-                    .font(DuskFont.rowTitle(ios: .headline))
+                    .font(DuskFont.rowTitle(style: .headline))
                     .foregroundStyle(Color.duskTextPrimary)
 
                 Text(libraryTypeLabel)
-                    .font(DuskFont.caption(ios: .subheadline))
+                    .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.duskTextSecondary)
             }
 
             Spacer()
 
             Image(systemName: "chevron.right")
-                .font(DuskFont.glyphSmall(ios: .caption))
+                .font(DuskFont.glyphSmall(style: .caption))
                 .foregroundStyle(Color.duskTextSecondary)
         }
         .padding(12)
         .background(Color.duskSurface)
         .clipShape(RoundedRectangle(cornerRadius: 28))
-        .duskTVOSFocusEffectShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+
     }
 
     private var libraryTypeLabel: String {
@@ -201,7 +201,7 @@ private struct LibraryRowContent: View {
     }
 
     private var libraryPlaceholderIconFont: Font {
-        DuskFont.glyphMedium(ios: .title2)
+        DuskFont.glyphMedium(style: .title2)
     }
 }
 

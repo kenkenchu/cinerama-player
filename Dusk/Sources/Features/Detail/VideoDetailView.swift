@@ -45,7 +45,7 @@ struct VideoDetailView: View {
                 contentView(details)
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
@@ -73,18 +73,10 @@ struct VideoDetailView: View {
     private func contentView(_ details: PlexMediaDetails) -> some View {
         GeometryReader { geometry in
             let heroBackgroundWidth: CGFloat = {
-                #if os(tvOS)
-                geometry.size.width + geometry.safeAreaInsets.leading + geometry.safeAreaInsets.trailing
-                #else
                 geometry.size.width
-                #endif
             }()
             let heroBackgroundLeadingInset: CGFloat = {
-                #if os(tvOS)
-                geometry.safeAreaInsets.leading
-                #else
                 0
-                #endif
             }()
 
             ScrollView {
@@ -96,18 +88,10 @@ struct VideoDetailView: View {
                         containerHeight: geometry.size.height,
                         backgroundLeadingInset: heroBackgroundLeadingInset
                     )
-#if os(tvOS)
-                    .focusSection()
-#endif
-                    // On iPad the description lives in the hero's right column;
-                    // the centered iPhone hero (and tvOS) keep it as a section below.
                     if detailShowsSynopsisBelowHero(for: sizeClass), let summary = details.summary, !summary.isEmpty {
                         descriptionSection(summary)
                             .padding(.horizontal, horizontalPadding)
                             .padding(.top, 40)
-#if os(tvOS)
-                            .focusSection()
-#endif
                     }
                     if let offlineBannerText = viewModel.offlineBannerText {
                         OfflineMetadataBanner(message: offlineBannerText)
@@ -122,10 +106,7 @@ struct VideoDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .scrollIndicators(.hidden)
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
-            .duskTVOSPageBackground()
+
         }
     }
 
@@ -161,7 +142,7 @@ struct VideoDetailView: View {
     private func metadataLine() -> some View {
         if let line = viewModel.metadataLine {
             Text(line)
-                .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                 .foregroundStyle(Color.primary.opacity(0.78))
         }
     }
@@ -170,14 +151,6 @@ struct VideoDetailView: View {
 
     @ViewBuilder
     private func actionButtons(_ details: PlexMediaDetails) -> some View {
-        #if os(tvOS)
-        HStack(spacing: detailHeroActionSpacing) {
-            playButton(details)
-            downloadButton(details)
-            subtitleSearchButton()
-            watchedButton()
-        }
-        #else
         // Primary fills the stack width; secondary row is centered beneath it.
         VStack(alignment: .center, spacing: detailHeroActionSpacing) {
             playButton(details)
@@ -187,8 +160,7 @@ struct VideoDetailView: View {
                 watchedButton()
             }
         }
-        .detailHeroActionStackFrame(isCompactPhone: usesFullWidthActionButtons)
-        #endif
+        .detailHeroActionStackFrame(isCompactLayout: usesFullWidthActionButtons)
     }
 
     private func playButton(_ details: PlexMediaDetails) -> some View {
@@ -225,7 +197,6 @@ struct VideoDetailView: View {
                 }
             }
 
-            #if !os(tvOS)
             if viewModel.canDownloadSubtitles {
                 Button {
                     showSubtitleSearch = true
@@ -233,7 +204,6 @@ struct VideoDetailView: View {
                     Label("Download Subtitles", systemImage: "arrow.down.circle")
                 }
             }
-            #endif
         }
     }
 
@@ -246,23 +216,9 @@ struct VideoDetailView: View {
         )
     }
 
-    /// Secondary hero action on tvOS only; iOS reaches the same flow from the
-    /// Play button's context menu so it does not compete with Play.
     @ViewBuilder
     private func subtitleSearchButton() -> some View {
-        #if os(tvOS)
-        if viewModel.canDownloadSubtitles {
-            Button {
-                showSubtitleSearch = true
-            } label: {
-                DetailHeroSecondaryIconLabel(systemImage: "captions.bubble")
-            }
-            .detailHeroNativeSecondaryButtonStyle()
-            .accessibilityLabel("Download Subtitles")
-        }
-        #else
         EmptyView()
-        #endif
     }
 
     private func watchedButton() -> some View {
@@ -279,14 +235,8 @@ struct VideoDetailView: View {
         usesFullWidthDetailActionButtons(for: sizeClass)
     }
 
-    // The primary label fills its container on all iOS layouts (the action stack
-    // owns the final width); tvOS keeps content-sized buttons in an inline row.
     private var fillsActionWidth: Bool {
-        #if os(tvOS)
-        false
-        #else
         true
-        #endif
     }
 
     // MARK: - Description
@@ -298,14 +248,8 @@ struct VideoDetailView: View {
         )
     }
 
-    // YouTube-style descriptions can be very long, so keep the collapsed block
-    // short on iPhone and let "Show More" reveal the rest.
     private var descriptionCollapsedLineLimit: Int {
-        #if os(tvOS)
-        9
-        #else
         4
-        #endif
     }
 
     // MARK: - Channel
@@ -326,9 +270,6 @@ struct VideoDetailView: View {
                 progress: { $0.posterProgress }
             )
             .padding(.top, 40)
-#if os(tvOS)
-            .focusSection()
-#endif
         }
     }
 }

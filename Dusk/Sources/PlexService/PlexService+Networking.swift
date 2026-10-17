@@ -1,8 +1,5 @@
 import Foundation
 import OSLog
-#if canImport(UIKit)
-import UIKit
-#endif
 
 extension PlexService {
     var basePlexHeaders: [String: String] {
@@ -19,16 +16,8 @@ extension PlexService {
     var plexRequestHeaders: [String: String] {
         var headers = basePlexHeaders
 
-        #if os(macOS)
         headers["X-Plex-Platform"] = "macOS"
         headers["X-Plex-Device-Name"] = "Mac"
-        #elseif os(tvOS)
-        headers["X-Plex-Platform"] = "tvOS"
-        headers["X-Plex-Device-Name"] = "Apple TV"
-        #elseif canImport(UIKit)
-        headers["X-Plex-Platform"] = "iOS"
-        headers["X-Plex-Device-Name"] = UIDevice.current.name
-        #endif
 
         return headers
     }

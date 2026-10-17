@@ -25,7 +25,7 @@ struct PlayerSelectionSheet<Item: Identifiable>: View {
                         )
                     }
                     .listRowBackground(Color.duskSurface)
-                    .duskSuppressTVOSButtonChrome()
+
                 }
 
                 ForEach(items) { item in
@@ -39,17 +39,17 @@ struct PlayerSelectionSheet<Item: Identifiable>: View {
                         )
                     }
                     .listRowBackground(Color.duskSurface)
-                    .duskSuppressTVOSButtonChrome()
+
                 }
             }
             .duskScrollContentBackgroundHidden()
             .background(Color.duskBackground)
             .duskNavigationTitle(title)
-            .duskNavigationBarTitleDisplayModeInline()
+
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done", action: onDismiss)
-                        .duskSuppressTVOSButtonChrome()
+
                 }
             }
         }
@@ -61,12 +61,12 @@ struct PlayerSelectionSheet<Item: Identifiable>: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .duskFont(tvOnly: DuskFont.TV.rowTitle)
+
                     .foregroundStyle(Color.duskTextPrimary)
 
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
-                        .font(DuskFont.caption(ios: .caption))
+                        .font(DuskFont.caption(style: .caption))
                         .foregroundStyle(Color.duskTextSecondary)
                 }
             }
@@ -75,7 +75,7 @@ struct PlayerSelectionSheet<Item: Identifiable>: View {
 
             if isSelected {
                 Image(systemName: "checkmark")
-                    .font(DuskFont.glyphSmall(ios: .caption.weight(.bold)))
+                    .font(DuskFont.glyphSmall(style: .caption.weight(.bold)))
                     .foregroundStyle(Color.duskTextPrimary)
             }
         }

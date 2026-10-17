@@ -75,7 +75,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-Playback also uses VLCKit (MobileVLCKit / TVVLCKit), linked dynamically and
+Playback also uses desktop VLCKit, linked dynamically and
 licensed under the GNU LGPL v2.1. Dolby, Dolby Vision and the double-D symbol
 are trademarks of Dolby Laboratories; Dusk is not affiliated with or certified
 by Dolby.

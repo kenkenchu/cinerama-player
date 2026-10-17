@@ -6,11 +6,7 @@ struct SeerrSettingsView: View {
 
     var body: some View {
         Group {
-            #if os(tvOS)
-            tvContent
-            #else
-            iosContent
-            #endif
+            settingsContent
         }
         .background(Color.duskBackground.ignoresSafeArea())
         .duskNavigationTitle("Seerr")
@@ -31,16 +27,10 @@ struct SeerrSettingsView: View {
         }
     }
 
-    #if !os(tvOS)
-    private var iosContent: some View {
+    private var settingsContent: some View {
         List {
             Section {
                 TextField("Server URL", text: $viewModel.serverURL)
-                    #if os(iOS)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                    .keyboardType(.URL)
-                    #endif
                     .disabled(seerrService.isConnected || viewModel.isWorking)
 
                 connectionRow
@@ -85,79 +75,16 @@ struct SeerrSettingsView: View {
         }
         .scrollContentBackground(.hidden)
     }
-    #endif
 
-    #if os(tvOS)
-    private var tvContent: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: TVSettingsMetrics.sectionSpacing) {
-                TVSettingsSection(
-                    title: "Server",
-                    footer: "Enter the address you use for Seerr."
-                ) {
-                    TVSettingsURLFieldRow(
-                        prompt: "Server URL",
-                        text: $viewModel.serverURL,
-                        isDisabled: seerrService.isConnected || viewModel.isWorking
-                    )
-
-                    tvRowDivider
-                    connectionRow
-                }
-
-                if let errorMessage = viewModel.errorMessage ?? seerrService.lastConnectionError {
-                    TVSettingsSection(title: "Connection") {
-                        Text(errorMessage)
-                            .font(DuskFont.TV.rowValue)
-                            .foregroundStyle(Color.duskTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(
-                                maxWidth: .infinity,
-                                minHeight: TVSettingsMetrics.rowMinHeight,
-                                alignment: .leading
-                            )
-                    }
-                }
-
-                TVSettingsSection(
-                    title: "Account",
-                    footer: "This connection is kept separate for each Plex Home user and Plex server."
-                ) {
-                    if seerrService.isConnected {
-                        TVSettingsActionRow(
-                            title: "Disconnect",
-                            tint: .red,
-                            role: .destructive,
-                            isLoading: viewModel.isWorking
-                        ) {
-                            Task { await viewModel.disconnect(using: seerrService) }
-                        }
-                    } else {
-                        TVSettingsActionRow(
-                            title: "Connect with Plex",
-                            isLoading: viewModel.isWorking
-                        ) {
-                            Task { await viewModel.prepareConnection(using: seerrService) }
-                        }
-                    }
-                }
-            }
-            .frame(maxWidth: 980, alignment: .leading)
-            .padding(.horizontal, 60)
-            .padding(.top, 48)
-            .padding(.bottom, 88)
-        }
-    }
-    #endif
 
     private var connectionRow: some View {
         HStack(spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Status")
-                    .duskFont(tvOnly: DuskFont.TV.rowTitle)
+
                     .foregroundStyle(Color.duskTextPrimary)
                 Text(seerrService.connectionSubtitle)
-                    .font(DuskFont.caption(ios: .caption))
+                    .font(DuskFont.caption(style: .caption))
                     .foregroundStyle(Color.duskTextSecondary)
             }
             Spacer()
@@ -171,9 +98,5 @@ struct SeerrSettingsView: View {
         return seerrService.isConnected ? .good : .neutral
     }
 
-    private var tvRowDivider: some View {
-        Rectangle()
-            .fill(Color.duskTextSecondary.opacity(0.16))
-            .frame(height: 1)
-    }
+
 }

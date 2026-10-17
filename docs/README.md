@@ -1,75 +1,28 @@
-# Dusk Agent Docs
+# Dusk Player for Mac Documentation
 
-This directory is the working map for future agents. It sits between the short
-root-level overview files and the source itself:
+These are the active guides for the **macOS-only** fork. Read `AGENTS.md` first,
+then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
+`STYLE.md` at the repository root is the visual source of truth.
 
-- `product-and-scope.md` explains product intent and long-lived constraints.
-- `codebase-map.md` gives the quick source tree map.
-- `STYLE.md` is the visual source of truth.
-- `docs/` explains how the current implementation is wired and where to make
-  changes safely.
+| Guide | Responsibility |
+| --- | --- |
+| [Product and scope](product-and-scope.md) | Supported Mac platform, feature scope, privacy, licensing |
+| [Codebase map](codebase-map.md) | Source ownership and extension points |
+| [Development workflow](development-workflow.md) | Mac bootstrap, signing, verification, and fork updates |
+| [UI features](ui-features.md) | Sidebar, native player, reusable UI, and settings |
+| [Playback](playback.md) | Engines, source selection, remux, timing, and track selection |
+| [Plex data](data-and-plex.md) | Account/session pool, API boundaries, models, merging |
+| [Downloads and offline](downloads-and-offline.md) | Queue, local storage, offline state, and sync |
+| [Seerr](seerr-integration.md) | Optional request integration and credential boundaries |
+| [Analytics](analytics.md) | Existing Mac reporting, opt-out, and closed vocabulary |
+| [Siri](siri.md) | Inherited App Intents and Mac validation limits |
+| [Screenshots](screenshots.md) | Mac visual verification and capture limits |
 
-## Reading Order
+[Historical upstream references](upstream/README.md) preserve old mobile/TV UI,
+playback, StoreKit, App Store, and debugging notes. They describe removed code
+and are not current feature promises, verification gates, or deployment steps.
 
-Agents must read the repo-local `AGENTS.md` before planning, editing,
-committing, or pushing. It is the source of truth for workflow expectations,
-verification, and multi-agent git hygiene.
-
-1. `AGENTS.md`
-2. `AGENTS.local.md` when present
-3. `codebase-map.md`
-4. `STYLE.md` when touching UI
-5. The relevant file in this directory
-6. The source files referenced by that doc
-
-For most feature work, start with `codebase-map.md`, then jump to the topic file
-that owns the behavior you are changing.
-
-## Files
-
-- `codebase-map.md`: source layout, ownership boundaries, and where new code goes.
-- `product-and-scope.md`: product intent, platform targets, non-goals, and
-  long-lived project constraints.
-- `data-and-plex.md`: `PlexService`, Plex models, requests, images, and API shape.
-- `seerr-integration.md`: optional Plex-token Seerr connection, merged search,
-  request-only detail flows, and missing-season enrichment.
-- `playback.md`: playback coordinator, resolver, engines, player UI, timeline,
-  scrobble, and up next.
-- `audio-silence-postmortem.md`: the 2026-07 VLCKit silent-audio saga — the
-  real bugs, the false leads, the audio revive mitigation, and the on-device
-  diagnostic tooling. MANDATORY reading before touching VLCKit audio,
-  playback recovery, or anything gated on "steady playback".
-- `ui-features.md`: app shell, shared SwiftUI primitives, home, libraries, detail,
-  search, settings, and platform UI rules.
-- `supporter.md`: supporter tier — StoreKit products and status rules, the
-  prompt scheduling, and alternate app icons.
-- `analytics.md`: the self-hosted anonymous event reporting — the hard rules
-  that keep the privacy policy accurate, the event list, and how to add one.
-  MANDATORY reading before adding or changing any reported event.
-- `siri.md`: "Play <title> in Dusk" — App Intents routes, title resolution,
-  the Siri title catalog, and what only a device can verify.
-- `downloads-and-offline.md`: download queue, local file storage, metadata cache,
-  offline playback, and delayed watch-state sync.
-- `development-workflow.md`: setup, project generation, verification, git, and doc
-  maintenance workflow.
-
-## Depth And Style
-
-Docs should be concise but operational. Prefer:
-
-- the responsibility of a component;
-- the important data/control flow;
-- extension points and where to edit;
-- invariants and traps that are easy to break;
-- verification steps for the area.
-
-Avoid:
-
-- restating every method or property;
-- duplicating code comments;
-- stale TODO lists without a concrete owner;
-- giant files that try to document the whole app.
-
-When a meaningful code change alters a flow, boundary, reusable component,
-preference, or setup/verification step, update the matching doc in the same
-change.
+Keep active docs concise and operational. Update the owning guide with a
+meaningful flow, component, setting, setup, or verification change. Preserve
+useful upstream history in the archive rather than mixing platform requirements
+into the Mac guides.

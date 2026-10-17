@@ -10,39 +10,8 @@ struct ShowAllCarouselTile: View {
     let width: CGFloat
     var imageAspectRatio: CGFloat = 2.0 / 3.0
 
-    #if os(tvOS)
-    @FocusState private var isFocused: Bool
-    #endif
 
     var body: some View {
-        #if os(tvOS)
-        let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
-
-        NavigationLink(value: route) {
-            label
-                .foregroundStyle(isFocused ? Color.duskBackground : Color.duskTextPrimary)
-                .background {
-                    shape
-                        .fill(isFocused ? Color.duskTextPrimary : Color.duskSurface)
-
-                    shape
-                        .strokeBorder(
-                            isFocused
-                                ? Color.duskTextPrimary
-                                : Color.duskTextSecondary.opacity(0.5),
-                            style: StrokeStyle(lineWidth: 2, dash: [10, 8])
-                        )
-                }
-        }
-        .duskSuppressTVOSButtonChrome()
-        .focused($isFocused)
-        .carouselLeadingFocusTarget()
-        .duskTVOSFocusEffectShape(shape, scales: false)
-        .frame(width: width, alignment: .topLeading)
-        .duskTVOSFocusedScale(isFocused)
-        .zIndex(isFocused ? 1 : 0)
-        .accessibilityLabel("Show all")
-        #else
         let shape = RoundedRectangle(
             cornerRadius: PosterArtwork.cornerRadius,
             style: .continuous
@@ -66,7 +35,6 @@ struct ShowAllCarouselTile: View {
         .buttonStyle(.plain)
         .frame(width: width, alignment: .topLeading)
         .accessibilityLabel("Show all")
-        #endif
     }
 
     private var label: some View {
@@ -87,27 +55,15 @@ struct ShowAllCarouselTile: View {
     }
 
     private var labelSpacing: CGFloat {
-        #if os(tvOS)
-        isHorizontalArtwork ? 10 : 14
-        #else
         isHorizontalArtwork ? 6 : 10
-        #endif
     }
 
     private var iconSize: CGFloat {
-        #if os(tvOS)
-        min(width * 0.16, 44)
-        #else
         min(width * 0.18, 34)
-        #endif
     }
 
     private var labelFont: Font {
-        #if os(tvOS)
-        DuskFont.TV.buttonLabel
-        #else
         .subheadline.weight(.semibold)
-        #endif
     }
 }
 
@@ -143,7 +99,7 @@ struct PlexItemPosterCarouselSection<ContextMenuContent: View>: View {
                 ) {
                     contextMenuContent(item)
                 }
-                .carouselItemFocusLock(isLeadingItem: item.id == items.first?.id)
+
             }
 
             if let showAllRoute {
@@ -152,7 +108,7 @@ struct PlexItemPosterCarouselSection<ContextMenuContent: View>: View {
                     width: posterWidth,
                     imageAspectRatio: imageAspectRatio
                 )
-                .carouselItemFocusLock(isLeadingItem: items.isEmpty)
+
             }
         }
     }
@@ -217,7 +173,7 @@ struct PlexItemActionCarouselSection<ContextMenuContent: View>: View {
                 ) {
                     contextMenuContent(item)
                 }
-                .carouselItemFocusLock(isLeadingItem: item.id == items.first?.id)
+
             }
 
             if let showAllRoute {
@@ -226,7 +182,7 @@ struct PlexItemActionCarouselSection<ContextMenuContent: View>: View {
                     width: posterWidth,
                     imageAspectRatio: imageAspectRatio
                 )
-                .carouselItemFocusLock(isLeadingItem: items.isEmpty)
+
             }
         }
     }

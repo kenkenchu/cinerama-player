@@ -32,38 +32,10 @@ resolved host. Dusk then:
 4. stores the returned session cookies in Keychain;
 5. verifies/restores sessions through `/api/v1/auth/me`.
 
-There is no browser, local Seerr password, or API-key mode. This keeps tvOS setup
-to URL entry using the system keyboard (including iPhone Remote keyboard input).
-HTTP URLs are allowed for local deployments, but probing never sends a Plex
-credential and the confirmation explicitly warns when the resolved credential
-transport is unencrypted. On tvOS the URL editor is a flat settings row with
-appearance-aware text and the shared row focus treatment. Selecting it opens a
-system text-entry alert and keyboard. Do not put a live `TextField` back inside
-the section card: tvOS forces focused inline text fields into a white editing
-capsule that conflicts with the grouped settings layout.
-
-Request confirmations are attached to the request control so iPad presents them
-from that button. Once an item is no longer requestable, the action is replaced
-by a noninteractive, appearance-aware status capsule rather than a disabled
-primary button. Seerr movie, show, and season detail scroll views support native
-pull-to-refresh so request and availability state can be fetched on demand.
-
-Sessions are partitioned by normalized Seerr URL, active Plex profile ID, and a
-Plex server ID. A Seerr instance is configured against one Plex server, so the
-binding is `plexService.seerrBindingServerID`: the first **enabled** entry of
-Server Priority (falling back to the first entry). That value is persisted, so
-it is already known at launch before any server has answered and it does not
-move when the top server is offline — unlike `pool.primary?.serverID`, which
-would flip the binding and make an existing session look unconfigured. Seerr is
-deliberately not merged across servers.
-
-Session matching is tolerant on purpose: the bound server wins, but a stored
-session recorded against any other server this account knows still counts as
-connected, so an upgrade never forces the user to re-link the same Seerr
-instance. Sessions whose stored id is a pre-multi-server base URL are re-keyed
-once through `plexService.serverID(forLegacyConnectionURI:)` when it resolves.
-Changing Plex Home identity never reuses another profile's Seerr session, and
-signing out of Plex clears stored Seerr sessions.
+The native Mac setup uses the Seerr settings form and active Plex identity;
+there is no separate Seerr password/API-key mode. HTTP is allowed for local
+servers, but probes never send credentials and confirmation warns when the
+resolved host uses unencrypted transport. Preserve the explicit host consent.
 
 ## Search And Detail Flow
 
@@ -116,7 +88,7 @@ wrong series. Seerr failures are ignored so Plex detail loading remains intact.
 
 ## Verification
 
-Compile both the iOS and tvOS schemes after changes. On-device checking should
+Run the signed Mac compile after changes. Explicitly authorized runtime checks should
 cover a Plex-enabled Seerr, an unauthorized Plex Home member, reconnect after a
 session expires, pending/approved/available states, partial TV requests, an
 offline Plex show, and a show with an exact TMDB GUID plus missing seasons.

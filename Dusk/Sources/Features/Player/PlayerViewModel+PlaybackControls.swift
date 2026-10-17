@@ -16,13 +16,7 @@ extension PlayerViewModel {
     private static let stallRecoveryCooldown: TimeInterval = 8.0
     private static let stallProgressTolerance: TimeInterval = 0.75
     private static let maxStallRecoveryAttempts = 2
-    #if os(tvOS)
-    /// tvOS tunables live together in `PlayerTVHUDLayout` so they can be
-    /// adjusted in one on-device pass.
-    private static let controlsAutoHideDelay: TimeInterval = PlayerTVHUDLayout.autoHideDelay
-    #else
     private static let controlsAutoHideDelay: TimeInterval = 4.0
-    #endif
     // The settings menu is a deliberate, multi-step interaction (open the menu,
     // read the options, drill into a picker), so it gets a longer auto-hide
     // window than a normal tap to avoid the HUD vanishing mid-selection.
@@ -155,10 +149,6 @@ extension PlayerViewModel {
         }
     }
 
-    /// Sets the session's playback speed. Platform-neutral; today only the
-    /// tvOS settings panel exposes it. A live session has no rate to change
-    /// and a transient 2× boost wins until it is released — the boost's own
-    /// `endSpeedBoost()` then restores whatever was chosen here.
     func setPlaybackRate(_ rate: Float) {
         guard liveTVContext == nil else { return }
         guard playbackRate != rate else { return }
@@ -188,11 +178,6 @@ extension PlayerViewModel {
         noteControlsInteraction()
     }
 
-    /// Records the current player orientation (portrait vs landscape) and
-    /// applies that orientation's saved zoom-to-fill choice. Portrait and
-    /// landscape keep independent settings, so rotating swaps the framing to
-    /// whatever that orientation was last left at. Driven by the player's
-    /// layout size, so it also covers iPad multitasking window shape changes.
     func updateVideoOrientation(isLandscape: Bool) {
         guard isLandscapeVideoOrientation != isLandscape else { return }
         isLandscapeVideoOrientation = isLandscape
@@ -295,13 +280,6 @@ extension PlayerViewModel {
     }
 
     func touchControls() {
-        #if os(tvOS)
-        // Skip Intro can run without revealing the tvOS HUD.
-        if suppressControlsReveal {
-            scheduleHide()
-            return
-        }
-        #endif
 
         let shouldRevealControls = !showControls
         if shouldRevealControls {
@@ -353,9 +331,6 @@ extension PlayerViewModel {
         scheduleHide()
     }
 
-    /// `precise` defaults to frame-accurate for deliberate targets (marker
-    /// skips, tvOS preview commits); `seek(by:)` opts transient double-tap and
-    /// remote skip jumps into the engine's fast keyframe-tolerant path.
     func seek(to position: TimeInterval, revealControls: Bool, precise: Bool = true) {
         let clampedPosition = clampedSeekPosition(position)
 
@@ -475,9 +450,6 @@ extension PlayerViewModel {
     }
 
     private var canAutoHideControls: Bool {
-        #if DEBUG && !os(macOS)
-        if ScreenshotMode.keepsPlayerHUD { return false }
-        #endif
         return showControls &&
             controlsAutoHideIsArmed &&
             !isScrubbing &&

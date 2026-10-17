@@ -114,16 +114,12 @@ final class ServerPrioritySettingsViewModel {
 
     // MARK: - Editing
 
-    /// iOS/iPadOS list editing. The offsets index the visible rows, which is not
-    /// the stored order — a server that has gone missing keeps its slot in the
-    /// store — so the reordered identifiers are handed back whole.
     func move(fromOffsets offsets: IndexSet, toOffset destination: Int) {
         var identifiers = rows.map(\.id)
         identifiers.move(fromOffsets: offsets, toOffset: destination)
         plexService.serverPriority.reorder(visible: identifiers)
     }
 
-    /// tvOS position menus: move one server to an absolute slot.
     func move(_ serverID: String, to index: Int) {
         var identifiers = rows.map(\.id)
         guard let current = identifiers.firstIndex(of: serverID) else { return }

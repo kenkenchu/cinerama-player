@@ -2,19 +2,18 @@
 set -euo pipefail
 
 # Builds Native/DuskDovi (Rust, over quietvoid's dolby_vision crate) into
-# Frameworks/DuskDovi.xcframework: static libraries for macOS, iOS and tvOS, device
-# and simulator, arm64 only (like VLCKit). The xcframework is git-ignored;
+# Frameworks/DuskDovi.xcframework: an Apple silicon macOS static library. The xcframework is git-ignored;
 # ci_scripts/install_dusk_dovi.sh calls this only when the sources changed.
 #
 # Uses rustup with the toolchain pinned in rust-toolchain.toml. Never call a
 # bare `cargo`: Homebrew's cargo/rustc are often first on PATH and ship no
-# iOS/tvOS standard library.
+# pinned target standard library.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CRATE_DIR="${ROOT_DIR}/Native/DuskDovi"
 OUTPUT_DIR="${ROOT_DIR}/Frameworks/DuskDovi.xcframework"
 STAGE_DIR="${ROOT_DIR}/.build/dusk-dovi-stage"
-TARGETS=(aarch64-apple-darwin aarch64-apple-ios aarch64-apple-ios-sim aarch64-apple-tvos aarch64-apple-tvos-sim)
+TARGETS=(aarch64-apple-darwin)
 
 TOOLCHAIN="$(sed -n 's/^channel *= *"\(.*\)"/\1/p' "${CRATE_DIR}/rust-toolchain.toml")"
 
@@ -32,14 +31,12 @@ fi
 deployment_target() {
     sed -n "s/^    $1: *\"\(.*\)\"/\1/p" "${ROOT_DIR}/project.yml" | head -1
 }
-IPHONEOS_DEPLOYMENT_TARGET="$(deployment_target iOS)"
-TVOS_DEPLOYMENT_TARGET="$(deployment_target tvOS)"
 MACOSX_DEPLOYMENT_TARGET="$(deployment_target macOS)"
-if [ -z "${TOOLCHAIN}" ] || [ -z "${IPHONEOS_DEPLOYMENT_TARGET}" ] || [ -z "${TVOS_DEPLOYMENT_TARGET}" ] || [ -z "${MACOSX_DEPLOYMENT_TARGET}" ]; then
-    echo "error: could not read the Rust toolchain or the deployment targets." >&2
+if [ -z "${TOOLCHAIN}" ] || [ -z "${MACOSX_DEPLOYMENT_TARGET}" ]; then
+    echo "error: could not read the Rust toolchain or macOS deployment target." >&2
     exit 1
 fi
-export IPHONEOS_DEPLOYMENT_TARGET TVOS_DEPLOYMENT_TARGET MACOSX_DEPLOYMENT_TARGET
+export MACOSX_DEPLOYMENT_TARGET
 
 installed_targets="$("${RUSTUP}" target list --installed --toolchain "${TOOLCHAIN}" 2>/dev/null || true)"
 for target in "${TARGETS[@]}"; do

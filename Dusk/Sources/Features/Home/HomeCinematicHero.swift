@@ -1,19 +1,9 @@
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-#endif
 
 struct HomeCinematicHeroLayout {
     var heroHeightFactor: CGFloat = 0.72
     var heroHeightRange: ClosedRange<CGFloat> = 520 ... 760
-    /// When true the hero ignores `heroHeightFactor` / `heroHeightRange` and
-    /// simply takes the container height it is handed, unmodified (no
-    /// `topInset` addition — the caller already sized the container to the whole
-    /// display). tvOS uses this for the full-bleed cinematic home hero.
     var fillsContainerHeight: Bool = false
-    /// Caps the factor-derived height (before `topInset`) at this multiple of
-    /// the container width, so a tall portrait iPad doesn't crop a 16:9
-    /// backdrop down to a sliver. Ignored with `fillsContainerHeight`.
     var maxHeightToWidthRatio: CGFloat? = nil
     var maxContentWidth: CGFloat = 620
     var contentHorizontalPadding: CGFloat = 20
@@ -31,8 +21,6 @@ struct HomeCinematicHeroLayout {
     var titleLogoMaxWidth: CGFloat = 420
     var titleLogoMaxHeight: CGFloat = 108
     var backdropImageAlignment: Alignment = .center
-    /// tvOS-only bottom mask of the backdrop + overlay stack. iOS ignores it.
-    var backdropBottomFadeStyle: DuskHeroBottomFadeStyle = .compact
     /// Scrim strength of `DuskHeroBackdropOverlay`.
     var backdropOverlayStyle: DuskHeroOverlayStyle = .standard
     /// Gap between the title (logo or text) and the lines under it. Movies have
@@ -45,15 +33,7 @@ struct HomeCinematicHeroLayout {
     var summaryLineLimit: Int = 3
     var summaryLineSpacing: CGFloat = 4
 
-    static let ios = HomeCinematicHeroLayout(summaryLineLimit: 2)
-    /// iPad (regular width): a near-full-screen take on the tvOS hero. It fills
-    /// the scroll viewport down to the bottom inset, so only the first shelf's
-    /// header and the top of its posters peek in under it — enough of a hint
-    /// that the page scrolls, since iPad has no tvOS-style "More" affordance.
-    /// Portrait is held to a square (`maxHeightToWidthRatio`) to keep the
-    /// backdrop's crop sane, and `.cinematic` keeps the artwork nearly clear
-    /// above the title block.
-    static let iPad = HomeCinematicHeroLayout(
+    static let desktop = HomeCinematicHeroLayout(
         heroHeightFactor: 1,
         heroHeightRange: 560 ... 1200,
         maxHeightToWidthRatio: 1,
@@ -76,44 +56,7 @@ struct HomeCinematicHeroLayout {
         metadataFont: .callout.weight(.medium),
         summaryLineLimit: 3
     )
-    /// Apple TV: the hero owns the **entire** screen. Heights come from the
-    /// container (`fillsContainerHeight`), and the paddings below are measured
-    /// from the real display edges, not from a banner box:
-    ///
-    /// - `contentBottomPaddingWithPager` sits the text/button block just above
-    ///   the pager pills. The "More" hint `HomeTVView` overlays is bottom
-    ///   *centre*, and the lowest thing in this leading-aligned block is the
-    ///   narrow play button, so the block only has to clear the pills.
-    /// - `pagerBottomPadding` = 60pt overscan inset + ~18pt so the pills share a
-    ///   baseline with that hint.
-    static let tv = HomeCinematicHeroLayout(
-        heroHeightFactor: 1,
-        heroHeightRange: 560 ... 2160,
-        fillsContainerHeight: true,
-        maxContentWidth: 920,
-        contentHorizontalPadding: 56,
-        contentTopPadding: 64,
-        contentBottomPaddingWithPager: 124,
-        contentBottomPaddingWithoutPager: 96,
-        actionsTopPadding: 10,
-        actionsBottomPadding: 8,
-        pagerHorizontalPadding: 56,
-        pagerBottomPadding: 78,
-        pagerMaxVisibleItems: 10,
-        titleFontSize: DuskFont.TV.Size.heroTitle,
-        titleLogoMaxWidth: 640,
-        titleLogoMaxHeight: 150,
-        backdropImageAlignment: .center,
-        backdropBottomFadeStyle: .fullBleed,
-        backdropOverlayStyle: .cinematic,
-        titleBlockSpacingMovie: 14,
-        titleBlockSpacingOther: 10,
-        episodeTitleFont: DuskFont.TV.heroSubtitle,
-        metadataFont: DuskFont.TV.metadata,
-        summaryFont: DuskFont.TV.body,
-        summaryLineLimit: 3,
-        summaryLineSpacing: 3
-    )
+
 }
 
 struct HomeCinematicHeroCallbacks {
@@ -136,25 +79,10 @@ struct HomeCinematicHero: View {
     let topInset: CGFloat
     var contentLeadingInset: CGFloat = 0
     var contentTrailingInset: CGFloat = 0
-    var layout: HomeCinematicHeroLayout = .ios
+    var layout: HomeCinematicHeroLayout = .desktop
     var autoRotates = true
     var supportsDragNavigation = false
     let selectionResetRevision: Int
-    /// tvOS: the hero's `onMoveCommand(.down)`. It fires for every down move
-    /// from the play button, whether or not the focus engine moved focus for
-    /// it; `HomeTVView` decides what the move amounts to.
-    var onMoveDown: (() -> Void)? = nil
-    /// tvOS: the `storageKey` of the page whose play button has focus, `nil`
-    /// while focus is anywhere else. Rotation only runs while it is set.
-    var focusedItemKey: String? = nil
-    /// tvOS: moves focus to that page's play button. Rotation and the
-    /// wrap-around at either end page through it, so a page change is always
-    /// the focus engine's own move and scroll.
-    var onFocusItem: ((PlexItem) -> Void)? = nil
-    /// tvOS: the `storageKey` of the page on screen, whenever it changes.
-    /// It follows the page scroll, so it is the page actually showing even
-    /// when focus is elsewhere and the hero has been reset or refilled.
-    var onVisibleItemChange: ((String?) -> Void)? = nil
     let primaryAction: (PlexItem, HomeCinematicHeroCallbacks) -> AnyView
     var secondaryAction: ((PlexItem, HomeCinematicHeroCallbacks) -> AnyView)? = nil
     var detailsAction: ((PlexItem) -> Void)? = nil
@@ -173,26 +101,10 @@ struct HomeCinematicHero: View {
     @State private var heroDragTargetIndex: Int?
     @State private var heroDragRevision = 0
     @State private var isHeroDragging = false
-    #if os(tvOS)
-    /// The horizontal page scroll of the tvOS hero. See `tvPages`.
-    @State private var tvPagePosition = ScrollPosition()
-    #endif
-    #if canImport(UIKit)
-    @State private var preloadedHeroBackdropImages: [String: UIImage] = [:]
-    @State private var preloadedHeroTitleImages: [String: UIImage] = [:]
-    @State private var failedHeroTitleImageKeys: Set<String> = []
-    #endif
 
     private let heroRotationInterval: UInt64 = 7_000_000_000
 
-    /// Duration of a user-driven hero move (remote press, pager tap, chevron).
-    /// tvOS is shorter: every Siri Remote click waits on this slide, so the
-    /// iOS-paced 0.5s read as lag there.
-    #if os(tvOS)
-    private let heroPressTransitionDuration: TimeInterval = 0.32
-    #else
     private let heroPressTransitionDuration: TimeInterval = 0.5
-    #endif
 
     var body: some View {
         let resolvedIndex = resolvedHeroIndex
@@ -278,24 +190,6 @@ struct HomeCinematicHero: View {
             await preloadHeroTitleImages(width: titleLogoWidth, height: titleLogoHeight)
         }
 
-        #if os(tvOS)
-        return baseHero
-            .duskTVOSStandardImageDynamicRange()
-            .onMoveCommand(perform: handleHeroMoveCommand)
-            // Focus arriving on a play button (Home on screen, back from the
-            // shelves or the tab bar, a page change) starts a fresh interval;
-            // focus going anywhere else holds the rotation where it is.
-            .onChange(of: focusedItemKey) { _, key in
-                if key == nil {
-                    pauseHeroRotation()
-                } else {
-                    restartHeroRotation()
-                }
-            }
-            .onChange(of: visibleItemKey, initial: true) { _, key in
-                onVisibleItemChange?(key)
-            }
-        #else
         if supportsDragNavigation {
             return AnyView(
                 baseHero
@@ -308,30 +202,10 @@ struct HomeCinematicHero: View {
                                 handleHeroDragEnded(value, heroWidth: heroWidth)
                             }
                     )
-                    #if os(iOS)
-                    .background(
-                        HeroIndirectScrollNavigation(
-                            isEnabled: supportsDragNavigation && heroItemIDs.count > 1,
-                            onChanged: { horizontalOffset in
-                                handleHeroIndirectScrollChanged(
-                                    horizontalOffset: horizontalOffset
-                                )
-                            },
-                            onEnded: { horizontalOffset, predictedHorizontalOffset in
-                                handleHeroIndirectScrollEnded(
-                                    horizontalOffset: horizontalOffset,
-                                    predictedHorizontalOffset: predictedHorizontalOffset,
-                                    heroWidth: heroWidth
-                                )
-                            }
-                        )
-                    )
-                    #endif
             )
         } else {
             return AnyView(baseHero)
         }
-        #endif
     }
 
     @ViewBuilder
@@ -343,15 +217,6 @@ struct HomeCinematicHero: View {
         backdropHeight: Int,
         contentWidth: CGFloat
     ) -> some View {
-        #if os(tvOS)
-        tvPages(
-            heroWidth: heroWidth,
-            heroHeight: heroHeight,
-            backdropWidth: backdropWidth,
-            backdropHeight: backdropHeight,
-            contentWidth: contentWidth
-        )
-        #else
         ZStack(alignment: .bottomLeading) {
             if let backgroundHeroIndex,
                items.indices.contains(backgroundHeroIndex) {
@@ -382,63 +247,8 @@ struct HomeCinematicHero: View {
                 .zIndex(1)
             }
         }
-        #endif
     }
 
-    #if os(tvOS)
-    /// tvOS: every hero item is a full-width page of one horizontal scroll
-    /// view, and each page carries its own play button.
-    ///
-    /// Paging is therefore an ordinary focus move: left/right from one play
-    /// button goes to its neighbour a page away, and the focus engine scrolls
-    /// it into view (snapped to whole pages by `HomeHeroTVPaging`). Clicks and
-    /// touch-surface swipes are the engine's own, exactly as in any row of
-    /// cards. The hero used to be a single slide with the only focusable item
-    /// on screen, paged by `onMoveCommand`; with nothing to the left or right
-    /// the engine had no horizontal move to make, and the arc of a sideways
-    /// swipe ended as a move down into the shelves.
-    ///
-    /// Not lazy: a page the engine is to move to must exist before it is on
-    /// screen, and the hero holds at most `heroItemLimit` items.
-    private func tvPages(
-        heroWidth: CGFloat,
-        heroHeight: CGFloat,
-        backdropWidth: Int,
-        backdropHeight: Int,
-        contentWidth: CGFloat
-    ) -> some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 0) {
-                ForEach(items, id: \.id) { item in
-                    heroSlide(
-                        item: item,
-                        heroHeight: heroHeight,
-                        backdropWidth: backdropWidth,
-                        backdropHeight: backdropHeight,
-                        contentWidth: contentWidth,
-                        reservesPagerSpace: items.count > 1
-                    )
-                    .frame(width: heroWidth, height: heroHeight)
-                }
-            }
-        }
-        .scrollIndicators(.hidden)
-        .contentMargins(.zero, for: .scrollContent)
-        .scrollPosition($tvPagePosition)
-        .scrollTargetBehavior(
-            HomeHeroTVPaging(
-                pageWidth: heroWidth,
-                actionLeadingInset: contentLeadingInset + layout.contentHorizontalPadding
-            )
-        )
-        .onScrollGeometryChange(for: Int.self) { geometry in
-            guard heroWidth > 0 else { return 0 }
-            return Int(((geometry.contentOffset.x + geometry.contentInsets.leading) / heroWidth).rounded())
-        } action: { _, page in
-            currentHeroIndex = min(max(page, 0), max(items.count - 1, 0))
-        }
-    }
-    #endif
 
     private var actionCallbacks: HomeCinematicHeroCallbacks {
         HomeCinematicHeroCallbacks(
@@ -450,11 +260,7 @@ struct HomeCinematicHero: View {
     }
 
     private static var initialHeroIndex: Int {
-        #if DEBUG && !os(macOS)
-        ScreenshotMode.heroIndex ?? 0
-        #else
         0
-        #endif
     }
 
     private var resolvedHeroIndex: Int {
@@ -493,16 +299,8 @@ struct HomeCinematicHero: View {
         ].joined(separator: "::")
     }
 
-    /// tvOS: rotation pages by moving focus between the pages' play buttons,
-    /// so it only runs while one of them has focus. That also holds it while
-    /// Home is behind another tab or the player, and keeps it from paging a
-    /// hero the user is not looking at.
     private var isRotationSuspended: Bool {
-        #if os(tvOS)
-        focusedItemKey == nil
-        #else
         false
-        #endif
     }
 
     private var backgroundHeroIndex: Int? {
@@ -542,21 +340,6 @@ struct HomeCinematicHero: View {
 
                 DuskHeroBackdropOverlay(style: layout.backdropOverlayStyle)
             }
-            .duskHeroBackdropBottomFade(layout.backdropBottomFadeStyle)
-
-            #if os(iOS)
-            if let detailsAction {
-                Rectangle()
-                    .fill(Color.white.opacity(0.001))
-                    .contentShape(Rectangle())
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .onTapGesture {
-                        restartHeroRotation()
-                        detailsAction(item)
-                    }
-                    .accessibilityHidden(true)
-            }
-            #endif
 
             VStack(alignment: heroContentHorizontalAlignment, spacing: 16) {
                 VStack(alignment: heroContentHorizontalAlignment, spacing: heroTitleBlockSpacing(for: item)) {
@@ -609,21 +392,11 @@ struct HomeCinematicHero: View {
     }
 
     private var showsHeroSummary: Bool {
-        #if os(iOS)
-        UIDevice.current.userInterfaceIdiom != .phone
-        #else
         true
-        #endif
     }
 
-    // iPhone centers the entire hero block — title logo, text, action button, and
-    // pager — while iPad and tvOS keep the leading-aligned cinematic layout.
     private var centersHeroContent: Bool {
-        #if os(iOS)
-        UIDevice.current.userInterfaceIdiom == .phone
-        #else
         false
-        #endif
     }
 
     private var heroContentHorizontalAlignment: HorizontalAlignment {
@@ -655,22 +428,7 @@ struct HomeCinematicHero: View {
 
     @ViewBuilder
     private func heroTitleArtwork(for item: PlexItem, width: CGFloat, height: CGFloat) -> some View {
-        #if canImport(UIKit)
-        if let image = preloadedHeroTitleImages[item.id.storageKey] {
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFit()
-                .shadow(color: .black.opacity(0.24), radius: 10, y: 4)
-                .frame(width: width, height: height, alignment: heroContentBlockAlignment)
-        } else if failedHeroTitleImageKeys.contains(item.id.storageKey) {
-            heroTitleFallback(for: item)
-        } else {
-            Color.clear
-                .frame(width: width, height: height, alignment: heroContentBlockAlignment)
-        }
-        #else
         heroTitleFallback(for: item)
-        #endif
     }
 
     private func heroTitleFallback(for item: PlexItem) -> some View {
@@ -724,14 +482,6 @@ struct HomeCinematicHero: View {
 
         let pills = HStack(spacing: 8) {
             ForEach(Array(window.range), id: \.self) { index in
-                #if os(tvOS)
-                HomeHeroPagerPill(
-                    isActive: index == currentIndex,
-                    progress: pagerProgress(for: index, currentIndex: currentIndex, date: date)
-                )
-                .scaleEffect(window.scale(for: index))
-                .accessibilityHidden(true)
-                #else
                 Button {
                     selectHero(at: index)
                 } label: {
@@ -743,14 +493,10 @@ struct HomeCinematicHero: View {
                 }
                 .buttonStyle(.plain)
                 .transition(.scale.combined(with: .opacity))
-                #endif
             }
         }
         .animation(.snappy(duration: 0.3), value: window.range)
 
-        #if os(tvOS)
-        pills
-        #else
         // One adjustable element, like UIPageControl, instead of a button per
         // item that the window may be hiding.
         pills
@@ -769,7 +515,6 @@ struct HomeCinematicHero: View {
                     break
                 }
             }
-        #endif
     }
 
     private func pagerProgress(for index: Int, currentIndex: Int, date: Date?) -> Double {
@@ -779,10 +524,6 @@ struct HomeCinematicHero: View {
     }
 
     private func rotateHeroIfNeeded() async {
-        #if DEBUG && !os(macOS)
-        // Screenshot mode holds the first slide so captures are deterministic.
-        if ScreenshotMode.isActive { return }
-        #endif
         guard autoRotates,
               heroItemIDs.count > 1,
               !accessibilityReduceMotion,
@@ -806,16 +547,11 @@ struct HomeCinematicHero: View {
                   !isHeroRotationPaused,
                   !isRotationSuspended else { return }
 
-            #if os(tvOS)
-            let index = focusedItemKey.flatMap { heroItemIDs.firstIndex(of: $0) } ?? currentHeroIndex
-            onFocusItem?(items[(index + 1) % items.count])
-            #else
             moveHero(
                 to: (currentHeroIndex + 1) % heroItemIDs.count,
                 direction: .forward,
                 duration: 0.42
             )
-            #endif
             restartHeroRotation()
         }
     }
@@ -854,7 +590,6 @@ struct HomeCinematicHero: View {
         heroRotationRevision += 1
     }
 
-    #if !os(tvOS)
     private func handleHeroDragChanged(_ value: DragGesture.Value) {
         handleHeroHorizontalNavigationChanged(
             horizontalOffset: value.translation.width,
@@ -937,41 +672,7 @@ struct HomeCinematicHero: View {
             cancelHeroDragTransition()
         }
     }
-    #endif
 
-    #if os(tvOS)
-    private func handleHeroMoveCommand(_ direction: MoveCommandDirection) {
-        switch direction {
-        case .down:
-            onMoveDown?()
-        case .left, .right:
-            // Moving to the neighbouring page's play button is the focus
-            // engine's (`tvPages`). Past either end page it has nothing to
-            // move to, so the move wraps around to the other end here.
-            //
-            // It fires for every move, also after the engine has moved focus
-            // for it, and `focusedItemKey` may or may not have caught up with
-            // that move yet (both measured). The page on screen has not: the
-            // scroll to a new page has only just started. So only a move on
-            // an end page that is also at rest on screen wraps.
-            restartHeroRotation()
-            guard items.count > 1,
-                  let focusedItemKey,
-                  let focusedIndex = heroItemIDs.firstIndex(of: focusedItemKey) else { return }
-            let lastIndex = items.count - 1
-            if direction == .right, focusedIndex == lastIndex, currentHeroIndex == lastIndex {
-                onFocusItem?(items[0])
-            } else if direction == .left, focusedIndex == 0, currentHeroIndex == 0 {
-                onFocusItem?(items[lastIndex])
-            }
-        case .up:
-            // The focus engine's: the tab bar.
-            break
-        @unknown default:
-            break
-        }
-    }
-    #endif
 
     private func showPreviousHero() {
         guard heroItemIDs.count > 1 else { return }
@@ -1031,9 +732,6 @@ struct HomeCinematicHero: View {
         resetHeroSlideState()
         resetHeroDragState()
         currentHeroIndex = Self.initialHeroIndex
-        #if os(tvOS)
-        tvPagePosition.scrollTo(edge: .leading)
-        #endif
 
         if restartRotation {
             restartHeroRotation()
@@ -1055,103 +753,9 @@ struct HomeCinematicHero: View {
     }
 
     private func preloadHeroBackdropImages(width: Int, height: Int) async {
-        #if canImport(UIKit)
-        let backdropRequests = items.compactMap { item -> (String, URL)? in
-            guard let url = viewModel.heroBackgroundURL(for: item, width: width, height: height) else {
-                return nil
-            }
-
-            return (item.id.storageKey, url)
-        }
-
-        let validKeys = Set(items.map(\.id.storageKey))
-        await MainActor.run {
-            preloadedHeroBackdropImages = preloadedHeroBackdropImages.filter { validKeys.contains($0.key) }
-        }
-
-        guard !backdropRequests.isEmpty else { return }
-
-        await withTaskGroup(of: (String, UIImage?).self) { group in
-            for (ratingKey, url) in backdropRequests {
-                group.addTask {
-                    do {
-                        let image = try await DuskImageLoader.shared.image(for: url, using: plexService)
-                        #if os(tvOS)
-                        // Decode the full-screen backdrop here, off the main
-                        // thread. Left lazy, it decodes on the first frame of
-                        // the slide that reveals it and stalls the animation
-                        // right as the press lands.
-                        return (ratingKey, await image.byPreparingForDisplay() ?? image)
-                        #else
-                        return (ratingKey, image)
-                        #endif
-                    } catch {
-                        return (ratingKey, nil)
-                    }
-                }
-            }
-
-            for await (ratingKey, image) in group {
-                guard let image else { continue }
-
-                await MainActor.run {
-                    guard !Task.isCancelled else { return }
-                    guard validKeys.contains(ratingKey) else { return }
-                    preloadedHeroBackdropImages[ratingKey] = image
-                }
-            }
-        }
-        #endif
     }
 
     private func preloadHeroTitleImages(width: Int, height: Int) async {
-        #if canImport(UIKit)
-        let titleRequests = items.compactMap { item -> (String, URL)? in
-            guard let url = viewModel.heroTitleLogoURL(for: item, width: width, height: height) else {
-                return nil
-            }
-
-            return (item.id.storageKey, url)
-        }
-
-        let validKeys = Set(items.map(\.id.storageKey))
-        let requestedKeys = Set(titleRequests.map(\.0))
-
-        await MainActor.run {
-            preloadedHeroTitleImages = preloadedHeroTitleImages.filter { validKeys.contains($0.key) }
-            failedHeroTitleImageKeys = failedHeroTitleImageKeys
-                .filter { validKeys.contains($0) && requestedKeys.contains($0) }
-        }
-
-        guard !titleRequests.isEmpty else { return }
-
-        await withTaskGroup(of: (String, UIImage?, Bool).self) { group in
-            for (ratingKey, url) in titleRequests {
-                group.addTask {
-                    do {
-                        let image = try await DuskImageLoader.shared.image(for: url, using: plexService)
-                        return (ratingKey, image, false)
-                    } catch {
-                        return (ratingKey, nil, true)
-                    }
-                }
-            }
-
-            for await (ratingKey, image, didFail) in group {
-                await MainActor.run {
-                    guard !Task.isCancelled else { return }
-                    guard validKeys.contains(ratingKey) else { return }
-
-                    if let image {
-                        preloadedHeroTitleImages[ratingKey] = image
-                        failedHeroTitleImageKeys.remove(ratingKey)
-                    } else if didFail {
-                        failedHeroTitleImageKeys.insert(ratingKey)
-                    }
-                }
-            }
-        }
-        #endif
     }
 
     @ViewBuilder
@@ -1163,44 +767,6 @@ struct HomeCinematicHero: View {
     ) -> some View {
         let imageAlignment = heroBackdropImageAlignment
 
-        #if canImport(UIKit)
-        if let image = preloadedHeroBackdropImages[item.id.storageKey] {
-            GeometryReader { geometry in
-                ZStack {
-                    Color.duskSurface
-
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: imageAlignment)
-                        .frame(
-                            width: geometry.size.width,
-                            height: geometry.size.height,
-                            alignment: imageAlignment
-                        )
-                        .clipped()
-                }
-                .frame(
-                    width: geometry.size.width,
-                    height: geometry.size.height,
-                    alignment: imageAlignment
-                )
-                .clipped()
-            }
-            .frame(height: heroHeight)
-            .frame(maxWidth: .infinity)
-        } else {
-            DetailHeroBackdrop(
-                imageURL: viewModel.heroBackgroundURL(
-                    for: item,
-                    width: width,
-                    height: height
-                ),
-                height: heroHeight,
-                imageAlignment: imageAlignment
-            )
-        }
-        #else
         DetailHeroBackdrop(
             imageURL: viewModel.heroBackgroundURL(
                 for: item,
@@ -1210,7 +776,6 @@ struct HomeCinematicHero: View {
             height: heroHeight,
             imageAlignment: imageAlignment
         )
-        #endif
     }
 
     private var heroBackdropImageAlignment: Alignment {
@@ -1221,22 +786,12 @@ struct HomeCinematicHero: View {
         guard items.indices.contains(index), index != currentHeroIndex else { return }
 
         if transitioningHeroIndex != nil {
-            #if os(tvOS)
-            // A remote press never waits for the slide in flight: land it where
-            // it is headed and start the new one now. Queueing made quick
-            // presses sit behind the whole previous slide (and dropped every
-            // press past the first queued one). With the front-loaded curve the
-            // in-flight slide is nearly settled by the time a second press can
-            // land, so finishing it in place is a small, fast jump.
-            resetHeroSlideState()
-            #else
             pendingHeroTransition = PendingHeroTransition(
                 index: index,
                 direction: direction,
                 duration: duration
             )
             return
-            #endif
         }
 
         resetHeroDragState()
@@ -1251,10 +806,6 @@ struct HomeCinematicHero: View {
         heroSlideProgress = 0
 
         Task { @MainActor in
-            // Give SwiftUI a transaction to mount the incoming slide at its
-            // off-screen offset before animating it. Without this boundary tvOS
-            // can coalesce progress 0 and 1, making the artwork appear to pop in
-            // from behind the outgoing slide.
             await Task.yield()
             guard heroSlideRevision == slideRevision else { return }
 
@@ -1283,14 +834,7 @@ struct HomeCinematicHero: View {
     }
 
     private func heroSlideAnimation(duration: TimeInterval) -> Animation {
-        #if os(tvOS)
-        // Front-loaded ease-out: the slide is already moving fast on the first
-        // frame after the press and spends its time settling. `easeInOut`
-        // barely moves for its first ~100ms, which made clicks feel ignored.
-        .timingCurve(0.16, 0.84, 0.3, 1, duration: duration)
-        #else
         .easeInOut(duration: duration)
-        #endif
     }
 
     private func heroSlideOffset(for role: HeroSlideRole, width: CGFloat) -> CGFloat {
@@ -1445,158 +989,3 @@ private enum HeroSlideRole {
     case outgoing
     case incoming
 }
-
-#if os(iOS)
-private struct HeroIndirectScrollNavigation: UIViewRepresentable {
-    var isEnabled: Bool
-    var onChanged: (CGFloat) -> Void
-    var onEnded: (CGFloat, CGFloat) -> Void
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(
-            isEnabled: isEnabled,
-            onChanged: onChanged,
-            onEnded: onEnded
-        )
-    }
-
-    func makeUIView(context: Context) -> CaptureView {
-        let view = CaptureView()
-        view.backgroundColor = .clear
-        view.isUserInteractionEnabled = false
-        view.coordinator = context.coordinator
-        return view
-    }
-
-    func updateUIView(_ uiView: CaptureView, context: Context) {
-        context.coordinator.isEnabled = isEnabled
-        context.coordinator.onChanged = onChanged
-        context.coordinator.onEnded = onEnded
-        uiView.coordinator = context.coordinator
-        context.coordinator.installIfPossible(from: uiView)
-    }
-
-    static func dismantleUIView(_ uiView: CaptureView, coordinator: Coordinator) {
-        coordinator.uninstall()
-        uiView.coordinator = nil
-    }
-
-    final class CaptureView: UIView {
-        weak var coordinator: Coordinator?
-
-        override func didMoveToSuperview() {
-            super.didMoveToSuperview()
-            coordinator?.installIfPossible(from: self)
-        }
-    }
-
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        var isEnabled: Bool
-        var onChanged: (CGFloat) -> Void
-        var onEnded: (CGFloat, CGFloat) -> Void
-
-        private weak var hostView: UIView?
-        private var panGesture: UIPanGestureRecognizer?
-        private let projectedVelocityDuration: CGFloat = 0.18
-
-        init(
-            isEnabled: Bool,
-            onChanged: @escaping (CGFloat) -> Void,
-            onEnded: @escaping (CGFloat, CGFloat) -> Void
-        ) {
-            self.isEnabled = isEnabled
-            self.onChanged = onChanged
-            self.onEnded = onEnded
-        }
-
-        func installIfPossible(from view: UIView) {
-            guard let superview = view.superview else { return }
-            install(on: superview)
-        }
-
-        func uninstall() {
-            if let panGesture {
-                hostView?.removeGestureRecognizer(panGesture)
-            }
-
-            hostView = nil
-            panGesture = nil
-        }
-
-        private func install(on view: UIView) {
-            guard hostView !== view else { return }
-
-            uninstall()
-
-            let panGesture = UIPanGestureRecognizer(
-                target: self,
-                action: #selector(handlePanGesture(_:))
-            )
-            panGesture.allowedScrollTypesMask = .all
-            panGesture.cancelsTouchesInView = false
-            panGesture.delaysTouchesBegan = false
-            panGesture.delaysTouchesEnded = false
-            panGesture.requiresExclusiveTouchType = false
-            panGesture.delegate = self
-
-            view.addGestureRecognizer(panGesture)
-            hostView = view
-            self.panGesture = panGesture
-        }
-
-        @objc private func handlePanGesture(_ gesture: UIPanGestureRecognizer) {
-            guard isEnabled, let hostView else { return }
-
-            let translation = gesture.translation(in: hostView)
-            let velocity = gesture.velocity(in: hostView)
-            let predictedHorizontalOffset = translation.x + (velocity.x * projectedVelocityDuration)
-
-            switch gesture.state {
-            case .began, .changed:
-                onChanged(translation.x)
-            case .ended:
-                onEnded(translation.x, predictedHorizontalOffset)
-            case .cancelled, .failed:
-                onEnded(translation.x, translation.x)
-            default:
-                break
-            }
-        }
-
-        func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-            isEnabled
-        }
-
-        func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-        ) -> Bool {
-            true
-        }
-    }
-}
-#endif
-
-#if os(tvOS)
-/// Snaps the tvOS hero's page scroll (`HomeCinematicHero.tvPages`) to whole
-/// pages.
-///
-/// The scroll that matters is the focus engine's: moving focus to the next
-/// page's play button proposes the smallest scroll that reveals that button,
-/// which on its own would leave the page half on screen. The proposed visible
-/// rect always contains the newly focused button and, being one page wide,
-/// never contains another page's button whole, so the page is the first one
-/// whose button starts at or after the rect's leading edge.
-private struct HomeHeroTVPaging: ScrollTargetBehavior {
-    var pageWidth: CGFloat
-    /// Leading edge of a page's play button, measured from the page's own.
-    var actionLeadingInset: CGFloat
-
-    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
-        guard pageWidth > 0, context.axes.contains(.horizontal) else { return }
-        let pageCount = max(Int((context.contentSize.width / pageWidth).rounded()), 1)
-        let page = Int(((target.rect.minX - actionLeadingInset) / pageWidth).rounded(.up))
-        target.rect.origin.x = CGFloat(min(max(page, 0), pageCount - 1)) * pageWidth
-    }
-}
-#endif

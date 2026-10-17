@@ -420,9 +420,6 @@ final class DolbyVision7HLSProxy: @unchecked Sendable {
         }
     }
 
-    /// iOS can tear the listener down while the app is suspended. Re-create
-    /// it once on the same port (the playlists AVPlayer holds name it);
-    /// after that, conversion is over.
     private func listenerFailedAfterStart(_ listener: NWListener, error: NWError) {
         let restartPort: NWEndpoint.Port? = lock.withLock {
             guard !isStopped, self.listener === listener, !hasRecreatedListener, let port else { return nil }

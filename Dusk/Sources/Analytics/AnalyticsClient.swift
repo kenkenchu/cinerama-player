@@ -1,7 +1,4 @@
 import Foundation
-#if canImport(UIKit)
-import UIKit
-#endif
 
 /// Fire-and-forget event reporting to the self-hosted Rybbit instance at
 /// `stats.marvinvr.ch`, the same one the website already uses (a separate
@@ -144,25 +141,14 @@ final class AnalyticsClient {
     }()
 
     private static let platform: String = {
-        #if os(macOS)
         return "macos"
-        #elseif os(tvOS)
-        return "tvos"
-        #else
-        return UIDevice.current.userInterfaceIdiom == .pad ? "ipados" : "ios"
-        #endif
     }()
 
     /// Sent explicitly so Rybbit is not left parsing URLSession's default
     /// CFNetwork string, which reads as neither a browser nor a known client.
     private static let userAgent: String = {
-        #if os(macOS)
         let system = "macOS"
         let version = ProcessInfo.processInfo.operatingSystemVersionString
-        #else
-        let system = UIDevice.current.systemName
-        let version = UIDevice.current.systemVersion
-        #endif
         return "Dusk/\(appVersion) (\(system) \(version))"
     }()
 

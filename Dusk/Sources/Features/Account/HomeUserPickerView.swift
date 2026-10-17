@@ -46,15 +46,6 @@ struct HomeUserPickerView: View {
                     profileSelection
                 }
             }
-            #if os(tvOS)
-            .onExitCommand {
-                if pendingUser != nil {
-                    leavePINEntry()
-                } else {
-                    onCancel?()
-                }
-            }
-            #else
             .overlay(alignment: .topLeading) {
                 if pendingUser != nil {
                     HomeUserBackButton(
@@ -74,21 +65,15 @@ struct HomeUserPickerView: View {
                     }
                 }
             }
-            #endif
         }
     }
 
     @ViewBuilder
     private var profileSelection: some View {
-        #if os(tvOS)
-        tvProfileSelection
-        #else
-        iosProfileSelection
-        #endif
+        desktopProfileSelection
     }
 
-    #if !os(tvOS)
-    private var iosProfileSelection: some View {
+    private var desktopProfileSelection: some View {
         ScrollView {
             VStack(spacing: 30) {
                 pickerHeader(titleSize: 38, iconSize: 66)
@@ -123,56 +108,7 @@ struct HomeUserPickerView: View {
         }
         .duskNavigationTitle("")
     }
-    #endif
 
-    #if os(tvOS)
-    private var tvProfileSelection: some View {
-        ScrollView {
-            VStack(spacing: 34) {
-                pickerHeader(titleSize: DuskFont.TV.Size.pageTitle, iconSize: 72)
-
-                LazyVGrid(
-                    columns: tvProfileColumns,
-                    spacing: 34
-                ) {
-                    ForEach(users, id: \.stableProfileID) { user in
-                        HomeUserCard(
-                            user: user,
-                            avatarSize: 142,
-                            isCurrent: user.stableProfileID == plexService.activeProfileID,
-                            isSwitching: switchingProfileID == user.stableProfileID,
-                            isDisabled: switchingProfileID != nil
-                        ) {
-                            select(user)
-                        }
-                    }
-                }
-                .frame(width: tvProfileGridWidth)
-
-                selectionOptions
-                    .frame(maxWidth: 1120)
-
-                bottomActions
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, 64)
-            .padding(.top, 58)
-            .padding(.bottom, 80)
-        }
-    }
-
-    private var tvProfileColumns: [GridItem] {
-        Array(
-            repeating: GridItem(.fixed(250), spacing: 34),
-            count: min(max(users.count, 1), 4)
-        )
-    }
-
-    private var tvProfileGridWidth: CGFloat {
-        let columnCount = CGFloat(min(max(users.count, 1), 4))
-        return (columnCount * 250) + (max(columnCount - 1, 0) * 34)
-    }
-    #endif
 
     private func pickerHeader(titleSize: CGFloat, iconSize: CGFloat) -> some View {
         VStack(spacing: 18) {
@@ -186,7 +122,7 @@ struct HomeUserPickerView: View {
                     .foregroundStyle(Color.duskTextPrimary)
 
                 Text("Choose a Plex Home user. Watch history and recommendations will stay with this profile.")
-                    .font(DuskFont.pageSubtitle(ios: .body))
+                    .font(DuskFont.pageSubtitle(style: .body))
                     .foregroundStyle(Color.duskTextSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
@@ -199,11 +135,11 @@ struct HomeUserPickerView: View {
         Toggle(isOn: $rememberSelection) {
             VStack(alignment: .leading, spacing: 5) {
                 Text("Remember This User")
-                    .font(DuskFont.rowTitle(ios: .headline))
+                    .font(DuskFont.rowTitle(style: .headline))
                     .foregroundStyle(Color.duskTextPrimary)
 
                 Text("Open Dusk with this profile next time. You can change this anytime in Settings.")
-                    .font(DuskFont.caption(ios: .subheadline))
+                    .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.duskTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -217,24 +153,17 @@ struct HomeUserPickerView: View {
     private var bottomActions: some View {
         if let switchError {
             Label(switchError, systemImage: "exclamationmark.triangle.fill")
-                .font(DuskFont.body(ios: .callout))
+                .font(DuskFont.body(style: .callout))
                 .foregroundStyle(.red)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 680)
         }
 
-        #if os(tvOS)
-        if onCancel == nil, let onSignOut {
-            HomeUserTextButton(title: "Sign Out", tint: .red, role: .destructive, action: onSignOut)
-                .disabled(switchingProfileID != nil)
-        }
-        #else
         if onCancel == nil, let onSignOut {
             Button("Sign Out", role: .destructive, action: onSignOut)
                 .font(.headline)
                 .disabled(switchingProfileID != nil)
         }
-        #endif
     }
 
     private func select(_ user: PlexHomeUser) {
@@ -250,15 +179,6 @@ struct HomeUserPickerView: View {
 
     @ViewBuilder
     private func pinEntry(for user: PlexHomeUser) -> some View {
-        #if os(tvOS)
-        TVHomeUserPINView(
-            user: user,
-            pin: $pin,
-            isSubmitting: switchingProfileID != nil,
-            error: switchError,
-            onSubmit: { switchTo(user, pin: pin) }
-        )
-        #else
         IOSHomeUserPINView(
             user: user,
             pin: $pin,
@@ -266,7 +186,6 @@ struct HomeUserPickerView: View {
             error: switchError,
             onSubmit: { switchTo(user, pin: pin) }
         )
-        #endif
     }
 
     private func leavePINEntry() {
@@ -311,7 +230,6 @@ struct HomeUserPickerView: View {
     }
 }
 
-#if !os(tvOS)
 private struct HomeUserBackButton: View {
     let isDisabled: Bool
     let action: () -> Void
@@ -331,11 +249,10 @@ private struct HomeUserBackButton: View {
         .buttonStyle(.plain)
         .disabled(isDisabled)
         .opacity(isDisabled ? 0.45 : 1)
-        .duskSuppressTVOSButtonChrome()
+
         .accessibilityLabel("Back")
     }
 }
-#endif
 
 // MARK: - Shared profile artwork
 
@@ -378,9 +295,6 @@ private struct HomeUserCard: View {
     let isDisabled: Bool
     let action: () -> Void
 
-    #if os(tvOS)
-    @FocusState private var isFocused: Bool
-    #endif
 
     var body: some View {
         Button(action: action) {
@@ -390,7 +304,7 @@ private struct HomeUserCard: View {
 
                     if user.isProtected {
                         Image(systemName: "lock.fill")
-                            .font(DuskFont.badge(ios: .caption.weight(.bold)))
+                            .font(DuskFont.badge(style: .caption.weight(.bold)))
                             .foregroundStyle(Color.duskTextPrimary)
                             .padding(8)
                             .background(Color.duskSurface, in: Circle())
@@ -399,13 +313,13 @@ private struct HomeUserCard: View {
 
                 HStack(spacing: 6) {
                     Text(user.displayName)
-                        .font(DuskFont.rowTitle(ios: .headline))
+                        .font(DuskFont.rowTitle(style: .headline))
                         .foregroundStyle(Color.duskTextPrimary)
                         .lineLimit(1)
 
                     if isCurrent {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(DuskFont.glyphSmall(ios: .subheadline))
+                            .font(DuskFont.glyphSmall(style: .subheadline))
                             .foregroundStyle(Color.duskTextSecondary)
                     }
                 }
@@ -428,17 +342,12 @@ private struct HomeUserCard: View {
             .contentShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
         }
         .disabled(isDisabled)
-        .duskSuppressTVOSButtonChrome()
-        #if os(tvOS)
-        .focused($isFocused)
-        .duskTVOSFocusedScale(isFocused)
-        #endif
+
         .accessibilityLabel(user.displayName)
         .accessibilityHint(user.isProtected ? "PIN required" : "Switch to this user")
     }
 }
 
-#if !os(tvOS)
 private struct IOSHomeUserPINView: View {
     @Environment(\.openURL) private var openURL
 
@@ -467,9 +376,6 @@ private struct IOSHomeUserPINView: View {
                 }
 
                 SecureField("PIN", text: $pin)
-                    #if os(iOS)
-                    .keyboardType(.numberPad)
-                    #endif
                     .textContentType(.oneTimeCode)
                     .font(.system(.title, design: .monospaced, weight: .bold))
                     .multilineTextAlignment(.center)
@@ -525,188 +431,3 @@ private struct IOSHomeUserPINView: View {
         }
     }
 }
-#endif
-
-#if os(tvOS)
-private struct TVHomeUserPINView: View {
-    let user: PlexHomeUser
-    @Binding var pin: String
-    let isSubmitting: Bool
-    let error: String?
-    let onSubmit: () -> Void
-
-    private let keypadRows = [
-        ["1", "2", "3"],
-        ["4", "5", "6"],
-        ["7", "8", "9"],
-        ["", "0", "delete.left"],
-    ]
-
-    var body: some View {
-        HStack(spacing: 120) {
-            VStack(spacing: 28) {
-                PlexHomeUserAvatar(user: user, size: 176)
-
-                VStack(spacing: 10) {
-                    Text("Enter PIN")
-                        .font(DuskFont.TV.pageTitleRounded)
-                        .foregroundStyle(Color.duskTextPrimary)
-
-                    Text("Enter the four-digit Plex Home PIN for \(user.displayName).")
-                        .font(DuskFont.TV.pageSubtitle)
-                        .foregroundStyle(Color.duskTextSecondary)
-                        .multilineTextAlignment(.center)
-                }
-
-                HStack(spacing: 16) {
-                    ForEach(0..<4, id: \.self) { index in
-                        Circle()
-                            .fill(index < pin.count ? Color.duskTextPrimary : Color.duskSurface)
-                            .frame(width: 25, height: 25)
-                            .overlay {
-                                Circle()
-                                    .stroke(Color.duskTextSecondary.opacity(0.35), lineWidth: 1)
-                            }
-                    }
-                }
-                .padding(.vertical, 8)
-
-                ZStack {
-                    if let error {
-                        Text(error)
-                            .font(DuskFont.TV.body)
-                            .foregroundStyle(.red)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(2)
-                            .frame(maxWidth: 620)
-                    }
-                }
-                .frame(height: 60)
-
-                Text("Forgot your PIN? Manage Plex Home from your Plex account on another device.")
-                    .font(DuskFont.TV.caption)
-                    .foregroundStyle(Color.duskTextSecondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 620)
-            }
-            .frame(width: 650)
-
-            VStack(spacing: 22) {
-                ForEach(Array(keypadRows.enumerated()), id: \.offset) { _, row in
-                    HStack(spacing: 22) {
-                        ForEach(row, id: \.self) { key in
-                            if key.isEmpty {
-                                Color.clear
-                                    .frame(width: 112, height: 82)
-                            } else {
-                                TVPINKey(
-                                    key: key,
-                                    isEnabled: keyEnabled(key),
-                                    action: { activate(key) }
-                                )
-                            }
-                        }
-                    }
-                }
-
-                ZStack {
-                    if isSubmitting {
-                        ProgressView()
-                    }
-                }
-                .frame(height: 32)
-                .padding(.top, 4)
-            }
-        }
-        .frame(maxWidth: 1420)
-        .padding(.horizontal, 80)
-        .padding(.vertical, 72)
-    }
-
-    private func keyEnabled(_ key: String) -> Bool {
-        guard !isSubmitting else { return false }
-        if key == "delete.left" {
-            return !pin.isEmpty
-        }
-        return pin.count < 4
-    }
-
-    private func activate(_ key: String) {
-        switch key {
-        case "delete.left":
-            if !pin.isEmpty {
-                pin.removeLast()
-            }
-        default:
-            guard pin.count < 4 else { return }
-            pin.append(key)
-            if pin.count == 4 {
-                onSubmit()
-            }
-        }
-    }
-}
-
-private struct TVPINKey: View {
-    let key: String
-    let isEnabled: Bool
-    let action: () -> Void
-
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        Button(action: action) {
-            Group {
-                if key == "delete.left" {
-                    Image(systemName: key)
-                } else {
-                    Text(key)
-                }
-            }
-            // One-off: the keypad digit is sized to the key tile, not to a text
-            // role, so it stays an explicit point size (see DuskFont's escape
-            // hatch) rather than borrowing a semantic token.
-            .font(.system(size: 40, weight: .semibold))
-            .foregroundStyle(Color.duskTextPrimary)
-            .frame(width: 112, height: 82)
-            .background(Color.duskSurface, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
-        }
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.35)
-        .duskSuppressTVOSButtonChrome()
-        .focused($isFocused)
-        .duskTVOSFocusedScale(isFocused)
-    }
-}
-
-private struct HomeUserTextButton: View {
-    let title: String
-    let tint: Color
-    var role: ButtonRole? = nil
-    let action: () -> Void
-
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        Group {
-            if let role {
-                Button(role: role, action: action) {
-                    Text(title)
-                }
-            } else {
-                Button(action: action) {
-                    Text(title)
-                }
-            }
-        }
-        .font(DuskFont.TV.buttonLabel)
-        .foregroundStyle(tint)
-        .padding(.horizontal, 26)
-        .padding(.vertical, 10)
-        .background(Color.duskSurface.opacity(isFocused ? 1 : 0), in: Capsule())
-        .duskSuppressTVOSButtonChrome()
-        .focused($isFocused)
-        .duskTVOSFocusedScale(isFocused)
-    }
-}
-#endif

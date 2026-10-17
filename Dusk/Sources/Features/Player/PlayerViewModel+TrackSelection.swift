@@ -152,13 +152,6 @@ extension PlayerViewModel {
             engine.selectSubtitleTrack(preferredSubtitleTrack)
             selectedSubtitleTrackID = engine.selectedSubtitleTrackID
             hasAppliedAutomaticSubtitleSelection = true
-            #if os(tvOS)
-            if let preferredSubtitleTrack, !preferredSubtitleTrack.isExternal {
-                // Engine-discovered tracks can differ from Plex's startup
-                // list (e.g. AVPlayer excludes an unmountable sidecar).
-                plexTrackSelectionHandler?(selectedAudioTrack?.plexStreamID, preferredSubtitleTrack.plexStreamID)
-            }
-            #endif
         } else if shouldReapplyAutomaticSubtitleSelectionForExternalTracks {
             // A mounted sidecar joins the list after the container's own
             // tracks, so give the language preference one more chance to land
@@ -170,11 +163,6 @@ extension PlayerViewModel {
                preferredSubtitleTrack.id != selectedSubtitleTrackID {
                 engine.selectSubtitleTrack(preferredSubtitleTrack)
                 selectedSubtitleTrackID = engine.selectedSubtitleTrackID
-                #if os(tvOS)
-                if !preferredSubtitleTrack.isExternal {
-                    plexTrackSelectionHandler?(selectedAudioTrack?.plexStreamID, preferredSubtitleTrack.plexStreamID)
-                }
-                #endif
             }
         }
     }
@@ -288,11 +276,6 @@ extension PlayerViewModel {
             }
             guard !languageMatches.isEmpty else { return nil }
         } else {
-            // No preferred language configured: never switch the authored
-            // language, but still re-rank between same-language alternatives
-            // so the platform codec adjustment below can demote e.g. a
-            // container-default TrueHD track in favor of its AC-3/E-AC-3
-            // sibling on iPhone. Only step in when there is a real choice.
             let anchorLanguage = defaultAudioAnchorLanguageCode()
             languageMatches = selectableAudioTracks.enumerated().filter { _, track in
                 Self.normalizedLanguageCode(track.languageCode) == anchorLanguage
@@ -822,12 +805,6 @@ extension PlayerViewModel {
             ?? audioStreams.first?.id
     }
 
-    /// Channel count of the stream `preferredAudioStreamID` resolves to, used to
-    /// open the tvOS audio session to the right layout before libvlc measures
-    /// the route (`PlaybackSource.preferredAudioChannelCount`). Falls back to the
-    /// richest audio stream in the part when the winning stream carries no
-    /// channel count, so an unlabelled 5.1 track still opens a multichannel
-    /// route rather than silently getting folded to stereo.
     static func preferredAudioStreamChannelCount(
         inPart part: PlexMediaPart?,
         preferredLanguage: String?
@@ -836,9 +813,6 @@ extension PlayerViewModel {
         let audioStreams = part.streams.filter { $0.streamType == .audio }
         guard !audioStreams.isEmpty else { return nil }
 
-        // Same pick VLCKit is preselected onto, so the route opens for the
-        // track that will actually play: TrueHD 7.1 on tvOS with Dusk's
-        // VLCKit build, the AC-3 5.1 sibling where TrueHD is undecodable.
         if let position = preferredAudioStreamPosition(inPart: part, preferredLanguage: preferredLanguage),
            audioStreams.indices.contains(position),
            let channels = audioStreams[position].channels,
@@ -1083,23 +1057,8 @@ extension PlayerViewModel {
         return 0
     }
 
-    /// Platform correction on top of the pure quality ladder above. On tvOS
-    /// the ladder is right as-is: lossless bitstreams (TrueHD/MLP, DTS-HD,
-    /// PCM) decode to multichannel LPCM over HDMI and are the best possible
-    /// pick. On iPhone/iPad the endpoint is a stereo/binaural downmix
-    /// whichever track plays, so lossless buys nothing audible while costing
-    /// decode CPU, battery, and (for remote streams) several Mbit/s — the
-    /// lossy surround sibling (E-AC-3/AC-3/DTS) is the better automatic
-    /// default. Sized to outweigh the Plex selected+default bonuses (+1500),
-    /// a 7.1-vs-5.1 channel edge (+80), and the ladder gap, so a
-    /// same-language lossy surround alternative wins; ranking stays relative,
-    /// so a file whose only track is lossless still plays it natively.
     static func platformAudioCodecAdjustment(for track: AudioTrack) -> Int {
-        #if os(tvOS)
-        return 0
-        #else
         return isLosslessBitstreamAudio(track) ? -1_800 : 0
-        #endif
     }
 
     /// Plex audio codecs neither local engine can decode. Dusk's own VLCKit

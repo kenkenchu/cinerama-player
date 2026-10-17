@@ -1,8 +1,5 @@
 import Foundation
 import SwiftUI
-#if os(iOS)
-import UIKit
-#endif
 
 struct DownloadsView: View {
     @Binding var path: NavigationPath
@@ -127,7 +124,7 @@ struct DownloadsRootContent: View {
                 }
             }
             .navigationTitle("Download Queue")
-            .duskNavigationBarTitleDisplayModeInline()
+
             .downloadQueueIdleTimerDisabled(downloadManager.activeDownloadCount > 0)
             .toolbar {
                 ToolbarItem(placement: DuskPlatform.trailingToolbarPlacement) {
@@ -689,43 +686,6 @@ private enum DownloadTimeRemainingFormatter {
 private extension View {
     @ViewBuilder
     func downloadQueueIdleTimerDisabled(_ isDisabled: Bool) -> some View {
-        #if os(iOS)
-        modifier(DownloadQueueIdleTimerModifier(isDisabled: isDisabled))
-        #else
         self
-        #endif
     }
 }
-
-#if os(iOS)
-private struct DownloadQueueIdleTimerModifier: ViewModifier {
-    let isDisabled: Bool
-    @State private var previousIdleTimerDisabled: Bool?
-
-    func body(content: Content) -> some View {
-        content
-            .onAppear(perform: updateIdleTimer)
-            .onChange(of: isDisabled) { _, _ in
-                updateIdleTimer()
-            }
-            .onDisappear(perform: restoreIdleTimer)
-    }
-
-    private func updateIdleTimer() {
-        if isDisabled {
-            if previousIdleTimerDisabled == nil {
-                previousIdleTimerDisabled = UIApplication.shared.isIdleTimerDisabled
-            }
-            UIApplication.shared.isIdleTimerDisabled = true
-        } else {
-            restoreIdleTimer()
-        }
-    }
-
-    private func restoreIdleTimer() {
-        guard let previousIdleTimerDisabled else { return }
-        UIApplication.shared.isIdleTimerDisabled = previousIdleTimerDisabled
-        self.previousIdleTimerDisabled = nil
-    }
-}
-#endif

@@ -1,97 +1,73 @@
-# Dusk for Plex
+# Dusk Player for Mac
 
-A native Swift/SwiftUI Plex client for Apple platforms, with AI upscaling for lower-resolution video.
+A native **macOS-only Plex client**, maintained in
+[kenkenchu/dusk-player-mac](https://github.com/kenkenchu/dusk-player-mac), forked
+from [marvinvr/dusk-player](https://github.com/marvinvr/dusk-player).
 
-![Dusk website](screenshots/dusk_website_screenshot.png)
-
-> **Warning:** This project is under very active development. Expect bugs and unexpected behavior. If you run into issues, please [submit an issue](https://github.com/marvinvr/dusk-player/issues).
-
-[![Download on the App Store](https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg)](https://apps.apple.com/us/app/dusk-for-plex/id6760492635)
+Dusk uses SwiftUI and AppKit to browse and play your Plex libraries in a Mac
+window. This fork supports **Apple silicon Macs running macOS 26 or later**.
 
 ## Features
 
-- [x] Direct Play
-- [x] Manual Transcoding
-- [x] Library browsing & Search
-- [x] Subtitle & audio track selection
-- [x] Continuous Playback
-- [x] Picture in Picture
-- [x] Skip Intro & Credits
-- [x] Passout Protection (Are you still watching?)
-- [x] macOS App
-- [x] Select which version to play
-- [x] tvOS App
-- [x] App Store Release
-- [x] Offline playback (Downloads)
-- [x] AI Upscaling
-- [x] Plex Home Integration
-- [x] SharePlay Integration
-- [x] Live TV Support
-- [ ] Translation of the UI
-- [x] Seerr Integration
+- Plex sign-in and Plex Home profiles.
+- Home recommendations, library browsing, search, and media details.
+- Direct playback through AVPlayer and desktop VLCKit, including MKV support.
+- Audio/subtitle selection and per-session manual playback quality.
+- Resume, watched-state reporting, intro/credits skipping, and continuous play.
+- Downloads, offline playback, and delayed watch-state synchronization.
+- Plex Live TV guide and playback, plus optional Seerr requests.
+- Native sidebar navigation, resizable window, fullscreen, and keyboard controls.
+- AVPlayer Metal enhancement and HDR/Dolby Vision remux/conversion paths;
+  output depends on the media, Mac, display, audio route, and Plex server.
 
-### Later down the line
-- [ ] Jellyfin Support
+The Mac UI currently has no Picture in Picture, AirPlay route picker, outgoing
+SharePlay invitation controls, system media-key integration, in-app purchases,
+or alternate app icon picker. Siri/Shortcuts integration is inherited but is
+not a verified Mac feature. There is no App Store release for this fork.
 
-### Maybe?
+Report fork-specific issues in
+[this repository](https://github.com/kenkenchu/dusk-player-mac/issues).
 
-- [ ] Apple Vision Pro App
+## Build
 
-## Native Mac build
-
-The `Dusk-macOS` scheme is a native SwiftUI/AppKit app for **Apple silicon Macs
-running macOS 26 or later**. It does not require an iPhone or iPad build.
-With Xcode, XcodeGen, rustup, and the Metal toolchain installed:
+Install Xcode 26 or later, [XcodeGen](https://github.com/yonaskolb/XcodeGen), and
+[rustup](https://rustup.rs). Open Xcode once to finish setup, then:
 
 ```bash
+brew install xcodegen
+xcodebuild -downloadComponent MetalToolchain
 ./scripts/build_macos.sh
 ```
 
-The script bootstraps desktop VLC and DuskDovi, then builds and signs for local
-use without launching. Allow Dusk’s Local Network access when macOS asks, or
-enable it in System Settings → Privacy & Security → Local Network.
-The app is written to `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
-You can also open `Dusk.xcodeproj` and choose **Dusk-macOS → My Mac**.
-This is a locally signed development build; distribution signing/notarization and runtime playback
-validation are separate. See [Mac UI notes](docs/ui-features.md#native-macos-shell)
-for the initial port's platform differences.
+The script downloads checksum-pinned desktop VLCKit, builds the native DuskDovi
+converter, generates the Xcode project, builds `Dusk-macOS`, and verifies its
+local signature. It never launches the app or runs tests.
 
-## Setup
+The app is at `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+You can also open `Dusk.xcodeproj` and select **Dusk-macOS → My Mac**.
+Set `DUSK_MACOS_SIGNING_IDENTITY` to an installed Apple-issued signing identity
+if available; local builds otherwise use ad hoc signing. Distribution signing
+and notarization are separate.
 
-```bash
-# 1. Generate the Xcode project if needed
-brew install xcodegen  # if not already installed
-xcodegen generate
+Allow Dusk in **System Settings → Privacy & Security → Local Network** so it can
+reach local Plex servers. If sign-in succeeds but Home times out, check that
+permission and use the signed app produced by the build script.
 
-# 2. Open in Xcode
-open Dusk.xcodeproj
-```
+## Development
 
-VLCKit is vendored but **not committed** to git: the `Frameworks/MobileVLCKit.xcframework` (iOS/iPadOS) and `Frameworks/TVVLCKit.xcframework` (tvOS) binaries are downloaded on demand. With `gh` access to the private `marvinvr/dusk-vlckit` repo you get Dusk's own VLCKit 3.x build with Dolby TrueHD decoding (see `ci_scripts/build_vlckit.sh`); without it, VideoLAN's stock VLCKit, and TrueHD plays through Plex. After cloning, fetch them (this also refreshes the pinned version):
-
-```bash
-./ci_scripts/install_vlckit.sh
-```
-
-The Dolby Vision 7 → 8.1 converter (`Frameworks/DuskDovi.xcframework`) is built from the Rust crate in `Native/DuskDovi`. Install [rustup](https://rustup.rs), then:
-
-```bash
-./ci_scripts/install_dusk_dovi.sh
-```
-
-CI does both automatically via `ci_scripts/ci_post_clone.sh`, so no binaries live in the repo.
+See [the documentation index](docs/README.md),
+[Mac build workflow](docs/development-workflow.md), and [design system](STYLE.md).
+`origin` points to this fork; `upstream` points to the original project. Only
+macOS targets, desktop dependencies, and Mac verification are maintained here.
 
 ## License
 
-Dusk is released under the [MIT License](LICENSE).
+Dusk is released under the [MIT License](LICENSE). Upstream attribution and
+license notices are preserved.
 
-Playback is powered by [VLCKit](https://code.videolan.org/videolan/VLCKit)
-(MobileVLCKit/TVVLCKit), which is licensed separately under the LGPL v2.1.
-
-Dolby Vision profile 7 conversion uses quietvoid's
-[`dolby_vision`](https://github.com/quietvoid/dovi_tool/tree/main/dolby_vision)
-crate (libdovi, MIT) and its MIT-licensed (or MIT-dual-licensed) dependencies,
-statically linked. Their notices ship in the app as
-[`Dusk/Resources/ThirdPartyNotices.txt`](Dusk/Resources/ThirdPartyNotices.txt).
-Dolby and Dolby Vision are trademarks of Dolby Laboratories; Dusk is not
-affiliated with or certified by Dolby.
+Playback uses desktop [VLCKit](https://code.videolan.org/videolan/VLCKit),
+licensed separately under LGPL v2.1 and linked dynamically. Dolby Vision profile
+7 conversion uses quietvoid's MIT-licensed `dolby_vision` crate and its
+MIT-compatible dependencies, linked statically. Their notices ship in
+[Dusk/Resources/ThirdPartyNotices.txt](Dusk/Resources/ThirdPartyNotices.txt).
+Dusk is not affiliated with or certified by Plex or Dolby Laboratories.

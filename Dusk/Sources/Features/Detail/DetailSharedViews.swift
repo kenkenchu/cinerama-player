@@ -4,40 +4,18 @@ import SwiftUI
 
 @MainActor
 func usesFullWidthDetailActionButtons(for sizeClass: UserInterfaceSizeClass?) -> Bool {
-    #if os(iOS)
-    sizeClass == .compact && UIDevice.current.userInterfaceIdiom == .phone
-    #else
     false
-    #endif
 }
 
 var detailHeroActionSpacing: CGFloat {
-    #if os(tvOS)
-    22
-    #else
     12
-    #endif
 }
 
-/// Minimum height of a detail-hero action label. tvOS sits a touch lower than iOS
-/// because its label is the 27pt `buttonLabel` token rather than a 38pt semantic
-/// style; iOS keeps the value it has always had.
 var detailHeroActionLabelMinHeight: CGFloat {
-    #if os(tvOS)
-    30
-    #else
     34
-    #endif
 }
 
-#if os(tvOS)
-/// Contained width for the left-aligned tvOS primary action, so "Play" / "Resume"
-/// doesn't hug its own label. Scaled down with the label type.
-let detailHeroTVActionLabelMinWidth: CGFloat = 220
-#endif
 
-/// Horizontal alignment for the detail hero's text/action blocks. iPhone centers
-/// the whole hero (no poster); iPad and tvOS stay leading-aligned.
 @MainActor
 func detailHeroContentAlignment(for sizeClass: UserInterfaceSizeClass?) -> HorizontalAlignment {
     usesFullWidthDetailActionButtons(for: sizeClass) ? .center : .leading
@@ -49,16 +27,9 @@ func detailHeroTextAlignment(for sizeClass: UserInterfaceSizeClass?) -> TextAlig
     usesFullWidthDetailActionButtons(for: sizeClass) ? .center : .leading
 }
 
-/// Whether the synopsis should render as its own section below the hero. The iPad
-/// (regular) hero shows the description in its right column, so it is suppressed
-/// below there; iPhone and tvOS keep the separate section.
 @MainActor
 func detailShowsSynopsisBelowHero(for sizeClass: UserInterfaceSizeClass?) -> Bool {
-    #if os(tvOS)
-    true
-    #else
     sizeClass != .regular
-    #endif
 }
 
 struct OfflineMetadataBanner: View {
@@ -67,11 +38,11 @@ struct OfflineMetadataBanner: View {
     var body: some View {
         HStack(spacing: 10) {
             Image(systemName: "wifi.slash")
-                .font(DuskFont.glyphSmall(ios: .caption.weight(.semibold)))
+                .font(DuskFont.glyphSmall(style: .caption.weight(.semibold)))
                 .foregroundStyle(Color.duskTextSecondary)
 
             Text(message)
-                .font(DuskFont.caption(ios: .caption.weight(.medium)))
+                .font(DuskFont.caption(style: .caption.weight(.medium)))
                 .foregroundStyle(Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
 
@@ -87,10 +58,6 @@ struct OfflineMetadataBanner: View {
     }
 }
 
-/// The show-title header shown in the season and episode detail heroes: the
-/// show's clear-logo art (centered) when Plex provides it, falling back to the
-/// show name, and wrapped in a link to the show so it doubles as navigation.
-/// tvOS keeps the plain text — the image treatment is iOS-only.
 struct DetailHeroShowTitleLink: View {
     @Environment(\.horizontalSizeClass) private var sizeClass
     let title: String
@@ -105,25 +72,17 @@ struct DetailHeroShowTitleLink: View {
     }
 
     var body: some View {
-        #if os(tvOS)
-        titleText
-        #else
         if let showRoute {
             NavigationLink(value: showRoute) {
                 content
             }
             .buttonStyle(.plain)
-            .duskSuppressTVOSButtonChrome()
+
         } else {
             content
         }
-        #endif
     }
 
-    // Centered on iPhone (the hero is a single centered column); leading on iPad,
-    // where the artwork heads the left column of the two-column hero and is capped
-    // to the same width as the Play button beneath it.
-    #if !os(tvOS)
     private var contentAlignment: Alignment {
         sizeClass == .regular ? .leading : .center
     }
@@ -138,7 +97,6 @@ struct DetailHeroShowTitleLink: View {
                         .resizable()
                         .scaledToFit()
                     if sizeClass == .regular {
-                        // iPad: fill the column width so it matches the Play button.
                         art.frame(width: detailHeroRegularPrimaryWidth, alignment: contentAlignment)
                     } else {
                         art
@@ -161,18 +119,14 @@ struct DetailHeroShowTitleLink: View {
         titleText
             .frame(maxWidth: .infinity, alignment: contentAlignment)
     }
-    #endif
 
     private var titleText: some View {
         Text(title)
-            .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+            .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
             .foregroundStyle(Color.primary.opacity(0.78))
     }
 }
 
-/// Pins the iPad hero's right-column synopsis to the top of the Play button in
-/// the left column, so anything above the synopsis (a season/episode title and
-/// marker) sits above the button rather than level with the metadata.
 private extension VerticalAlignment {
     enum HeroDescriptionTop: AlignmentID {
         static func defaultValue(in dimensions: ViewDimensions) -> CGFloat {
@@ -240,38 +194,19 @@ struct DetailHeroSection<Supertitle: View, Subtitle: View, Actions: View>: View 
 
     var body: some View {
         let horizontalPadding: CGFloat = {
-            #if os(tvOS)
-            DuskPosterMetrics.detailHorizontalPadding
-            #else
             20
-            #endif
         }()
         let contentTopPadding: CGFloat = {
-            #if os(tvOS)
-            topInset + 80
-            #else
             topInset + 64
-            #endif
         }()
         let contentBottomPadding: CGFloat = {
-            #if os(tvOS)
-            40
-            #else
             // Sit the title block lower so it reads over the background fade
             // rather than the busier middle of the artwork — easier to read,
             // especially the dark text in Light mode.
             14
-            #endif
         }()
         let titleArtworkHeight: CGFloat = {
-            // Match the home cinematic hero's title-logo size so the clear-logo
-            // reads at the same scale on detail pages as in the home carousel
-            // (HomeCinematicHeroLayout.titleLogoMaxHeight: 124 tvOS / 108 iOS).
-            #if os(tvOS)
-            124
-            #else
             108
-            #endif
         }()
 
         ZStack(alignment: .bottomLeading) {
@@ -285,7 +220,7 @@ struct DetailHeroSection<Supertitle: View, Subtitle: View, Actions: View>: View 
                 DuskHeroBackdropOverlay(style: .soft)
             }
             .frame(width: containerWidth, height: heroHeight, alignment: .leading)
-            .duskHeroBackdropBottomFade()
+
             .offset(x: -backgroundLeadingInset)
             .allowsHitTesting(false)
 
@@ -301,38 +236,13 @@ struct DetailHeroSection<Supertitle: View, Subtitle: View, Actions: View>: View 
 
     @ViewBuilder
     private func heroContent(titleArtworkHeight: CGFloat) -> some View {
-        #if os(tvOS)
-        tvOSHeroContent(titleArtworkHeight: titleArtworkHeight)
-        #else
         if sizeClass == .regular {
             twoColumnHeroContent(titleArtworkHeight: titleArtworkHeight)
         } else {
             centeredHeroContent(titleArtworkHeight: titleArtworkHeight)
         }
-        #endif
     }
 
-    #if os(tvOS)
-    // tvOS now drops the poster too: a left-aligned column (title, metadata) over
-    // the backdrop with a single action row beneath it.
-    @ViewBuilder
-    private func tvOSHeroContent(titleArtworkHeight: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            VStack(alignment: .leading, spacing: 8) {
-                supertitle
-                titleView(height: titleArtworkHeight, alignment: .leading)
-                if let titleAccessory { titleAccessory }
-                subtitle
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            actions
-        }
-    }
-    #else
-    // iPhone: one centered column over the backdrop, no poster. The logo, title
-    // and metadata are a single tightly-spaced text group; the actions sit a
-    // step further down as their own group (same grouping tvOS uses).
     @ViewBuilder
     private func centeredHeroContent(titleArtworkHeight: CGFloat) -> some View {
         VStack(alignment: .center, spacing: 16) {
@@ -349,15 +259,6 @@ struct DetailHeroSection<Supertitle: View, Subtitle: View, Actions: View>: View 
         .multilineTextAlignment(.center)
     }
 
-    // iPad: a two-column hero. The name artwork leads the top of the column at the
-    // same width as the Play button. Below it the left column holds the metadata
-    // then the Play button + secondary actions; the right column holds the synopsis
-    // (for season/episode, preceded by the title + marker). The synopsis lines up
-    // with the top of the Play button, so the title/marker sit above the button.
-    //
-    // Show/movie heroes use the clear-logo as their title (so it leads the left
-    // column); season/episode heroes have a text title, so they lead with the show
-    // logo and put the title + marker at the head of the right column.
     @ViewBuilder
     private func twoColumnHeroContent(titleArtworkHeight: CGFloat) -> some View {
         let columnWidth = detailHeroRegularPrimaryWidth
@@ -416,10 +317,7 @@ struct DetailHeroSection<Supertitle: View, Subtitle: View, Actions: View>: View 
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    #endif
 
-    // `width` (iPad) sizes the artwork to a fixed width so it fills to the Play
-    // button's width; without it the logo is height-bound and centered/leading.
     @ViewBuilder
     private func titleView(height: CGFloat, alignment: Alignment, width: CGFloat? = nil) -> some View {
         if let titleArtworkURL {
@@ -453,7 +351,7 @@ struct DetailHeroSection<Supertitle: View, Subtitle: View, Actions: View>: View 
 
     private func titleFallback(alignment: Alignment) -> some View {
         Text(title)
-            .font(DuskFont.heroTitle(ios: .title2.bold()))
+            .font(DuskFont.heroTitle(style: .title2.bold()))
             // Soft near-black/near-white instead of pure `Color.primary` so the
             // title reads as a gentler grey, not harsh black, in Light mode.
             .foregroundStyle(Color.duskTextPrimary)
@@ -525,56 +423,32 @@ struct PlayVersionContextMenu: View {
 }
 
 extension View {
-    /// Presents the "Download Subtitles" (OpenSubtitles via Plex) flow the way
-    /// each platform expects: a detented sheet on iOS/iPadOS, a full-screen
-    /// cover on tvOS where sheets and context menus are awkward.
     func detailSubtitleSearchPresentation(
         isPresented: Binding<Bool>,
         viewModel: @escaping () -> SubtitleSearchViewModel
     ) -> some View {
-        #if os(tvOS)
-        fullScreenCover(isPresented: isPresented) {
-            SubtitleSearchView(viewModel: viewModel()) { isPresented.wrappedValue = false }
-        }
-        #else
         sheet(isPresented: isPresented) {
             SubtitleSearchView(viewModel: viewModel()) { isPresented.wrappedValue = false }
         }
-        #endif
     }
 }
 
-/// Icon-only secondary action label for detail heroes. Pairs with
-/// `detailHeroNativeSecondaryButtonStyle()` to make a compact glass icon button
-/// (a capsule pill on iOS, a circle on tvOS) without crowding the row with text.
 struct DetailHeroSecondaryIconLabel: View {
     let systemImage: String
 
     var body: some View {
         Image(systemName: systemImage)
-            .font(DuskFont.buttonLabel(ios: .subheadline.weight(.semibold)))
-            // Square on tvOS so the circular button reads as round; a slimmer pill
-            // on iOS where the secondaries sit in a capsule row.
+            .font(DuskFont.buttonLabel(style: .subheadline.weight(.semibold)))
             .frame(minWidth: iconMinWidth, minHeight: iconMinHeight)
             .contentShape(Capsule())
     }
 
     private var iconMinWidth: CGFloat {
-        #if os(tvOS)
-        // Kept equal to `iconMinHeight` — the tvOS button is a circle and goes
-        // oval the moment these diverge.
-        iconMinHeight
-        #else
         24
-        #endif
     }
 
     private var iconMinHeight: CGFloat {
-        #if os(tvOS)
-        30
-        #else
         32
-        #endif
     }
 }
 
@@ -586,24 +460,14 @@ struct DetailHeroPrimaryActionButtonLabel: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: systemImage)
-                .font(DuskFont.buttonLabel(ios: .headline.weight(.semibold)))
+                .font(DuskFont.buttonLabel(style: .headline.weight(.semibold)))
 
             Text(title)
-                .font(DuskFont.buttonLabel(ios: .headline))
+                .font(DuskFont.buttonLabel(style: .headline))
                 .lineLimit(1)
         }
         .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: detailHeroActionLabelMinHeight)
-        #if os(tvOS)
-        // tvOS is left-aligned, so give the primary a contained width (space to its
-        // right) rather than letting it hug the short "Play" / "Resume" label.
-        // No label color: the system glass flips it between light (unfocused) and
-        // dark (focused, on the white platter) by itself.
-        .frame(minWidth: detailHeroTVActionLabelMinWidth)
-        #else
-        // The iOS primary fills with a translucent-`primary` prominent glass, so
-        // the label uses the inverse color to stay legible on it.
         .foregroundStyle(Color.duskPrimaryActionLabel)
-        #endif
         .contentShape(Capsule())
     }
 }
@@ -616,17 +480,14 @@ struct DetailHeroStatusActionLabel: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: systemImage)
-                .font(DuskFont.buttonLabel(ios: .headline.weight(.semibold)))
+                .font(DuskFont.buttonLabel(style: .headline.weight(.semibold)))
 
             Text(title)
-                .font(DuskFont.buttonLabel(ios: .headline))
+                .font(DuskFont.buttonLabel(style: .headline))
                 .lineLimit(1)
         }
         .foregroundStyle(Color.duskTextPrimary)
         .frame(maxWidth: fillsWidth ? .infinity : nil, minHeight: detailHeroActionLabelMinHeight)
-        #if os(tvOS)
-        .frame(minWidth: detailHeroTVActionLabelMinWidth)
-        #endif
         .padding(.horizontal, 20)
         .padding(.vertical, 5)
         .background(Color.duskSurface.opacity(0.86), in: Capsule())
@@ -640,93 +501,22 @@ struct DetailHeroStatusActionLabel: View {
 extension View {
     @ViewBuilder
     func detailHeroNativePrimaryButtonStyle() -> some View {
-        #if os(tvOS)
-        // Plain system glass, like the TV app: a dark platter that lifts to white
-        // with a dark label on focus. No tint: any explicit colour (even
-        // `.primary`) recolours the label too and goes white-on-white on focus.
         self
-            .buttonStyle(.glass)
-            .controlSize(.regular)
-            .buttonBorderShape(.capsule)
-        #elseif os(iOS)
-        // Prominent glass tinted with a *translucent* `primary`: a contrasting lean
-        // (dark in Light mode, light in Dark) that still reads as liquid glass rather
-        // than a solid black/white fill. `.regular` height keeps it compact.
-        if #available(iOS 26.0, *) {
-            self
-                .buttonStyle(.glassProminent)
-                .controlSize(.regular)
-                .buttonBorderShape(.capsule)
-                .tint(Color.duskPrimaryButtonTint)
-        } else {
-            self
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .buttonBorderShape(.capsule)
-                .tint(Color.primary)
-        }
-        #else
-        self
-        #endif
     }
 
     @ViewBuilder
     func detailHeroNativeSecondaryButtonStyle() -> some View {
-        #if os(tvOS)
-        // tvOS secondaries are icon-only and sit beside the primary, so make them
-        // round — there is no width to match. No tint, same as the primary.
         self
-            .buttonStyle(.glass)
-            .controlSize(.regular)
-            .buttonBorderShape(.circle)
-        #elseif os(iOS)
-        if #available(iOS 26.0, *) {
-            self
-                .buttonStyle(.glass)
-                .controlSize(.regular)
-                .buttonBorderShape(.capsule)
-                .tint(Color.primary)
-        } else {
-            self
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
-                .buttonBorderShape(.capsule)
-                .tint(Color.primary)
-        }
-        #else
-        self
-        #endif
     }
 
-    /// Sizes and aligns the stacked iOS detail hero action block so the primary
-    /// button and the secondary row underneath share a single width. iPhone uses
-    /// ~60% of the screen, centered; iPad/regular uses a capped width, leading
-    /// aligned in the hero text column. No-op on tvOS, which keeps its inline row.
     @ViewBuilder
-    func detailHeroActionStackFrame(isCompactPhone: Bool) -> some View {
-        #if os(iOS)
-        if isCompactPhone {
-            self
-                .containerRelativeFrame(.horizontal) { width, _ in
-                    max(width * detailHeroCompactActionWidthFraction, 0)
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-        } else {
-            self
-                .frame(maxWidth: detailHeroRegularPrimaryWidth, alignment: .leading)
-        }
-        #else
+    func detailHeroActionStackFrame(isCompactLayout: Bool) -> some View {
         self
-        #endif
     }
 }
 
-/// Fraction of the hero (screen) width the iPhone primary action button spans.
 let detailHeroCompactActionWidthFraction: CGFloat = 0.6
 
-/// Shared width on iPad/regular for the primary action button and the title
-/// artwork, so the logo reads at roughly the same width as the Play button
-/// beneath it rather than filling the whole column.
 let detailHeroRegularPrimaryWidth: CGFloat = 260
 
 // MARK: - Actor Credit Card
@@ -737,33 +527,8 @@ struct ActorCreditCard: View {
     /// have to be fetched from it, because person ids are per-server tag ids.
     let serverID: String?
     let plexService: PlexService
-    #if os(tvOS)
-    @FocusState private var isFocused: Bool
-    #endif
 
     var body: some View {
-        #if os(tvOS)
-        let avatarSize: CGFloat = 144
-        let cardWidth: CGFloat = 156
-        let avatarTextSpacing: CGFloat = 14
-        let artworkShape = RoundedRectangle(cornerRadius: PosterArtwork.cornerRadius, style: .continuous)
-
-        VStack(alignment: .leading, spacing: avatarTextSpacing) {
-            NavigationLink(value: AppNavigationRoute.person(person, serverID: serverID)) {
-                avatarImage(size: avatarSize)
-            }
-            .duskSuppressTVOSButtonChrome()
-            .focused($isFocused)
-            .duskTVOSFocusEffectShape(artworkShape, scales: false)
-            .accessibilityLabel(accessibilityLabel)
-            .frame(width: avatarSize, height: avatarSize)
-
-            personDetails(width: avatarSize)
-        }
-        .frame(width: cardWidth, alignment: .topLeading)
-        .duskTVOSFocusedScale(isFocused)
-        .zIndex(isFocused ? 1 : 0)
-        #else
         NavigationLink(value: AppNavigationRoute.person(person, serverID: serverID)) {
             VStack(spacing: 8) {
                 avatarImage(size: 72)
@@ -772,8 +537,7 @@ struct ActorCreditCard: View {
             .frame(width: 80)
         }
         .buttonStyle(.plain)
-        .duskSuppressTVOSButtonChrome()
-        #endif
+
     }
 
     @ViewBuilder
@@ -815,13 +579,13 @@ struct ActorCreditCard: View {
     private func personDetails(width: CGFloat) -> some View {
         VStack(spacing: 2) {
             Text(person.name)
-                .font(DuskFont.cardSubtitle(ios: .caption))
+                .font(DuskFont.cardSubtitle(style: .caption))
                 .foregroundStyle(Color.primary)
                 .lineLimit(1)
 
             if let roleName = person.roleName, !roleName.isEmpty {
                 Text(roleName)
-                    .font(DuskFont.cardSubtitle(ios: .caption2))
+                    .font(DuskFont.cardSubtitle(style: .caption2))
                     .foregroundStyle(Color.primary.opacity(0.72))
                     .lineLimit(1)
             }
@@ -848,19 +612,13 @@ struct DetailCastSection: View {
     var maxVisibleRoles = 20
 
     var body: some View {
-        #if os(tvOS)
-        let castSpacing: CGFloat = 24
-        let castVerticalPadding: CGFloat = 12
-        let headerSpacing: CGFloat = 10
-        #else
         let castSpacing: CGFloat = 12
         let castVerticalPadding: CGFloat = 0
         let headerSpacing: CGFloat = 12
-        #endif
 
         VStack(alignment: .leading, spacing: headerSpacing) {
             Text(title)
-                .font(DuskFont.sectionHeader(ios: .headline))
+                .font(DuskFont.sectionHeader(style: .headline))
                 .foregroundStyle(Color.primary)
                 .padding(.horizontal, horizontalPadding)
 
@@ -877,25 +635,13 @@ struct DetailCastSection: View {
                 .padding(.horizontal, horizontalPadding)
                 .padding(.vertical, castVerticalPadding)
             }
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
         }
-        #if os(tvOS)
-        .focusSection()
-        #endif
     }
 }
 
 struct ExpandableSummaryText: View {
-    /// Default collapsed height of a synopsis block. tvOS fits one extra line in
-    /// the same space now that the prose is 27pt rather than 29pt.
     static var defaultCollapsedLineLimit: Int {
-        #if os(tvOS)
-        10
-        #else
         9
-        #endif
     }
 
     let text: String
@@ -912,7 +658,7 @@ struct ExpandableSummaryText: View {
             Text(text)
                 // Must stay identical to `measurementText` below, or the
                 // expand/collapse height comparison stops matching the real text.
-                .font(DuskFont.body(ios: .body))
+                .font(DuskFont.body(style: .body))
                 .foregroundStyle(foregroundStyle)
                 .lineSpacing(4)
                 .lineLimit(isExpanded ? nil : collapsedLineLimit)
@@ -935,14 +681,9 @@ struct ExpandableSummaryText: View {
                 Button(isExpanded ? "Show Less" : "Show More") {
                     isExpanded.toggle()
                 }
-                .font(DuskFont.buttonLabel(ios: .subheadline.weight(.semibold)))
-                #if os(tvOS)
-                .buttonStyle(.glass)
-                .buttonBorderShape(.capsule)
-                #else
+                .font(DuskFont.buttonLabel(style: .subheadline.weight(.semibold)))
                 .foregroundStyle(Color.primary)
                 .buttonStyle(.plain)
-                #endif
             }
         }
     }
@@ -957,7 +698,7 @@ struct ExpandableSummaryText: View {
     ) -> some View {
         Text(text)
             // Keep in lockstep with the visible text's font above.
-            .font(DuskFont.body(ios: .body))
+            .font(DuskFont.body(style: .body))
             .lineSpacing(4)
             .lineLimit(lineLimit)
             .truncationMode(.tail)

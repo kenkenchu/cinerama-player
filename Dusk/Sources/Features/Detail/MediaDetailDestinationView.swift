@@ -37,16 +37,6 @@ struct MediaDetailDestinationView: View {
                 downloadManager: downloadManager,
                 offlinePlaybackSyncManager: offlinePlaybackSyncManager
             )
-        #if os(tvOS)
-        // tvOS has one page per show: a show, season, or episode route all open
-        // it, on the season (and episode) the route points at.
-        case .show:
-            seriesDetail(entry: .show)
-        case .season:
-            seriesDetail(entry: .season)
-        case .episode:
-            seriesDetail(entry: .episode)
-        #else
         case .show:
             ShowDetailView(
                 id: id,
@@ -71,7 +61,6 @@ struct MediaDetailDestinationView: View {
                 downloadManager: downloadManager,
                 offlinePlaybackSyncManager: offlinePlaybackSyncManager
             )
-        #endif
         case .person:
             ActorDetailView(
                 person: PlexPersonReference(personID: id.ratingKey, name: "Actor", thumb: nil),
@@ -97,17 +86,4 @@ struct MediaDetailDestinationView: View {
         }
     }
 
-    #if os(tvOS)
-    private func seriesDetail(entry: SeriesDetailViewModel.Entry) -> some View {
-        SeriesDetailView(
-            entry: entry,
-            id: id,
-            plexService: plexService,
-            seerrService: seerrService,
-            downloadManager: downloadManager,
-            offlinePlaybackSyncManager: offlinePlaybackSyncManager,
-            prefersOfflineAvailability: prefersOfflineAvailability
-        )
-    }
-    #endif
 }

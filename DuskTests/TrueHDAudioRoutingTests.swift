@@ -26,13 +26,8 @@ struct TrueHDAudioRoutingTests {
             preferredLanguage: nil,
             decodesTrueHD: true
         )
-        #if os(tvOS)
-        // Lossless ranks top on tvOS: discrete 7.1 PCM over HDMI.
-        #expect(position == 0)
-        #else
         // iPhone/iPad downmix to stereo either way, so the lossy sibling wins.
         #expect(position == 1)
-        #endif
     }
 
     @Test func stockBuildNeverPreselectsTrueHD() throws {

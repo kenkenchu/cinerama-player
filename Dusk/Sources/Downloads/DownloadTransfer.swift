@@ -52,15 +52,7 @@ final class DownloadTransferController: NSObject, URLSessionDownloadDelegate, @u
     private var cancelledTaskIdentifiers: Set<Int> = []
     private var progressSnapshots: [Int: ProgressSnapshot] = [:]
     private lazy var session: URLSession = {
-        #if os(iOS)
-        let configuration = URLSessionConfiguration.background(
-            withIdentifier: DownloadBackgroundSessionRegistry.identifier
-        )
-        configuration.sessionSendsLaunchEvents = true
-        configuration.isDiscretionary = false
-        #else
         let configuration = URLSessionConfiguration.default
-        #endif
         configuration.allowsExpensiveNetworkAccess = true
         configuration.allowsConstrainedNetworkAccess = true
         configuration.waitsForConnectivity = true

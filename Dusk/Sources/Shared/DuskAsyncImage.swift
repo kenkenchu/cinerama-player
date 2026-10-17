@@ -1,11 +1,6 @@
 import SwiftUI
-#if canImport(UIKit)
-import UIKit
-typealias DuskPlatformImage = UIImage
-#else
 import AppKit
 typealias DuskPlatformImage = NSImage
-#endif
 
 enum DuskAsyncImagePhase {
     case empty
@@ -40,11 +35,7 @@ struct DuskAsyncImage<Content: View>: View {
         do {
             let image = try await DuskImageLoader.shared.image(for: url, using: plexService)
             guard !Task.isCancelled else { return }
-            #if os(macOS)
             phase = .success(Image(nsImage: image))
-            #else
-            phase = .success(Image(uiImage: image))
-            #endif
         } catch {
             guard !Task.isCancelled else { return }
             phase = .failure(error)

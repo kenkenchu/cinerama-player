@@ -1,447 +1,100 @@
 import SwiftUI
 
-/// The main tab shell shown after authentication and server connection.
+private enum MacDestination: String, CaseIterable, Identifiable {
+    case home = "Home", movies = "Movies", shows = "TV Shows", videos = "Videos"
+    case liveTV = "Live TV", search = "Search", downloads = "Downloads", settings = "Settings"
+    var id: Self { self }
+    var symbol: String {
+        switch self {
+        case .home: "house"
+        case .movies: "film"
+        case .shows: "tv"
+        case .videos: "play.rectangle"
+        case .liveTV: "dot.radiowaves.left.and.right"
+        case .search: "magnifyingglass"
+        case .downloads: "arrow.down.circle"
+        case .settings: "gearshape"
+        }
+    }
+}
+
 struct MainTabView: View {
-    @Environment(PlexService.self) private var plexService
+    @Environment(PlexService.self) private var plex
     @Environment(PlaybackCoordinator.self) private var playback
-    @Environment(DownloadManager.self) private var downloadManager
-    @Environment(UserPreferences.self) private var preferences
-    @Environment(\.scenePhase) private var scenePhase
-    @State private var selectedTab: MainTabItem = .home
-    @State private var homePath = NavigationPath()
-    @State private var moviesPath = NavigationPath()
-    @State private var showsPath = NavigationPath()
-    @State private var videosPath = NavigationPath()
-    @State private var liveTVPath = NavigationPath()
-    @State private var downloadsPath = NavigationPath()
-    @State private var searchPath = NavigationPath()
-    @State private var settingsPath = NavigationPath()
-    @State private var morePath = NavigationPath()
-    @State private var librariesViewModel: LibrariesViewModel?
-    @State private var liveTVViewModel: LiveTVViewModel?
-    #if os(tvOS)
-    @Environment(TopShelfLinkRouter.self) private var topShelfLinks
-    @State private var isHomeScrolledOffTop = false
-    @State private var homeScrollToTopRevision = 0
-    #endif
+    @State private var selection: MacDestination? = .home
+    @State private var paths: [MacDestination: NavigationPath] = [:]
+    @State private var libraries: LibrariesViewModel?
+    @State private var liveTV: LiveTVViewModel?
 
     var body: some View {
-        @Bindable var bindablePlayback = playback
-
-        shellView
-            // Which tabs exist depends on the merged library list, so the shell
-            // reloads it whenever the set of connected servers changes: it
-            // mounts before the first server is connected.
-            .task(id: plexService.serverContentRevision) {
-                if librariesViewModel == nil {
-                    librariesViewModel = LibrariesViewModel(plexService: plexService)
-                }
-                if liveTVViewModel == nil {
-                    liveTVViewModel = LiveTVViewModel(plexService: plexService)
-                }
-                await librariesViewModel?.loadLibraries()
-                await liveTVViewModel?.discover()
+        NavigationSplitView {
+            List(MacDestination.allCases, selection: $selection) { item in
+                Label(item.rawValue, systemImage: item.symbol).tag(item)
             }
-            // Teaches Siri the recently watched and added titles, again on
-            // each return to the foreground (at most every 30 minutes). Waits
-            // a moment so it never competes with Home's first paint.
-            .task(id: SiriCatalogRefreshTrigger(
-                revision: plexService.serverContentRevision,
-                isActive: scenePhase == .active
-            )) {
-                guard scenePhase == .active else { return }
-                try? await Task.sleep(for: .seconds(5))
-                guard !Task.isCancelled else { return }
-                await SiriTitleCatalog.shared.refreshIfNeeded(plexService: plexService)
-            }
-            .onChange(of: availableTabs) { _, newTabs in
-                guard !newTabs.contains(selectedTab) else { return }
-                // Active iPhone tabs are normally retained while the shell
-                // folds into or out of More. This remains the fallback for a
-                // destination that genuinely disappears with server state.
-                switch selectedTab {
-                case .search, .settings, .downloads:
-                    selectedTab = newTabs.contains(.more) ? .more : .home
-                case .more:
-                    selectedTab = newTabs.contains(.settings) ? .settings : .home
-                default:
-                    selectedTab = .home
-                }
-            }
-            .fullScreenCover(isPresented: $bindablePlayback.showPlayer, onDismiss: {
-                playback.onPlayerDismissed()
-            }) {
+            .navigationTitle("Dusk")
+            .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
+        } detail: {
+            if playback.showPlayer {
                 PlayerView()
-                    .environment(plexService)
-                    .environment(playback)
-                    .environment(playback.preferences)
-            }
-            #if !os(tvOS)
-            .supporterPromptPresenter()
-            #endif
-            #if DEBUG
-            .task(id: plexService.serverContentRevision) {
-                await applyScreenshotDestination()
-            }
-            .modifier(ScreenshotSheetPresenter())
-            #endif
-            #if os(tvOS)
-            // Re-checked whenever a server connects: a cold launch from the
-            // Top Shelf delivers the link before the item's server is up.
-            .task(id: TopShelfLinkAttempt(link: topShelfLinks.pending, revision: plexService.serverContentRevision)) {
-                await openPendingTopShelfLink()
-            }
-            #endif
-    }
-
-    private var tabSelection: Binding<MainTabItem> {
-        Binding(
-            get: { selectedTab },
-            set: { newTab in
-                activate(newTab)
-            }
-        )
-    }
-
-    @ViewBuilder
-    private var shellView: some View {
-        #if os(tvOS)
-        MainTabTVShell(
-            tabs: availableTabs,
-            selection: tabSelection,
-            rootBackAction: rootBackAction,
-            content: tabRootView(for:)
-        )
-        #else
-        MainTabIOSShell(tabs: availableTabs, selection: tabSelection, content: tabRootView(for:))
-        #endif
-    }
-
-    #if os(tvOS)
-    /// What the Siri Remote's Back press does at the root of a tab, or `nil`
-    /// to leave it to the system.
-    ///
-    /// By default Back at a tab root leaves the app, which feels wrong
-    /// anywhere but Home. So every other tab goes back to Home, and Home
-    /// scrolled down goes back to its hero. Only Home at its top leaves the
-    /// app. Pushed screens keep the system's pop: the shell also checks the
-    /// real navigation stack, because settings rows push without the path.
-    private var rootBackAction: (() -> Void)? {
-        guard path(for: selectedTab).isEmpty else { return nil }
-        if selectedTab != .home {
-            return { activate(.home) }
-        }
-        guard isHomeScrolledOffTop else { return nil }
-        return { homeScrollToTopRevision += 1 }
-    }
-
-    /// Acts on the Top Shelf link once the item's server is connected. Open
-    /// lands on the item's detail page in Home; Play resumes it from the
-    /// server's current position, not the one the snapshot was written with.
-    private func openPendingTopShelfLink() async {
-        guard let link = topShelfLinks.pending else { return }
-        if link.isStale() {
-            topShelfLinks.pending = nil
-            return
-        }
-        guard plexService.pool.connection(for: link.id.serverID) != nil else { return }
-        topShelfLinks.pending = nil
-
-        switch link.action {
-        case .open:
-            if selectedTab != .home {
-                activate(.home)
-            }
-            homePath = NavigationPath([link.route])
-        case .play:
-            let details = try? await plexService.getMediaDetails(
-                ratingKey: link.id.ratingKey,
-                serverID: link.id.serverID
-            )
-            await playback.play(
-                id: link.id,
-                resumeOffsetMilliseconds: details?.viewOffset,
-                resumeOffsetDurationMilliseconds: details?.duration,
-                placeholder: details.map(PlaybackPlaceholder.init(details:))
-            )
-        }
-    }
-    #endif
-
-    private var hasDownloads: Bool {
-        DownloadsFeature.isVisible && !downloadManager.records.isEmpty
-    }
-
-    private var availableTabs: [MainTabItem] {
-        let desiredTabs = desiredAvailableTabs
-
-        #if os(tvOS)
-        return desiredTabs
-        #else
-        guard UIDevice.current.userInterfaceIdiom != .pad else {
-            return desiredTabs
-        }
-
-        // Never tear down the selected tab just because a visibility change
-        // crosses the iPhone's five-tab limit. Replacing a selected More tab
-        // with Settings (or the reverse) destroys its NavigationStack while a
-        // pushed settings destination is still active. Keep that container
-        // mounted until the user selects a different tab; the desired layout
-        // takes effect immediately after the selection changes.
-        if selectedTab == .more, !desiredTabs.contains(.more) {
-            let trailingTabs: Set<MainTabItem> = [.downloads, .settings]
-            return desiredTabs.filter { !trailingTabs.contains($0) } + [.more]
-        }
-
-        if !desiredTabs.contains(selectedTab),
-           let moreIndex = desiredTabs.firstIndex(of: .more) {
-            var retainedTabs = desiredTabs
-            retainedTabs[moreIndex] = selectedTab
-            return retainedTabs
-        }
-
-        return desiredTabs
-        #endif
-    }
-
-    private var desiredAvailableTabs: [MainTabItem] {
-        let availableLibraryTypes = librariesViewModel?.availableLibraryTypes ?? [.movie, .show]
-        let availableTypes = availableLibraryTypes + (liveTVViewModel?.isAvailable == true ? [.liveTV] : [])
-        let contentTabs = preferences.visibleLibraryTabs(from: availableTypes).map { type in
-            type == .liveTV ? MainTabItem.liveTV : MainTabItem.library(type)
-        }
-        let baseTabs: [MainTabItem] = [.home] + contentTabs
-
-        #if os(tvOS)
-        return baseTabs + [.search, .settings]
-        #else
-        if UIDevice.current.userInterfaceIdiom == .pad {
-            var trailingTabs: [MainTabItem] = []
-            if hasDownloads {
-                trailingTabs.append(.downloads)
-            }
-            trailingTabs.append(.settings)
-            return baseTabs + trailingTabs
-        }
-
-        var trailingTabs: [MainTabItem] = []
-        if hasDownloads {
-            trailingTabs.append(.downloads)
-        }
-        trailingTabs.append(.settings)
-
-        if baseTabs.count + trailingTabs.count > 5 {
-            return [.home] + Array(contentTabs.prefix(3)) + [.more]
-        }
-
-        return baseTabs + trailingTabs
-        #endif
-    }
-
-    /// Downloads folds into the More tab whenever it no longer fits as its own
-    /// tab; the More list only shows a Downloads row in that case.
-    private var moreTabIncludesDownloads: Bool {
-        hasDownloads && !availableTabs.contains(.downloads)
-    }
-
-    private var moreTabContentTypes: [PlexLibraryType] {
-        guard availableTabs.contains(.more) else { return [] }
-        let availableLibraryTypes = librariesViewModel?.availableLibraryTypes ?? []
-        let availableTypes = availableLibraryTypes + (liveTVViewModel?.isAvailable == true ? [.liveTV] : [])
-        let visibleTypes = preferences.visibleLibraryTabs(from: availableTypes)
-        let flatTypes = availableTabs.compactMap { tab -> PlexLibraryType? in
-            switch tab {
-            case .library(let type): type
-            case .liveTV: .liveTV
-            default: nil
-            }
-        }
-        return visibleTypes.filter { !flatTypes.contains($0) }
-    }
-
-    @ViewBuilder
-    private func tabRootView(for tab: MainTabItem) -> some View {
-        switch tab {
-        case .home:
-            #if os(tvOS)
-            HomeView(
-                path: $homePath,
-                isSelected: selectedTab == .home,
-                liveTVViewModel: resolvedLiveTVViewModel,
-                isScrolledOffTop: $isHomeScrolledOffTop,
-                scrollToTopRevision: homeScrollToTopRevision
-            )
-            #else
-            HomeView(
-                path: $homePath,
-                isSelected: selectedTab == .home,
-                liveTVViewModel: resolvedLiveTVViewModel
-            )
-            #endif
-        case .library(let libraryType):
-            if let librariesViewModel {
-                LibrariesView(
-                    libraryType: libraryType,
-                    viewModel: librariesViewModel,
-                    path: binding(for: libraryType)
-                )
+            } else if let libraries, let liveTV {
+                destination(selection ?? .home, libraries: libraries, liveTV: liveTV)
             } else {
-                NavigationStack(path: binding(for: libraryType)) {
-                    ZStack {
-                        Color.duskBackground.ignoresSafeArea()
-                        FeatureLoadingView()
-                    }
-                }
-            }
-        case .liveTV:
-            LiveTVView(viewModel: resolvedLiveTVViewModel, path: $liveTVPath)
-        case .downloads:
-            DownloadsView(path: $downloadsPath)
-        case .search:
-            SearchView(path: $searchPath)
-        case .settings:
-            SettingsView(path: $settingsPath)
-        case .more:
-            if let librariesViewModel {
-                MoreView(
-                    path: $morePath,
-                    showsDownloads: moreTabIncludesDownloads,
-                    contentTypes: moreTabContentTypes,
-                    librariesViewModel: librariesViewModel,
-                    liveTVViewModel: resolvedLiveTVViewModel
-                )
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-    }
-
-    private var resolvedLiveTVViewModel: LiveTVViewModel {
-        if let liveTVViewModel {
-            return liveTVViewModel
+        .frame(minWidth: 900, minHeight: 600)
+        .background(Color.duskBackground)
+        .task(id: plex.serverContentRevision) {
+            if libraries == nil { libraries = LibrariesViewModel(plexService: plex) }
+            if liveTV == nil { liveTV = LiveTVViewModel(plexService: plex) }
+            await libraries?.loadLibraries()
+            await liveTV?.discover()
         }
-        let viewModel = LiveTVViewModel(plexService: plexService)
-        return viewModel
-    }
-
-    private func activate(_ tab: MainTabItem) {
-        if selectedTab == tab {
-            popToRoot(for: tab)
-            return
+        .onChange(of: playback.showPlayer) { _, shown in
+            if !shown { playback.onPlayerDismissed() }
         }
-
-        if !desiredAvailableTabs.contains(selectedTab) {
-            setPath(NavigationPath(), for: selectedTab)
+        .onDisappear {
+            if playback.showPlayer {
+                playback.showPlayer = false
+                playback.onPlayerDismissed()
+            }
         }
-        selectedTab = tab
-    }
-
-    private func popToRoot(for tab: MainTabItem) {
-        guard !path(for: tab).isEmpty else { return }
-
-        withAnimation {
-            setPath(NavigationPath(), for: tab)
+        .onChange(of: selection) { _, _ in
+            if playback.showPlayer { playback.showPlayer = false }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .duskShowSearch)) { _ in
+            selection = .search
         }
     }
 
-    private func path(for tab: MainTabItem) -> NavigationPath {
-        switch tab {
-        case .home:
-            homePath
-        case .library(.movie):
-            moviesPath
-        case .library(.show):
-            showsPath
-        case .library(.video):
-            videosPath
-        case .library(.liveTV), .liveTV:
-            liveTVPath
-        case .downloads:
-            downloadsPath
-        case .search:
-            searchPath
-        case .settings:
-            settingsPath
-        case .more:
-            morePath
-        }
+    private func path(_ item: MacDestination) -> Binding<NavigationPath> {
+        Binding(get: { paths[item] ?? NavigationPath() }, set: { paths[item] = $0 })
     }
 
-    private func setPath(_ path: NavigationPath, for tab: MainTabItem) {
-        switch tab {
-        case .home:
-            homePath = path
-        case .library(.movie):
-            moviesPath = path
-        case .library(.show):
-            showsPath = path
-        case .library(.video):
-            videosPath = path
-        case .library(.liveTV), .liveTV:
-            liveTVPath = path
-        case .downloads:
-            downloadsPath = path
-        case .search:
-            searchPath = path
-        case .settings:
-            settingsPath = path
-        case .more:
-            morePath = path
-        }
-    }
-
-    private func binding(for libraryType: PlexLibraryType) -> Binding<NavigationPath> {
-        switch libraryType {
-        case .movie:
-            $moviesPath
-        case .show:
-            $showsPath
-        case .video:
-            $videosPath
-        case .liveTV:
-            $liveTVPath
+    @ViewBuilder private func destination(_ item: MacDestination, libraries: LibrariesViewModel, liveTV: LiveTVViewModel) -> some View {
+        switch item {
+        case .home: HomeView(path: path(.home), isSelected: true, liveTVViewModel: liveTV)
+        case .movies: LibrariesView(libraryType: .movie, viewModel: libraries, path: path(.movies))
+        case .shows: LibrariesView(libraryType: .show, viewModel: libraries, path: path(.shows))
+        case .videos: LibrariesView(libraryType: .video, viewModel: libraries, path: path(.videos))
+        case .search: SearchView(path: path(.search))
+        case .downloads: DownloadsView(path: path(.downloads))
+        case .liveTV: LiveTVView(viewModel: liveTV, path: path(.liveTV))
+        case .settings: SettingsView(path: path(.settings))
         }
     }
 }
 
-#if DEBUG
-private extension MainTabView {
-    /// Screenshot mode (`ScreenshotMode`): opens the requested screen once the
-    /// demo server and its libraries are in.
-    func applyScreenshotDestination() async {
-        guard ScreenshotMode.isActive else { return }
-        for _ in 0..<60 {
-            if let destination = await ScreenshotMode.consumeDestination(
-                plexService: plexService,
-                libraries: librariesViewModel?.libraries ?? [],
-                downloadManager: downloadManager
-            ) {
-                if selectedTab != destination.tab {
-                    selectedTab = destination.tab
-                }
-                setPath(NavigationPath(destination.routes), for: destination.tab)
-                ScreenshotMode.pendingSheet = destination.sheet
-                if let playID = destination.playID {
-                    await playback.playForScreenshot(
-                        id: playID,
-                        startPosition: destination.playOffsetMilliseconds.map { TimeInterval($0) / 1000 }
-                    )
-                }
-                return
-            }
-            try? await Task.sleep(for: .milliseconds(250))
-            if Task.isCancelled { return }
+struct DuskMacCommands: Commands {
+    var body: some Commands {
+        SidebarCommands()
+        CommandGroup(after: .textEditing) {
+            Button("Search Library") { NotificationCenter.default.post(name: .duskShowSearch, object: nil) }
+                .keyboardShortcut("f", modifiers: .command)
         }
     }
 }
-#endif
 
-#if os(tvOS)
-private struct TopShelfLinkAttempt: Equatable {
-    let link: TopShelfLink?
-    let revision: ServerContentRevision
-}
-#endif
-
-private struct SiriCatalogRefreshTrigger: Equatable {
-    let revision: ServerContentRevision
-    let isActive: Bool
+extension Notification.Name {
+    static let duskShowSearch = Notification.Name("DuskShowSearch")
 }

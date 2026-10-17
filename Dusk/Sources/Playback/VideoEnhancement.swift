@@ -9,15 +9,8 @@ enum VideoEnhancementMode: String, CaseIterable, Identifiable, Sendable {
 
     var id: String { rawValue }
 
-    /// Default upscaling mode per platform. Apple TV has the thermal and power
-    /// headroom to run the Metal upscaler continuously, so it defaults to Auto;
-    /// battery-powered devices default to Off to avoid the extra power draw.
     static var defaultForPlatform: VideoEnhancementMode {
-        #if os(tvOS)
-        .automatic
-        #else
         .disabled
-        #endif
     }
 
     var displayName: String {

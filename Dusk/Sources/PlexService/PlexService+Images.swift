@@ -1,9 +1,5 @@
 import Foundation
-#if canImport(UIKit)
-import UIKit
-#elseif os(macOS)
 import AppKit
-#endif
 
 extension PlexService {
     /// - Parameter serverID: The server the artwork path belongs to. nil means
@@ -258,13 +254,7 @@ extension PlexService {
     }
 
     var displayScale: CGFloat {
-        #if canImport(UIKit)
-        UIScreen.main.scale
-        #elseif os(macOS)
         NSScreen.main?.backingScaleFactor ?? 2
-        #else
-        1
-        #endif
     }
 
     private func defaultPort(for scheme: String?) -> Int? {

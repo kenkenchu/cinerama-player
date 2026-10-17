@@ -13,7 +13,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRAMEWORK_DIR="${ROOT_DIR}/Frameworks/DuskDovi.xcframework"
 STAMP_PATH="${FRAMEWORK_DIR}/dusk-dovi-source.sha256"
 BUILD_SCRIPT="${ROOT_DIR}/scripts/build_dusk_dovi_xcframework.sh"
-SLICES=(macos-arm64 ios-arm64 ios-arm64-simulator tvos-arm64 tvos-arm64-simulator)
+SLICES=(macos-arm64)
 
 source_hash() {
     (
@@ -23,7 +23,7 @@ source_hash() {
                 Native/DuskDovi/rust-toolchain.toml Native/DuskDovi/src \
                 Native/DuskDovi/include scripts/build_dusk_dovi_xcframework.sh \
                 -type f ! -name .DS_Store -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256
-            grep -E '^    (iOS|tvOS|macOS): ' project.yml
+            grep -E '^    macOS: ' project.yml
         } | shasum -a 256 | cut -d ' ' -f 1
     )
 }
@@ -54,7 +54,7 @@ if [ ! -x "${rustup_path}" ] && ! command -v rustup >/dev/null 2>&1; then
         cat >&2 <<'EOF'
 error: rustup is required to build DuskDovi.xcframework.
 Install it from https://rustup.rs (Homebrew's `rust` formula is not enough:
-it has no iOS/tvOS standard library), then rerun ./ci_scripts/install_dusk_dovi.sh.
+it has no pinned target standard library), then rerun ./ci_scripts/install_dusk_dovi.sh.
 EOF
         exit 1
     fi

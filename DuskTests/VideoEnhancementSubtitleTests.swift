@@ -1,9 +1,5 @@
 import Foundation
 import Testing
-#if os(tvOS)
-import AVFoundation
-import SwiftUI
-#endif
 @testable import Dusk
 
 @Suite("Video enhancement subtitle eligibility")
@@ -83,13 +79,8 @@ struct VideoEnhancementSubtitleTests {
     func sdrEmbeddedSubtitleEngineChoiceIsTVOnly(mode: VideoEnhancementMode) throws {
         let media = try engineSelectionMedia(videoFields: #","bitDepth":8"#)
         let decision = directDecision(media, mode: mode, subtitleID: 3)
-        #if os(tvOS)
-        #expect(decision.engine == .vlcKit)
-        #expect(decision.usesEnhancedSubtitleRenderer)
-        #else
         #expect(decision.engine == .avPlayer)
         #expect(!decision.usesEnhancedSubtitleRenderer)
-        #endif
     }
 
     @Test func subtitleOffSidecarsAndDisabledEnhancementKeepTheNormalEngine() throws {
@@ -130,22 +121,14 @@ struct VideoEnhancementSubtitleTests {
     @Test func sdrTransferCanEstablishRangeWithoutBitDepth() throws {
         let media = try engineSelectionMedia(videoFields: #","colorTrc":"bt709""#)
         let decision = directDecision(media, mode: .enabled, subtitleID: 3)
-        #if os(tvOS)
-        #expect(decision.usesEnhancedSubtitleRenderer)
-        #else
         #expect(decision.engine == .avPlayer)
-        #endif
     }
 
     @Test func sdrContainersThatNeedVLCCanAlsoPreferEnhancementOverTheAtmosRemux() throws {
         let media = try engineSelectionMedia(videoFields: #","bitDepth":8"#, container: "mkv")
         let decision = directDecision(media, mode: .enabled, subtitleID: 3)
         #expect(decision.engine == .vlcKit)
-        #if os(tvOS)
-        #expect(decision.usesEnhancedSubtitleRenderer)
-        #else
         #expect(!decision.usesEnhancedSubtitleRenderer)
-        #endif
         let hdr = try engineSelectionMedia(videoFields: #","colorTrc":"smpte2084""#, container: "mkv")
         #expect(!directDecision(hdr, mode: .enabled, subtitleID: 3).usesEnhancedSubtitleRenderer)
     }
@@ -193,100 +176,6 @@ struct VideoEnhancementSubtitleTests {
             """.utf8))
     }
 
-    #if os(tvOS)
-    @Test @MainActor
-    func automaticEmbeddedSelectionReportsTheDiscoveredPlexTrack() throws {
-        let media = try engineSelectionMedia(videoFields: #","bitDepth":8"#)
-        let player = PlayerViewModel(engine: SubtitleHandoffEngine(state: .playing))
-        defer { player.cleanup() }
-        player.hasConfiguredAutomaticTrackSelection = true
-        player.hasAppliedAutomaticAudioSelection = true
-        player.subtitleForcedOnly = true
-        player.subtitleTracks = media.parts[0].streams.filter { $0.id == 3 }.map(SubtitleTrack.init(stream:))
-        player.audioTracks = media.parts[0].streams.filter { $0.id == 11 }.map(AudioTrack.init(stream:))
-        player.selectedAudioTrackID = 11
-        var reported: ExplicitTrackSelection?
-        player.plexTrackSelectionHandler = { audioID, subtitleID in
-            reported = ExplicitTrackSelection(audioStreamID: audioID, subtitleStreamID: subtitleID)
-        }
-        player.applyAutomaticTrackSelectionIfNeeded()
-        #expect(reported == ExplicitTrackSelection(audioStreamID: 11, subtitleStreamID: 3))
-    }
-
-    @Test @MainActor
-    func liveHandoffRetainsPositionTracksPauseStateAndDownloadIdentity() throws {
-        let preferences = UserPreferences()
-        let previousMode = preferences.videoEnhancementMode
-        let previousForceAV = preferences.forceAVPlayer
-        let previousForceVLC = preferences.forceVLCKit
-        defer {
-            preferences.videoEnhancementMode = previousMode
-            preferences.forceAVPlayer = previousForceAV
-            preferences.forceVLCKit = previousForceVLC
-        }
-        preferences.videoEnhancementMode = .enabled
-        preferences.forceAVPlayer = false
-        preferences.forceVLCKit = false
-        let media = try engineSelectionMedia(videoFields: #","bitDepth":8"#)
-        let encodedMedia = String(decoding: try JSONEncoder().encode(media), as: UTF8.self)
-        let details = try JSONDecoder().decode(PlexMediaDetails.self, from: Data("""
-            {"ratingKey":"1","key":"/library/metadata/1","type":"movie","title":"SDR","Media":[\(encodedMedia)]}
-            """.utf8))
-
-        for isDownload in [false, true] {
-            for initialState: PlaybackState in [.playing, .paused] {
-                let playback = PlaybackCoordinator(plexService: PlexService(), preferences: preferences)
-                defer { playback.cancelDirectPlayFallbackWatch(); playback.engine?.stop() }
-                let oldEngine = SubtitleHandoffEngine(state: initialState)
-                playback.engine = oldEngine
-                playback.ratingKey = "1"
-                playback.activeItemDetails = details
-                playback.activePlaybackSessionIdentifier = "existing-session"
-                playback.activePlaybackUsesLocalDownload = isDownload
-                playback.hasScrobbled = true
-                playback.activeAudioStreamID = 11
-                let url = try #require(URL(string: isDownload ? "file:///tmp/clip.mp4" : "https://example.invalid/clip.mp4"))
-                let context = PlaybackAttemptContext(
-                    attemptID: UUID(), title: "SDR", ratingKey: "1", engine: .avPlayer,
-                    resolverReason: "MP4", mediaID: 1, partID: 1, sanitizedPlaybackURL: url.absoluteString
-                )
-                playback.debugInfo = PlaybackDebugInfo(
-                    title: "SDR", engine: .avPlayer, decision: isDownload ? .localDownload : .directPlay,
-                    media: media, part: media.parts[0], attemptID: context.attemptID,
-                    resolverReason: "MP4", sanitizedPlaybackURL: url.absoluteString
-                )
-                // The live clock is behind the original resume position after
-                // a backwards seek. Also exercise play after a paused start.
-                playback.playbackSource = PlaybackSource(
-                    url: url, startPosition: 100, shouldAutoPlay: initialState == .paused, context: context
-                )
-                let presentationID = playback.playerPresentationID
-                playback.selectPlexStreamsForPlayback(audioStreamID: 11, subtitleStreamID: 3)
-                #expect(oldEngine.didStop)
-                #expect(playback.engine is VLCKitEngine)
-                #expect(playback.debugInfo?.engine == .vlcKit)
-                #expect(playback.playbackSource?.url == url)
-                #expect(playback.playbackSource?.startPosition == 42)
-                #expect(playback.playbackSource?.shouldAutoPlay == (initialState == .playing))
-                #expect(playback.playbackSource?.preferredAudioTrackPosition == 1)
-                #expect(playback.playbackSource?.preferredAudioChannelCount == 6)
-                #expect(playback.activePlaybackUsesLocalDownload == isDownload)
-                #expect(playback.activePlaybackSessionIdentifier == "existing-session")
-                #expect(playback.hasScrobbled)
-                #expect(playback.playerPresentationID != presentationID)
-                #expect(playback.consumePendingExplicitTrackSelection() == ExplicitTrackSelection(audioStreamID: 11, subtitleStreamID: 3))
-                #expect(playback.consumePendingExplicitTrackSelection() == nil)
-                let vlcPresentationID = playback.playerPresentationID
-                for subtitleID: Int? in [nil, 3, nil, 3, nil] {
-                    playback.selectPlexStreamsForPlayback(audioStreamID: 11, subtitleStreamID: subtitleID)
-                    #expect(playback.playerPresentationID == vlcPresentationID)
-                    #expect(playback.debugInfo?.engine == .vlcKit)
-                    #expect(playback.playbackSource?.url == url)
-                }
-            }
-        }
-    }
-    #endif
 
     private func mediaWithStreams(_ streams: String) throws -> PlexMedia {
         try JSONDecoder().decode(PlexMedia.self, from: Data("""
@@ -294,38 +183,3 @@ struct VideoEnhancementSubtitleTests {
             """.utf8))
     }
 }
-
-#if os(tvOS)
-@MainActor
-private final class SubtitleHandoffEngine: PlaybackEngine {
-    let state: PlaybackState
-    let currentTime: TimeInterval = 42
-    let duration: TimeInterval = 300
-    let isBuffering = false
-    let error: PlaybackError? = nil
-    let videoEnhancementStatus = VideoEnhancementStatus.disabled
-    let availableSubtitleTracks: [SubtitleTrack] = []
-    let availableAudioTracks: [AudioTrack] = []
-    let selectedSubtitleTrackID: Int? = nil
-    let selectedAudioTrackID: Int? = nil
-    var onPlaybackEnded: (@MainActor () -> Void)?
-    private let player = AVPlayer()
-    var playbackCoordinator: AVPlaybackCoordinator { player.playbackCoordinator }
-    private(set) var didStop = false
-
-    init(state: PlaybackState) { self.state = state }
-    func load(source: PlaybackSource) {}
-    func configureVideoEnhancement(_ request: VideoEnhancementRequest) {}
-    func play() {}
-    func pause() {}
-    func stop() { didStop = true }
-    func seek(to position: TimeInterval) {}
-    func setPlaybackRate(_ rate: Float) {}
-    func configureCoordinatedPlayback(itemIdentifier: String?) {}
-    func recoverFromStall() {}
-    func handleReturnToForeground() {}
-    func selectSubtitleTrack(_ track: SubtitleTrack?) {}
-    func selectAudioTrack(_ track: AudioTrack) {}
-    func makePlayerView() -> AnyView { AnyView(EmptyView()) }
-}
-#endif

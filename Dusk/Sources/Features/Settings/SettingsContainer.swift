@@ -18,17 +18,11 @@ struct SettingsContainer<Content: View>: View {
             Color.duskBackground.ignoresSafeArea()
             content
         }
-        #if os(tvOS)
-        .fullScreenCover(isPresented: homeUserPickerPresented) {
-            homeUserPicker
-        }
-        #else
         .sheet(isPresented: homeUserPickerPresented) {
             homeUserPicker
         }
-        #endif
         .duskNavigationTitle("Settings")
-        .duskNavigationBarTitleDisplayModeLarge()
+
     }
 
     private var homeUserPicker: some View {

@@ -50,13 +50,6 @@ extension PlaybackCoordinator {
             passoutProtectionEpisodeLimit: preferences.continuousPlayPassoutProtectionEpisodeLimit
         )
 
-        #if DEBUG && !os(macOS)
-        // The overlay times a running countdown from its start date; without one
-        // it shows the frozen `secondsRemaining` the countdown task publishes.
-        if ScreenshotMode.frozenUpNextSeconds != nil {
-            upNextPresentation?.countdownStartedAt = nil
-        }
-        #endif
 
         if shouldAutoplay {
             startUpNextCountdown()
@@ -86,12 +79,7 @@ extension PlaybackCoordinator {
                       current.shouldAutoplay else { return }
 
                 let rawElapsed = Date().timeIntervalSince(startedAt)
-                #if DEBUG && !os(macOS)
-                let elapsed = ScreenshotMode.frozenUpNextSeconds
-                    .map { min(rawElapsed, duration - Double($0)) } ?? rawElapsed
-                #else
                 let elapsed = rawElapsed
-                #endif
                 let clampedElapsed = min(max(elapsed, 0), duration)
                 current.secondsRemaining = max(0, Int(ceil(duration - clampedElapsed)))
                 current.autoplayProgress = min(max(clampedElapsed / duration, 0), 1)
@@ -301,12 +289,7 @@ extension PlaybackCoordinator {
                 pausedAt = nil
 
                 let rawElapsed = now.timeIntervalSince(startedAt) - accumulatedPausedTime
-                #if DEBUG && !os(macOS)
-                let elapsed = ScreenshotMode.frozenUpNextSeconds
-                    .map { min(rawElapsed, duration - Double($0)) } ?? rawElapsed
-                #else
                 let elapsed = rawElapsed
-                #endif
                 let clampedElapsed = min(max(elapsed, 0), duration)
                 current.secondsRemaining = max(0, Int(ceil(duration - clampedElapsed)))
                 current.countdownProgress = min(max(clampedElapsed / duration, 0), 1)

@@ -30,8 +30,6 @@ enum StreamResolver {
         /// from a remux nor libvlc can tone-map). The coordinator should start
         /// such media on the server-transcode ladder rung instead of direct play.
         var requiresServerTranscode: Bool = false
-        /// tvOS prefers VLC for enhanced SDR subtitles, including when the
-        /// container already needs VLC but an optional Atmos remux could win.
         var usesEnhancedSubtitleRenderer = false
     }
 
@@ -48,35 +46,7 @@ enum StreamResolver {
         forceVLCKit: Bool = false
     ) -> Decision {
         let decision = evaluate(media: media, forceAVPlayer: forceAVPlayer, forceVLCKit: forceVLCKit)
-        #if os(tvOS)
-        guard !forceAVPlayer, !forceVLCKit,
-              !decision.requiresServerTranscode,
-              let selectedSubtitleStreamID,
-              part.streams.contains(where: {
-                  $0.streamType == .subtitle && $0.id == selectedSubtitleStreamID && $0.key == nil
-              }) else { return decision }
-        let request = VideoEnhancementRequest.make(mode: enhancementMode, media: media, part: part)
-        guard request.isPotentiallyEnabled, request.preflightUnavailabilityReason == nil else { return decision }
-
-        // vmem is SDR-only. Require positive SDR evidence and reject *every*
-        // HDR/DV hint, even when Plex omitted bitDepth or spelled PQ as ST2084.
-        let videoStreams = part.streams.filter { $0.streamType == .video }
-        let sdrTransfers: Set<String> = ["bt709", "smpte170m", "smpte240m", "gamma22", "gamma28", "iec61966-2-1"]
-        guard !videoStreams.isEmpty, videoStreams.allSatisfy({ stream in
-            !stream.isHDRVideo && hdrTransfer(of: stream) == nil &&
-                stream.doviPresent != true && stream.doviProfile == nil &&
-                stream.doviBLCompatID == nil && stream.doviLevel == nil &&
-                (stream.bitDepth.map { (1...8).contains($0) } == true ||
-                    sdrTransfers.contains(stream.colorTrc?.lowercased() ?? ""))
-        }) else { return decision }
-        return Decision(
-            engine: .vlcKit,
-            reason: "SDR video enhancement with selected embedded subtitles uses VLCKit",
-            usesEnhancedSubtitleRenderer: true
-        )
-        #else
         return decision
-        #endif
     }
 
     // MARK: - AVPlayer-Compatible Codec Sets
@@ -289,23 +259,6 @@ enum StreamResolver {
         "srt", "subrip", "vtt", "webvtt", "mov_text", "tx3g",
     ]
 
-    /// Whether this file should reach AVPlayer through a Plex copy-remux so
-    /// Dolby audio plays as Atmos (HDMI) or spatial audio (AirPods) instead of
-    /// VLCKit's plain PCM decode. Returns why not, or nil when it qualifies.
-    ///
-    /// Only files that would otherwise direct play on VLCKit are considered —
-    /// AVPlayer-compatible files already get Atmos/spatial audio natively. The
-    /// video must be something AVPlayer decodes from fMP4 HLS (8-bit H.264 or
-    /// HEVC). The audio stream playback would open on must be Dolby: E-AC-3
-    /// with Atmos everywhere, and on iPhone/iPad any 5.1+ AC-3/E-AC-3 (AVPlayer
-    /// spatializes multichannel Dolby for AirPods; on tvOS VLCKit already
-    /// outputs discrete multichannel PCM, so only Atmos is worth the remux).
-    ///
-    /// HDR video needs `displaySupportsHDR` (`AVPlayer.eligibleForHDRPlayback`):
-    /// Plex declares the remux's only variant `VIDEO-RANGE=PQ`, AVFoundation
-    /// refuses such a stream on an SDR display
-    /// (`AVErrorNoCompatibleAlternatesForExternalDisplay`) and rejects it if
-    /// the declaration is removed (CoreMedia -12927). VLCKit tone-maps there.
     static func spatialAudioRemuxBlocker(
         media: PlexMedia,
         decision: Decision,
@@ -382,19 +335,6 @@ enum StreamResolver {
 
     // MARK: - HDR Video Remux
 
-    /// Whether an HDR file only VLCKit could direct play should reach AVPlayer
-    /// through a video-copy Plex remux. VLCKit 3 renders into an untagged
-    /// 8-bit surface on iOS/tvOS, so it never shows HDR at all; AVPlayer
-    /// gives real HDR10, HLG, HDR10+ (the ST 2094-40 SEI rides the copied
-    /// bitstream) and — with `DolbyVisionSignaling` — Dolby Vision 8.1/8.4.
-    /// Returns why not, or nil when it qualifies.
-    ///
-    /// Audio must be copyable (E-AC-3/AC-3/AAC): converting DTS & co. to
-    /// keep the picture would trade a lossless track for a lossy one, so
-    /// those files keep VLCKit. DV7 + TrueHD is the exception, see
-    /// `convertedTrueHDRemuxBlocker`.
-    /// The display gate is the one the Atmos remux uses: Plex declares the
-    /// variant HDR, which AVFoundation refuses on an SDR display.
     static func hdrVideoRemuxBlocker(
         media: PlexMedia,
         decision: Decision,
@@ -542,11 +482,7 @@ enum StreamResolver {
         let codec = stream.codec?.lowercased()
         guard codec == "eac3" || codec == "ac3" else { return false }
         if isDolbyAtmos(stream) { return true }
-        #if os(tvOS)
-        return false
-        #else
         return (stream.channels ?? 0) >= 6
-        #endif
     }
 
     /// Plex reports E-AC-3 + JOC as profile "dolby digital plus + dolby atmos".
@@ -558,11 +494,7 @@ enum StreamResolver {
     }
 
     private static var platformSpatialAudioSuffix: String {
-        #if os(tvOS)
-        ""
-        #else
         " or multichannel Dolby"
-        #endif
     }
 
     // MARK: - Per-Stream Checks

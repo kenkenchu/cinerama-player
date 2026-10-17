@@ -121,15 +121,6 @@ struct PlaybackSource: Sendable {
     /// until a manual pause/resume — pre-selecting removes the switch
     /// entirely. `nil` leaves the container/libvlc default untouched.
     var preferredAudioTrackPosition: Int? = nil
-    /// Channel count of the audio stream playback is expected to open on, from
-    /// Plex metadata, resolved BEFORE the engine sees a single track. tvOS needs
-    /// it that early: libvlc reads the route's `maximumOutputNumberOfChannels`
-    /// while bringing its audio output up, and if the session has not been
-    /// opened to multichannel by then it locks the output to stereo and folds
-    /// 5.1/7.1 down in software for the rest of the session (see
-    /// `VLCKitEngine.configureAudioOutputPolicy`). The engine's own track list
-    /// only arrives after that decision has already been made. `nil` when the
-    /// metadata does not say.
     var preferredAudioChannelCount: Int? = nil
     /// Where the bytes come from (downloaded file / LAN server / remote
     /// server), resolved by the coordinator. VLCKit sizes its protective
@@ -569,27 +560,6 @@ struct UpNextPresentation: Sendable {
     var errorMessage: String?
 }
 
-/// The small bottom-right "next episode" poster shown over the play bar once
-/// the credits marker is reached. It replaces the old "Skip Credits" button and
-/// stays visible until the episode ends (or the user acts on it). Its `mode`
-/// captures how the session should continue, derived once from preferences when
-/// the credits marker is first reached:
-///
-/// - `timedAutoplay`: continuous play + auto-skip credits are both on. A visible
-///   countdown runs from the credits marker; when it ends the next episode plays
-///   immediately, skipping the rest of the credits and never showing the
-///   full-screen Up Next screen.
-/// - `autoAdvanceAtEnd`: continuous play on, auto-skip credits off. No countdown;
-///   the credits play out and the next episode starts at the natural episode end
-///   without the full-screen Up Next screen.
-/// - `manual`: continuous play off, or the passout-protection streak was hit. No
-///   countdown and no automatic advance; the natural episode end shows the
-///   full-screen Up Next screen ("Are You Still Watching?" / "Autoplay Paused").
-///
-/// In every mode, tapping the poster plays the next episode now, and dragging it
-/// down (iOS) / swiping down (tvOS) cancels any timer and opens the full-screen
-/// Up Next screen with no countdown so the user can wait indefinitely.
-/// Which way the player's Previous / Next Episode controls step.
 enum AdjacentEpisodeDirection: Sendable {
     case previous
     case next

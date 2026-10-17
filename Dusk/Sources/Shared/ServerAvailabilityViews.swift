@@ -58,14 +58,12 @@ struct ServerAvailabilityStateView: View {
             FeatureErrorView(message: message) {
                 Task { await connections.refresh() }
             }
-            #if os(macOS)
             Text("For a local Plex server, allow Dusk in System Settings → Privacy & Security → Local Network, then choose Retry.")
-                .font(DuskFont.caption(ios: .callout))
+                .font(DuskFont.caption(style: .callout))
                 .foregroundStyle(Color.duskTextSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 480)
                 .padding(.horizontal, 24)
-            #endif
             serverPriorityButton("Server Priority")
         }
     }
@@ -91,8 +89,8 @@ struct ServerAvailabilityStateView: View {
         .padding(.horizontal, 28)
         .padding(.vertical, 12)
         .background(Color.duskSurface, in: Capsule())
-        .duskSuppressTVOSButtonChrome()
-        .duskTVOSFocusEffectShape(Capsule())
+
+
     }
 }
 
@@ -128,9 +126,8 @@ struct ServerOutageNote: View {
                 Button("Retry") {
                     Task { await connections.refresh() }
                 }
-                .duskSuppressTVOSButtonChrome()
-                // On tvOS Home this can be the first thing under the hero.
-                .carouselLeadingFocusTarget()
+
+
             }
             .font(.footnote)
             .foregroundStyle(Color.duskTextSecondary)
@@ -153,13 +150,11 @@ extension View {
         sheet(isPresented: isPresented) {
             NavigationStack {
                 ServerPrioritySettingsView()
-                    #if !os(tvOS)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) {
                             Button("Done") { isPresented.wrappedValue = false }
                         }
                     }
-                    #endif
             }
         }
     }

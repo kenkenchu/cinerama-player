@@ -243,14 +243,6 @@ enum DolbyVisionSignaling {
         "hev1": "dvhe",
     ]
 
-    /// Level a profile 8 variant's HEVC `CODECS` entry is lowered to when
-    /// the source over-declares. tvOS 27 refuses a Dolby Vision master that
-    /// declares level 5.2 (`L156`) with -11848, while the same 4K24 stream
-    /// declared 5.1 plays with Dolby Vision engaged (AetherEngine #674).
-    /// Only applied when the content provably fits 5.1
-    /// (`DolbyVisionConfiguration.fitsHEVCLevel51`), so the declaration is
-    /// never lower than what the stream needs; only the playlist changes,
-    /// the decoder reads `hvcC`.
     static let cappedHEVCLevel = 153
 
     /// Returns the init segment with every HEVC sample entry signalled as

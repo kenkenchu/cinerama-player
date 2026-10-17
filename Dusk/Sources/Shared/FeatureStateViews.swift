@@ -14,16 +14,16 @@ struct FeatureEmptyStateView: View {
     var body: some View {
         VStack(spacing: 12) {
             Image(systemName: systemImage)
-                .font(DuskFont.glyphLarge(ios: .largeTitle))
+                .font(DuskFont.glyphLarge(style: .largeTitle))
                 .foregroundStyle(Color.duskTextSecondary)
 
             Text(title)
-                .duskFont(tvOnly: DuskFont.TV.rowTitle)
+
                 .foregroundStyle(Color.duskTextSecondary)
 
             if let message, !message.isEmpty {
                 Text(message)
-                    .font(DuskFont.caption(ios: .subheadline))
+                    .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.duskTextSecondary)
                     .multilineTextAlignment(.center)
             }
@@ -55,11 +55,11 @@ struct FeatureErrorView: View {
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "exclamationmark.triangle")
-                .font(DuskFont.glyphLarge(ios: .largeTitle))
+                .font(DuskFont.glyphLarge(style: .largeTitle))
                 .foregroundStyle(Color.duskTextSecondary)
 
             Text(message)
-                .duskFont(tvOnly: DuskFont.TV.rowTitle)
+
                 .foregroundStyle(Color.duskTextSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
@@ -84,11 +84,9 @@ struct FeaturePrimaryButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(DuskFont.buttonLabel(ios: .headline))
+                .font(DuskFont.buttonLabel(style: .headline))
                 .padding(.horizontal, 12)
-                #if !os(tvOS)
                 .foregroundStyle(Color.duskPrimaryActionLabel)
-                #endif
         }
         .detailHeroNativePrimaryButtonStyle()
     }

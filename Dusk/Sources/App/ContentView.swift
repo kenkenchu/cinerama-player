@@ -39,7 +39,7 @@ struct ContentView: View {
         .animation(.default, value: plexService.homeBootstrapCompleted)
         .animation(.default, value: plexService.needsHomeUserSelection)
         .background(Color.duskBackground.ignoresSafeArea())
-        .duskSuppressTVOSButtonChrome()
+
         .task(id: plexService.isAuthenticated) {
             await bootstrapHomeIfNeeded()
         }
@@ -87,15 +87,15 @@ struct ContentView: View {
             VStack(spacing: 18) {
                 if let homeBootstrapError {
                     Image(systemName: "person.2.slash")
-                        .font(DuskFont.glyphLarge(ios: .largeTitle))
+                        .font(DuskFont.glyphLarge(style: .largeTitle))
                         .foregroundStyle(Color.duskTextSecondary)
 
                     Text("Couldn’t load Plex")
-                        .font(DuskFont.sectionHeader(ios: .headline))
+                        .font(DuskFont.sectionHeader(style: .headline))
                         .foregroundStyle(Color.duskTextPrimary)
 
                     Text(homeBootstrapError)
-                        .duskFont(tvOnly: DuskFont.TV.body)
+
                         .foregroundStyle(Color.duskTextSecondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal, 40)
@@ -106,43 +106,42 @@ struct ContentView: View {
                             Button("Sign In") {
                                 signOut()
                             }
-                            .font(DuskFont.buttonLabel(ios: .headline))
+                            .font(DuskFont.buttonLabel(style: .headline))
                             .foregroundStyle(Color.duskPrimaryActionLabel)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
                             .background(Color.primary.opacity(0.88), in: Capsule())
-                            .duskSuppressTVOSButtonChrome()
-                            .duskTVOSFocusEffectShape(Capsule())
+
+
                         } else {
                             Button("Retry") {
                                 Task { await bootstrapHomeIfNeeded(force: true) }
                             }
-                            .font(DuskFont.buttonLabel(ios: .headline))
+                            .font(DuskFont.buttonLabel(style: .headline))
                             .foregroundStyle(Color.duskPrimaryActionLabel)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
                             .background(Color.primary.opacity(0.88), in: Capsule())
                             .disabled(isBootstrappingHome)
-                            .duskSuppressTVOSButtonChrome()
-                            .duskTVOSFocusEffectShape(Capsule())
+
 
                             Button("Sign Out", role: .destructive) {
                                 signOut()
                             }
-                            .font(DuskFont.buttonLabel(ios: .headline))
+                            .font(DuskFont.buttonLabel(style: .headline))
                             .foregroundStyle(.red)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
                             .background(.ultraThinMaterial, in: Capsule())
-                            .duskSuppressTVOSButtonChrome()
-                            .duskTVOSFocusEffectShape(Capsule())
+
+
                         }
                     }
                 } else {
                     ProgressView()
 
                     Text("Loading…")
-                        .duskFont(tvOnly: DuskFont.TV.body)
+
                         .foregroundStyle(Color.duskTextSecondary)
                 }
             }

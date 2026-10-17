@@ -202,9 +202,6 @@ final class SeasonDetailViewModel {
             ?? plexService.imageURL(for: details?.thumb, serverID: serverID, width: width, height: height)
     }
 
-    /// The show's title logo (clear-logo art) inherited onto the season metadata.
-    /// Used in place of the show-name text in the iOS season hero; nil when Plex
-    /// didn't attach a clear logo, in which case the hero falls back to text.
     func showTitleLogoURL(width: Int, height: Int) -> URL? {
         downloadManager?.localArtworkURL(for: details?.clearLogo)
             ?? plexService.imageURL(for: details?.clearLogo, serverID: serverID, width: width, height: height)

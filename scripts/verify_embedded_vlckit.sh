@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fails the build when the VLCKit binary embedded into the app product does
-# not match the copy in Frameworks/ (fetched by ci_scripts/install_vlckit.sh).
+# not match the copy in Frameworks/ (fetched by ci_scripts/install_macos_vlckit.sh).
 #
 # Why this exists: Xcode's framework-embed step can silently keep a stale
 # cached copy when the framework binary in Frameworks/ is replaced in-place (a
@@ -15,28 +15,8 @@ set -euo pipefail
 
 FRAMEWORKS_DIR="${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}"
 
-case "${PLATFORM_NAME}" in
-    iphoneos)
-        FRAMEWORK_NAME="MobileVLCKit"
-        REPO_SLICE="MobileVLCKit.xcframework/ios-arm64"
-        ;;
-    iphonesimulator)
-        FRAMEWORK_NAME="MobileVLCKit"
-        REPO_SLICE="MobileVLCKit.xcframework/ios-arm64-simulator"
-        ;;
-    appletvos)
-        FRAMEWORK_NAME="TVVLCKit"
-        REPO_SLICE="TVVLCKit.xcframework/tvos-arm64"
-        ;;
-    appletvsimulator)
-        FRAMEWORK_NAME="TVVLCKit"
-        REPO_SLICE="TVVLCKit.xcframework/tvos-arm64-simulator"
-        ;;
-    *)
-        echo "warning: unknown platform ${PLATFORM_NAME}; skipping VLCKit staleness check."
-        exit 0
-        ;;
-esac
+FRAMEWORK_NAME="VLCKit"
+REPO_SLICE="VLCKit.xcframework/macos-arm64_x86_64"
 
 EMBEDDED_BINARY="${FRAMEWORKS_DIR}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"
 REPO_BINARY="${PROJECT_DIR}/Frameworks/${REPO_SLICE}/${FRAMEWORK_NAME}.framework/${FRAMEWORK_NAME}"

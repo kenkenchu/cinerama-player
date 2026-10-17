@@ -1,4 +1,6 @@
-# Dusk Plex Data Layer
+# Dusk Mac Plex Data Layer
+
+This guide describes the shared data layer used by the native macOS app.
 
 Agent-facing map for Dusk's Plex data layer. Plex is the only media/playback
 backend; views call view models, view models call `PlexService`, and
@@ -126,15 +128,12 @@ Tokens and persisted state:
 
 Flow:
 1. `generatePin(strong:)` posts to `https://plex.tv/api/v2/pins`.
-2. `authURL(for:)` builds Plex's hosted auth page URL for the PIN. `SignInView`
-   opens it in an in-app `SFSafariViewController` on iPhone/iPad, but for an iOS
-   app on macOS (`isiOSAppOnMac`/`isMacCatalystApp`, where that sheet dismisses
-   itself immediately) it opens the external browser instead. Polling is started
-   before the browser opens and is independent of the browser's lifecycle:
-   closing/dismissing the browser must **not** cancel sign-in — the `plex.tv/link`
-   code stays on screen as the fallback and only the explicit Cancel button (or a
-   real ~120 s poll-window timeout) ends it. Cancellation exits polling silently;
-   the "Sign-in timed out" message is reserved for the full window elapsing.
+2. `authURL(for:)` builds Plex's hosted auth page URL for the PIN.
+   `SignInView` opens it in the Mac's default browser. Polling starts before
+   the browser opens and is independent of its lifecycle. Closing the browser
+   does not cancel sign-in: the `plex.tv/link` code remains as a fallback.
+   Explicit Cancel or the full roughly 120-second polling window ends the flow;
+   cancellation exits silently, while expiration displays the timeout error.
 3. `checkPin(_:)` polls until `authToken` appears.
 4. `setAuthToken(_:)` stores the primary token and clears stale account/server
    state on account change.
@@ -467,7 +466,7 @@ File: `PlexService+Playback.swift`.
 - Non-original quality presets force `directPlay=0`, `directStream=0`,
   `protocol=hls`, a Generic client profile, and an H.264/AAC HLS transcode
   target. Do not add HEVC to the current mpegts HLS target without validating
-  the resulting package on iOS and tvOS AVPlayer.
+  the resulting package with native Mac AVPlayer.
 - Decision code `1001` means transcode available, `1000` means direct-play only,
   and codes `>= 2000` are treated as failures.
 - Transcode start URLs also carry `X-Plex-Token` in the query because playback

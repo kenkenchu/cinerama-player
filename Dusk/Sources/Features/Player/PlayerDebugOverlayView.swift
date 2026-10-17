@@ -2,9 +2,6 @@ import SwiftUI
 
 struct PlayerPlaybackInfoView: View {
     @Environment(\.dismiss) private var dismiss
-    #if os(tvOS)
-    @FocusState private var focusedTVInfoEntryID: String?
-    #endif
 
     let debugInfo: PlaybackDebugInfo
     let state: PlaybackState
@@ -14,14 +11,10 @@ struct PlayerPlaybackInfoView: View {
     let videoEnhancementStatus: VideoEnhancementStatus
 
     var body: some View {
-        #if os(tvOS)
-        tvOSBody
-        #else
-        iOSBody
-        #endif
+        infoContent
     }
 
-    private var iOSBody: some View {
+    private var infoContent: some View {
         NavigationStack {
             List {
                 Section {
@@ -36,110 +29,19 @@ struct PlayerPlaybackInfoView: View {
             .duskScrollContentBackgroundHidden()
             .background(Color.duskBackground)
             .duskNavigationTitle("Playback Info")
-            .duskNavigationBarTitleDisplayModeInline()
+
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
                         dismiss()
                     }
-                    .duskSuppressTVOSButtonChrome()
+
                 }
             }
         }
         .presentationBackground(Color.duskBackground)
     }
 
-    #if os(tvOS)
-    private var tvOSBody: some View {
-        let entries = infoEntries
-
-        return ZStack {
-            Color.duskBackground
-                .ignoresSafeArea()
-
-            VStack(alignment: .leading, spacing: 26) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Playback Info")
-                        .font(DuskFont.TV.pageTitle)
-                        .foregroundStyle(Color.duskTextPrimary)
-
-                    Text(debugInfo.title)
-                        .font(DuskFont.TV.body)
-                        .foregroundStyle(Color.duskTextSecondary)
-                        .lineLimit(2)
-                }
-
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 10) {
-                            ForEach(entries) { entry in
-                                tvOSPlaybackInfoRow(
-                                    entry,
-                                    isFocused: focusedTVInfoEntryID == entry.id
-                                )
-                                .id(entry.id)
-                                .focusable(true)
-                                .focused($focusedTVInfoEntryID, equals: entry.id)
-                            }
-                        }
-                        .padding(28)
-                    }
-                    .scrollIndicators(.visible)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 28, style: .continuous)
-                            .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-                    }
-                    .onAppear {
-                        focusedTVInfoEntryID = entries.first?.id
-                    }
-                    .onChange(of: focusedTVInfoEntryID) { _, entryID in
-                        guard let entryID else { return }
-                        withAnimation(.easeInOut(duration: 0.18)) {
-                            proxy.scrollTo(entryID, anchor: .center)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, 96)
-            .padding(.vertical, 64)
-        }
-        .onExitCommand {
-            dismiss()
-        }
-    }
-
-    private func tvOSPlaybackInfoRow(_ entry: PlaybackInfoEntry, isFocused: Bool) -> some View {
-        HStack(alignment: .top, spacing: 28) {
-            Text(entry.label.uppercased())
-                .font(DuskFont.TV.groupHeader)
-                .foregroundStyle(Color.duskTextSecondary)
-                .frame(width: 230, alignment: .leading)
-
-            Text(entry.value)
-                .font(DuskFont.TV.rowValue.monospaced())
-                .foregroundStyle(Color.duskTextPrimary)
-                .lineLimit(Self.extendedLineLabels.contains(entry.label) ? 5 : 2)
-                .minimumScaleFactor(0.8)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, 22)
-        .padding(.vertical, 14)
-        .background(
-            isFocused ? Color.duskSurface.opacity(0.96) : Color.duskSurface.opacity(0.76),
-            in: RoundedRectangle(cornerRadius: 14, style: .continuous)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .strokeBorder(
-                    isFocused ? .white.opacity(0.35) : .white.opacity(0.04),
-                    lineWidth: 1
-                )
-        }
-        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-    }
-    #endif
 
     private var infoEntries: [PlaybackInfoEntry] {
         var entries = [
@@ -162,11 +64,6 @@ struct PlayerPlaybackInfoView: View {
             entries.append(PlaybackInfoEntry(label: "Enhancement Detail", value: enhancementDetail))
         }
 
-        #if os(tvOS)
-        // Reports both the mode Dusk asked for and the reason it could not ask,
-        // so "Match Content is off in tvOS Settings" is self-diagnosing.
-        entries.append(PlaybackInfoEntry(label: "Display Mode", value: DisplayModeMatcher.statusLabel))
-        #endif
 
         entries += [
             PlaybackInfoEntry(label: "File", value: debugInfo.fileSizeLabel),
@@ -220,11 +117,11 @@ struct PlayerPlaybackInfoView: View {
     private func playbackInfoRow(_ entry: PlaybackInfoEntry) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(entry.label.uppercased())
-                .font(DuskFont.badge(ios: .caption2.weight(.semibold)))
+                .font(DuskFont.badge(style: .caption2.weight(.semibold)))
                 .foregroundStyle(Color.duskTextSecondary)
 
             Text(entry.value)
-                .font(DuskFont.caption(ios: .caption).monospaced())
+                .font(DuskFont.caption(style: .caption).monospaced())
                 .foregroundStyle(Color.duskTextPrimary)
                 .lineLimit(Self.extendedLineLabels.contains(entry.label) ? 4 : 2)
         }
@@ -247,14 +144,10 @@ struct PlayerPlaybackInfoUnavailableView: View {
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        #if os(tvOS)
-        tvOSBody
-        #else
-        iOSBody
-        #endif
+        infoContent
     }
 
-    private var iOSBody: some View {
+    private var infoContent: some View {
         NavigationStack {
             ContentUnavailableView(
                 "Playback Info Unavailable",
@@ -264,53 +157,19 @@ struct PlayerPlaybackInfoUnavailableView: View {
             .foregroundStyle(Color.duskTextSecondary)
             .background(Color.duskBackground)
             .duskNavigationTitle("Playback Info")
-            .duskNavigationBarTitleDisplayModeInline()
+
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
                         dismiss()
                     }
-                    .duskSuppressTVOSButtonChrome()
+
                 }
             }
         }
         .presentationBackground(Color.duskBackground)
     }
 
-    #if os(tvOS)
-    private var tvOSBody: some View {
-        ZStack {
-            Color.duskBackground
-                .ignoresSafeArea()
-
-            VStack(spacing: 18) {
-                Image(systemName: "info.circle")
-                    .font(DuskFont.TV.glyphLarge)
-                    .foregroundStyle(Color.duskTextSecondary)
-
-                Text("Playback Info Unavailable")
-                    .font(DuskFont.TV.sectionHeader)
-                    .foregroundStyle(Color.duskTextPrimary)
-
-                Text("No playback statistics are available for this session.")
-                    .font(DuskFont.TV.body)
-                    .foregroundStyle(Color.duskTextSecondary)
-                    .multilineTextAlignment(.center)
-
-            }
-            .padding(42)
-            .frame(width: 620)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .overlay {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
-            }
-        }
-        .onExitCommand {
-            dismiss()
-        }
-    }
-    #endif
 }
 
 private struct PlaybackInfoEntry: Identifiable {

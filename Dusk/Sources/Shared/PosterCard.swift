@@ -52,7 +52,7 @@ struct PosterArtwork: View {
         .overlay(alignment: .topTrailing) {
             if let availabilityBadge, !availabilityBadge.isEmpty {
                 Text(availabilityBadge)
-                    .font(DuskFont.badge(ios: .caption2.weight(.bold)))
+                    .font(DuskFont.badge(style: .caption2.weight(.bold)))
                     .foregroundStyle(Color.primary)
                     .lineLimit(1)
                     .padding(.horizontal, availabilityBadgeHorizontalPadding)
@@ -79,31 +79,16 @@ struct PosterArtwork: View {
         imageAspectRatio > 1
     }
 
-    /// The badge text shrinks to `DuskFont.badge` on tvOS, so the pill needs
-    /// relatively more horizontal padding there to stay a pill rather than a
-    /// tight box around two words.
     private var availabilityBadgeHorizontalPadding: CGFloat {
-        #if os(tvOS)
-        9
-        #else
         7
-        #endif
     }
 
     private var playOverlaySymbolSize: CGFloat {
-        #if os(tvOS)
-        isHorizontalArtwork ? 34 : 28
-        #else
         25
-        #endif
     }
 
     private var playOverlayPadding: CGFloat {
-        #if os(tvOS)
-        isHorizontalArtwork ? 16 : 14
-        #else
         14
-        #endif
     }
 
     private var placeholder: some View {
@@ -111,7 +96,7 @@ struct PosterArtwork: View {
             .fill(Color.duskSurface)
             .overlay {
                 Image(systemName: isHorizontalArtwork ? "play.rectangle" : "film")
-                    .font(DuskFont.glyphLarge(ios: .title2))
+                    .font(DuskFont.glyphLarge(style: .title2))
                     .foregroundStyle(Color.duskTextSecondary)
             }
     }
@@ -313,22 +298,12 @@ extension PlexItem {
         PlexItemID(serverID: serverID, ratingKey: ratingKey)
     }
 
-    // tvOS has one page per show that every episode/season/show route opens, so
-    // the item's own details entry already lands there; separate season and show
-    // entries would just open the same page again.
     var contextMenuSeasonRoute: AppNavigationRoute? {
-        #if os(tvOS)
-        return nil
-        #else
         guard type == .episode, let parentRatingKey else { return nil }
         return .media(type: .season, id: relativeID(parentRatingKey))
-        #endif
     }
 
     var contextMenuShowRoute: AppNavigationRoute? {
-        #if os(tvOS)
-        return nil
-        #else
         switch type {
         case .episode:
             guard let grandparentRatingKey else { return nil }
@@ -339,6 +314,5 @@ extension PlexItem {
         default:
             return nil
         }
-        #endif
     }
 }

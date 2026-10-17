@@ -1,47 +1,13 @@
-# mmux workspace config.
-# Run `mmux` in this directory to open (or reattach to) the session.
-
-name: dusk-player
-
-# Processes: commands you start/stop and watch. cwd is relative to this file.
+# Optional Mac development processes. Nothing autostarts or launches the app.
+name: dusk-player-mac
 processes:
-  - name: Fetch VLCKit
-    cmd: ./ci_scripts/install_vlckit.sh
+  - name: Fetch Desktop VLCKit
+    cmd: ./ci_scripts/install_macos_vlckit.sh
     args: []
     cwd: .
     autostart: false
-  - name: iPhone Simulator
-    cmd: ./scripts/iphone.sh
+  - name: Build Mac App
+    cmd: ./scripts/build_macos.sh
     args: []
     cwd: .
-    autostart: false
-  - name: iPad Simulator
-    cmd: ./scripts/ipad.sh
-    args: []
-    cwd: .
-    autostart: false
-  - name: TVOS Simulator
-    cmd: ./scripts/tv.sh
-    args: []
-    cwd: .
-    autostart: false
-  - name: Build Check (iOS)
-    cmd: ./scripts/build-ios.sh
-    args: []
-    cwd: .
-    autostart: false
-  - name: Build Check (tvOS)
-    cmd: ./scripts/build-tv.sh
-    args: []
-    cwd: .
-    autostart: false
-  - name: TestFlight
-    cmd: ./scripts/testflight.sh
-    args: []
-    cwd: .
-    autostart: false
-  - name: Website Preview
-    cmd: sh
-    args: ["-c", "HOST=$(tailscale ip -4 2>/dev/null | head -n1); HOST=${HOST:-127.0.0.1}; echo \"Serving on http://$HOST:8080\"; exec python3 -m http.server 8080 --bind \"$HOST\""]
-    cwd: website
     autostart: false

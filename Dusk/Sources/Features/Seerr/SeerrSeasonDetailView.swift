@@ -25,7 +25,7 @@ struct SeerrSeasonDetailView: View {
                 content(season)
             }
         }
-        .duskNavigationBarTitleDisplayModeInline()
+
         .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
         .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task { await viewModel.load() }
@@ -57,11 +57,11 @@ struct SeerrSeasonDetailView: View {
                         VStack(alignment: detailHeroContentAlignment(for: sizeClass), spacing: 6) {
                             if let showName = viewModel.show?.name {
                                 Text(showName)
-                                    .font(DuskFont.metadata(ios: .subheadline.weight(.medium)))
+                                    .font(DuskFont.metadata(style: .subheadline.weight(.medium)))
                                     .foregroundStyle(Color.primary.opacity(0.84))
                             }
                             Text("\(season.episodes?.count ?? 0) episodes · \(viewModel.requestState.detailTitle)")
-                                .font(DuskFont.caption(ios: .caption))
+                                .font(DuskFont.caption(style: .caption))
                                 .foregroundStyle(Color.primary.opacity(0.76))
                         }
                     } actions: {
@@ -97,9 +97,6 @@ struct SeerrSeasonDetailView: View {
                             )
                         }
                     }
-                    #if os(tvOS)
-                    .focusSection()
-                    #endif
 
                     if let overview = season.overview?.nilIfEmpty,
                        detailShowsSynopsisBelowHero(for: sizeClass) {
@@ -129,11 +126,11 @@ struct SeerrSeasonDetailView: View {
 
                                 VStack(alignment: .leading, spacing: 5) {
                                     Text(episode.name?.nilIfEmpty ?? "Episode \(episode.episodeNumber ?? 0)")
-                                        .font(DuskFont.rowTitle(ios: .headline))
+                                        .font(DuskFont.rowTitle(style: .headline))
                                         .foregroundStyle(Color.duskTextPrimary)
                                     if let episodeNumber = episode.episodeNumber {
                                         Text("Episode \(episodeNumber)")
-                                            .font(DuskFont.caption(ios: .caption))
+                                            .font(DuskFont.caption(style: .caption))
                                             .foregroundStyle(Color.duskTextSecondary)
                                     }
                                 }
@@ -153,7 +150,7 @@ struct SeerrSeasonDetailView: View {
             .refreshable {
                 try? await viewModel.refresh()
             }
-            .duskTVOSPageBackground()
+
         }
     }
 }

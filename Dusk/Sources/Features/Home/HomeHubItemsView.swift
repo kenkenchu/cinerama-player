@@ -44,7 +44,7 @@ struct HomeHubItemsView: View {
             }
         }
         .duskNavigationTitle(viewModel.navigationTitle)
-        .duskNavigationBarTitleDisplayModeLarge()
+
         .task {
             await viewModel.loadItems()
         }
@@ -85,9 +85,6 @@ struct HomeHubItemsView: View {
                 .padding(.vertical, 32)
             }
             .scrollIndicators(.hidden)
-            #if os(tvOS)
-            .scrollClipDisabled()
-            #endif
         }
     }
 
