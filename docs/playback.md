@@ -118,13 +118,10 @@ Bitmap subtitles and text already burned into video cannot adopt system styles.
 Verify caption appearance with real text tracks on both engines; a successful
 build does not establish visual parity.
 
-Open issue from the 2026-10-17 user session: selected subtitles disappeared on
-some files after the system-style change. Investigation was deferred while
-catalog player presentation was repaired; subtitle rendering has not been
-confirmed fixed. Next collect the affected track's codec and embedded/sidecar
-status, active engine/route, and selected track from the overlay. Distinguish
-selection/mounting failures from caption appearance and bitmap limitations;
-do not assume the later player-presentation fix resolved this report.
+The user subsequently confirmed that the missing-subtitle behavior reported
+following the system-style change works now. This is no longer an open issue.
+No specific root cause was isolated; broader subtitle-format and engine coverage
+still requires runtime verification.
 
 
 ## Dolby Atmos and Spatial Audio

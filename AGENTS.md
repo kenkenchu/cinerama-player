@@ -113,11 +113,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - Subtitle choice persists per Plex profile/server/movie or TV series, including
   Off. Appearance comes only from macOS Captions preferences, with a VLC adapter;
   there is no app subtitle-size setting. The menu marks the active selection.
-- Pending investigation: after the system-caption-style change the user reported
-  selected subtitles missing on some files. This was deferred for the catalog
-  presentation fix and remains unresolved. Identify an affected file/track and
-  engine using the overlay before changing rendering or routing again. Do not
-  describe the subtitle issue as fixed or assume all files/engines are affected.
+- The user subsequently confirmed that the previously reported missing-subtitle
+  issue works now. It is no longer an open investigation; no specific root cause
+  was isolated, and this confirmation is not an exhaustive subtitle-format audit.
 - Latest source changes passed Apple Development-signed compile-only builds;
   agents did not launch the app or run tests. Basic user-confirmed playback is
   not HDR/Atmos fidelity, offline, or comprehensive subtitle runtime verification.
