@@ -222,11 +222,9 @@ private struct MacPlayerSession: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background {
-            RoundedRectangle(cornerRadius: 28)
-                .fill(.ultraThinMaterial)
-                .opacity(0.65)
-        }
+        .fixedSize(horizontal: false, vertical: true)
+        .background(.ultraThinMaterial.opacity(0.65), ignoresSafeAreaEdges: [])
+        .clipShape(RoundedRectangle(cornerRadius: 28))
     }
 
     private var debugOverlay: some View {

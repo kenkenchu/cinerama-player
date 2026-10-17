@@ -96,7 +96,9 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 
 The playback control bar uses two compact rows (timeline, then transport and
 menus with an inline title), small native controls, and a translucent ultra-thin
-material background so it covers less of the video.
+material background so it covers less of the video. The material uses the
+padded control bounds with no safe-area expansion, and the whole bar is clipped
+to one rounded shape so the translucent surface stays aligned with its controls.
 
 The gear-icon toggle in the playback control bar opens a live Playback Debug Info
 overlay. It stays visible independently of control auto-hide and has its own close
