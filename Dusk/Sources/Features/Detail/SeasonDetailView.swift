@@ -408,6 +408,8 @@ private struct SeasonEpisodeRow: View {
                 .disabled(constrainsPlaybackToOfflineAvailability && !isPlayableOffline)
                 .accessibilityLabel("Play \(episode.title)")
                 .frame(width: artworkWidth, height: artworkHeight, alignment: .leading)
+                .pointerStyle(constrainsPlaybackToOfflineAvailability && !isPlayableOffline ? .default : .link)
+                .help("Play \(episode.title)")
 
                 NavigationLink(value: destination) {
                     SeasonEpisodeTextContent(
@@ -425,6 +427,7 @@ private struct SeasonEpisodeRow: View {
                     .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .pointerStyle(.default)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
 
@@ -435,6 +438,7 @@ private struct SeasonEpisodeRow: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
+                .pointerStyle(.default)
             }
 
             SeasonEpisodeDivider()
