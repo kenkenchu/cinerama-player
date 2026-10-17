@@ -180,11 +180,13 @@ private struct MacPlayerSession: View {
         guard let details = playback.activeItemDetails else {
             return source.liveTVContext?.channel.title ?? "Dusk"
         }
-        if details.type == .episode,
-           let numbering = MediaTextFormatter.compactSeasonEpisodeLabel(
-               season: details.parentIndex, episode: details.index
-           ) {
-            return "\(numbering) · \(details.title)"
+        if details.type == .episode {
+            let numbering = MediaTextFormatter.compactSeasonEpisodeLabel(
+                season: details.parentIndex, episode: details.index
+            )
+            return [details.grandparentTitle?.nilIfEmpty, numbering, details.title]
+                .compactMap { $0 }
+                .joined(separator: " · ")
         }
         return details.title
     }
