@@ -108,13 +108,13 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 The playback control bar uses two compact rows (timeline, then transport and
 menus with an inline title showing series name, season/episode numbers, and
 episode title for TV episodes),
-small native controls, and a translucent neutral
+regular native controls with modest padding, and a translucent neutral
 black background confined to the padded control bounds. The fill composites over
 both native video and letterboxing without sampling a separate AppKit backdrop.
 The player explicitly supplies the dark color environment even when the shell
 uses light appearance. Reduce Transparency makes the bar's background opaque.
 
-The gear-icon toggle in the playback control bar opens a live Playback Debug Info
+The monitor-and-waveform icon toggle in the playback control bar opens a live Playback Debug Info
 overlay. It stays visible independently of control auto-hide and has its own close
 button. It shows the engine, route, source codecs, subtitle selection/codec,
 transport/buffering state, and renderer geometry/readiness. Plex playback is

@@ -192,7 +192,7 @@ private struct MacPlayerSession: View {
     }
 
     private var controls: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 8) {
             HStack {
                 Text(MediaTextFormatter.playbackDuration(milliseconds: Int(model.currentTime * 1000)) ?? "0:00").monospacedDigit()
                 Slider(value: Binding(get: { model.isScrubbing ? model.scrubPosition : model.currentTime },
@@ -205,7 +205,7 @@ private struct MacPlayerSession: View {
                 Text(MediaTextFormatter.playbackDuration(milliseconds: Int(model.duration * 1000)) ?? "0:00").monospacedDigit()
             }
             .font(.caption.monospacedDigit())
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
                 Button("Back 10 Seconds", systemImage: "gobackward.10") { model.seek(to: model.currentTime - 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.leftArrow, modifiers: [])
                     .help("Back 10 Seconds (←)")
@@ -221,7 +221,7 @@ private struct MacPlayerSession: View {
                     .lineLimit(1)
                     .help(playbackTitle)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Toggle("Playback Debug Info", systemImage: "gearshape", isOn: $showsDebugInfo)
+                Toggle("Playback Debug Info", systemImage: "waveform.path.ecg.rectangle", isOn: $showsDebugInfo)
                     .toggleStyle(.button)
                     .keyboardShortcut("i", modifiers: .command)
                     .help("Playback Debug Info (⌘I)")
@@ -272,12 +272,12 @@ private struct MacPlayerSession: View {
                 .help(isFullScreen ? "Exit Full Screen (⌃⌘F)" : "Enter Full Screen (⌃⌘F)")
             }
             .labelStyle(.iconOnly)
-            .controlSize(.small)
+            .controlSize(.regular)
             .buttonStyle(.borderless)
             .menuStyle(.borderlessButton)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
         .fixedSize(horizontal: false, vertical: true)
         // A uniform fill composites directly over native video and letterboxing;
         // a backdrop material can sample a different AppKit surface underneath.
