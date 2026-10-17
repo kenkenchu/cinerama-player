@@ -19,7 +19,7 @@ struct HomeDesktopView: View {
     var body: some View {
         applyNavigationChrome(to: content, showsHero: showsCinematicHero)
             .toolbar {
-                ToolbarItem(placement: DuskPlatform.trailingToolbarPlacement) {
+                ToolbarItem(placement: .primaryAction) {
                     SearchToolbarLink()
                 }
             }
@@ -61,7 +61,7 @@ struct HomeDesktopView: View {
                                         }
                                     }
                                     .frame(
-                                        maxWidth: DuskPlatform.usesWideLayout ? 300 : 240,
+                                        maxWidth: 300,
                                         alignment: .leading
                                     )
                                     .accessibilityValue(item.posterProgress.map {
@@ -200,15 +200,15 @@ struct HomeDesktopView: View {
     private func applyNavigationChrome<Content: View>(to content: Content, showsHero: Bool) -> some View {
         if showsHero {
             content
-                .duskNavigationTitle("")
+                .navigationTitle("")
 
-                .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
-                .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
+                .toolbarColorScheme(.dark, for: .windowToolbar)
+                .toolbarBackground(.hidden, for: .windowToolbar)
         } else {
             content
-                .duskNavigationTitle("Home")
+                .navigationTitle("Home")
 
-                .toolbarBackground(.visible, for: DuskPlatform.navigationToolbarPlacement)
+                .toolbarBackground(.visible, for: .windowToolbar)
         }
     }
 

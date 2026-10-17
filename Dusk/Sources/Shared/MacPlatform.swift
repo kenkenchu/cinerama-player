@@ -1,17 +1,5 @@
 import SwiftUI
 
-enum DuskPlatform {
-    static var trailingToolbarPlacement: ToolbarItemPlacement {
-        .primaryAction
-    }
-    static var navigationToolbarPlacement: ToolbarPlacement {
-        .windowToolbar
-    }
-    static var usesWideLayout: Bool {
-        true
-    }
-}
-
 import AppKit
 
 extension Color {

@@ -7,7 +7,7 @@ struct LibraryOrderSettingsView: View {
     var body: some View {
         content
             .background(Color.duskBackground.ignoresSafeArea())
-            .duskNavigationTitle("Library Order")
+            .navigationTitle("Library Order")
 
             .task {
                 let model = viewModel ?? LibraryOrderSettingsViewModel(plexService: plexService)
@@ -84,7 +84,7 @@ struct LibraryOrderSettingsView: View {
             }
         }
         .contentMargins(.top, 12, for: .scrollContent)
-        .duskScrollContentBackgroundHidden()
+        .scrollContentBackground(.hidden)
         .toolbar {
         }
     }

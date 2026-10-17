@@ -27,7 +27,7 @@ struct SearchRootContent: View {
                 searchContent(viewModel)
             }
         }
-        .duskNavigationTitle("Search")
+        .navigationTitle("Search")
 
         .onAppear {
             if viewModel == nil {

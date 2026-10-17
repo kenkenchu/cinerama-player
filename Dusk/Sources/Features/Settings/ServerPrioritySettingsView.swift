@@ -8,7 +8,7 @@ struct ServerPrioritySettingsView: View {
     var body: some View {
         content
             .background(Color.duskBackground.ignoresSafeArea())
-            .duskNavigationTitle("Server Priority")
+            .navigationTitle("Server Priority")
 
             .task {
                 let model = viewModel ?? ServerPrioritySettingsViewModel(
@@ -102,7 +102,7 @@ struct ServerPrioritySettingsView: View {
             .listRowBackground(Color.duskSurface)
         }
         .contentMargins(.top, 12, for: .scrollContent)
-        .duskScrollContentBackgroundHidden()
+        .scrollContentBackground(.hidden)
         .toolbar {
             if !viewModel.isSingleServer {
             }

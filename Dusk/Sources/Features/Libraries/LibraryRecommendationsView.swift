@@ -64,7 +64,7 @@ struct LibraryRecommendationsView: View {
             guard newPhase == .active, viewModel.hasLoadedOnce else { return }
             Task { await viewModel.load(maxRecentlyAddedItems: recentlyAddedInlineItemLimit) }
         }
-        .duskNavigationTitle(navigationTitle)
+        .navigationTitle(navigationTitle)
 
     }
 

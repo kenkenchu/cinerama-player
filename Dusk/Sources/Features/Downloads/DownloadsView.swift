@@ -40,7 +40,7 @@ struct DownloadsRootContent: View {
         }
         .navigationTitle("Downloads")
         .toolbar {
-            ToolbarItem(placement: DuskPlatform.trailingToolbarPlacement) {
+            ToolbarItem(placement: .primaryAction) {
                 Button {
                     isShowingQueue = true
                 } label: {
@@ -127,7 +127,7 @@ struct DownloadsRootContent: View {
 
             .downloadQueueIdleTimerDisabled(downloadManager.activeDownloadCount > 0)
             .toolbar {
-                ToolbarItem(placement: DuskPlatform.trailingToolbarPlacement) {
+                ToolbarItem(placement: .primaryAction) {
                     Button("Done") {
                         isShowingQueue = false
                     }

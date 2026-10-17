@@ -46,8 +46,8 @@ struct ShowDetailView: View {
             }
         }
 
-        .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
-        .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
+        .toolbarColorScheme(.dark, for: .windowToolbar)
+        .toolbarBackground(.hidden, for: .windowToolbar)
         .task {
             await viewModel.load()
         }

@@ -49,7 +49,7 @@ struct LibraryItemsView: View {
                 libraryContent
             }
         }
-        .duskNavigationTitle(viewModel.navigationTitle)
+        .navigationTitle(viewModel.navigationTitle)
 
         .task {
             await viewModel.loadItems()

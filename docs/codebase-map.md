@@ -82,7 +82,8 @@ Use `DuskAsyncImage` for Plex-aware artwork, `PlexItemPresentation` and
 `MediaFormatting` for labels/progress, `DuskPosterMetrics` for geometry,
 `DuskFont` for semantic roles, and `FeatureStateViews`/`ServerAvailabilityViews`
 for loading, errors and per-server availability. Theme providers are AppKit
-`NSColor`s in `Shared/MacPlatform.swift`.
+`NSColor`s in `Shared/MacPlatform.swift`. Native SwiftUI navigation, toolbar and list APIs and
+AppKit `NSImage` are used directly, without mobile platform-selection wrappers.
 
 Add new Plex endpoints to the matching `PlexService+*.swift` extension and new
 response shapes to `Models/`. Routing belongs in `AppNavigationRoute`.

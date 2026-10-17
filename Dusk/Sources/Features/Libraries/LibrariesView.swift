@@ -49,7 +49,7 @@ struct LibrariesRootContent: View {
                 Color.duskBackground.ignoresSafeArea()
                 ServerAvailabilityStateView(availability: viewModel.availability)
             }
-            .duskNavigationTitle(libraryType.tabTitle)
+            .navigationTitle(libraryType.tabTitle)
 
         } else if viewModel.isLoading && viewModel.libraries.isEmpty {
             loadingView
@@ -79,7 +79,7 @@ struct LibrariesRootContent: View {
             Color.duskBackground.ignoresSafeArea()
             FeatureLoadingView()
         }
-        .duskNavigationTitle(libraryType.tabTitle)
+        .navigationTitle(libraryType.tabTitle)
 
     }
 
@@ -90,7 +90,7 @@ struct LibrariesRootContent: View {
                 Task { await viewModel.loadLibraries(force: true) }
             }
         }
-        .duskNavigationTitle(libraryType.tabTitle)
+        .navigationTitle(libraryType.tabTitle)
 
     }
 
@@ -102,7 +102,7 @@ struct LibrariesRootContent: View {
                 title: "No \(libraryType.tabTitle) libraries found"
             )
         }
-        .duskNavigationTitle(libraryType.tabTitle)
+        .navigationTitle(libraryType.tabTitle)
 
     }
 }
@@ -133,7 +133,7 @@ struct LibraryTypeListView: View {
         }
         .scrollIndicators(.hidden)
         .background(Color.duskBackground.ignoresSafeArea())
-        .duskNavigationTitle(libraryType.tabTitle)
+        .navigationTitle(libraryType.tabTitle)
 
     }
 }

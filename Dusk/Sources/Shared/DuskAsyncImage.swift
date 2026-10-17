@@ -1,6 +1,5 @@
 import SwiftUI
 import AppKit
-typealias DuskPlatformImage = NSImage
 
 enum DuskAsyncImagePhase {
     case empty
@@ -62,7 +61,7 @@ actor DuskImageLoader {
         memoryCache.countLimit = 512
     }
 
-    func image(for url: URL, using plexService: PlexService? = nil) async throws -> DuskPlatformImage {
+    func image(for url: URL, using plexService: PlexService? = nil) async throws -> NSImage {
         let cacheKey = url as NSURL
         if let cachedImage = memoryCache.object(forKey: cacheKey) {
             if cachedImage.isFresh {
@@ -73,7 +72,7 @@ actor DuskImageLoader {
 
         if url.isFileURL {
             let data = try Data(contentsOf: url)
-            guard let image = DuskPlatformImage(data: data) else {
+            guard let image = NSImage(data: data) else {
                 throw URLError(.cannotDecodeContentData)
             }
             memoryCache.setObject(CachedMemoryImage(image: image), forKey: cacheKey)
@@ -92,7 +91,7 @@ actor DuskImageLoader {
             )
 
             if let cachedResponse = AppImageCache.cachedResponse(for: request),
-               let cachedImage = DuskPlatformImage(data: cachedResponse.data) {
+               let cachedImage = NSImage(data: cachedResponse.data) {
                 return LoadedImage(
                     image: cachedImage,
                     cachedAt: AppImageCache.cachedAt(for: cachedResponse) ?? .now
@@ -113,7 +112,7 @@ actor DuskImageLoader {
                 data = fetchedData
             }
 
-            guard let image = DuskPlatformImage(data: data) else {
+            guard let image = NSImage(data: data) else {
                 throw URLError(.cannotDecodeContentData)
             }
 
@@ -141,20 +140,20 @@ actor DuskImageLoader {
 }
 
 private struct LoadedImage: @unchecked Sendable {
-    let image: DuskPlatformImage
+    let image: NSImage
     let cachedAt: Date
 
-    init(image: DuskPlatformImage, cachedAt: Date = .now) {
+    init(image: NSImage, cachedAt: Date = .now) {
         self.image = image
         self.cachedAt = cachedAt
     }
 }
 
 private final class CachedMemoryImage: @unchecked Sendable {
-    let image: DuskPlatformImage
+    let image: NSImage
     let cachedAt: Date
 
-    init(image: DuskPlatformImage, cachedAt: Date = .now) {
+    init(image: NSImage, cachedAt: Date = .now) {
         self.image = image
         self.cachedAt = cachedAt
     }

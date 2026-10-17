@@ -37,7 +37,7 @@ struct LiveTVRootContent: View {
                 guide(lineup)
             }
         }
-        .duskNavigationTitle("Live TV")
+        .navigationTitle("Live TV")
 
         .task {
             await viewModel.load()

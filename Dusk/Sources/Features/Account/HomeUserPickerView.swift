@@ -106,7 +106,7 @@ struct HomeUserPickerView: View {
             .padding(.top, 36)
             .padding(.bottom, 44)
         }
-        .duskNavigationTitle("")
+        .navigationTitle("")
     }
 
 

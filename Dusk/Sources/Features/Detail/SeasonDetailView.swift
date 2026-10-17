@@ -40,8 +40,8 @@ struct SeasonDetailView: View {
             }
         }
 
-        .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
-        .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
+        .toolbarColorScheme(.dark, for: .windowToolbar)
+        .toolbarBackground(.hidden, for: .windowToolbar)
         .task {
             await viewModel.load()
         }
@@ -215,7 +215,7 @@ struct SeasonDetailView: View {
             let artworkWidth = min(max(contentWidth * 0.48, 170), 320)
             let imageWidth = Int(artworkWidth.rounded(.up))
             let imageHeight = Int((artworkWidth / (16.0 / 9.0)).rounded(.up))
-            let showsInlineSummary = usesInlineEpisodeSummaryLayout && contentWidth >= 700
+            let showsInlineSummary = contentWidth >= 700
 
             VStack(alignment: .leading, spacing: 16) {
                 Text("Episodes")
@@ -260,10 +260,6 @@ struct SeasonDetailView: View {
                 }
             }
         }
-    }
-
-    private var usesInlineEpisodeSummaryLayout: Bool {
-        DuskPlatform.usesWideLayout
     }
 
     @ViewBuilder

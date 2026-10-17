@@ -1,23 +1,5 @@
 import SwiftUI
 
-extension View {
-    @ViewBuilder
-    func duskNavigationTitle(_ title: String) -> some View {
-        self.navigationTitle(title)
-    }
-
-    @ViewBuilder
-    func duskScrollContentBackgroundHidden() -> some View {
-        self.scrollContentBackground(.hidden)
-    }
-
-    @ViewBuilder
-    func duskListRowSeparatorHidden() -> some View {
-        self.listRowSeparator(.hidden)
-    }
-
-}
-
 enum DuskPosterMetrics {
     static var carouselSectionSpacing: CGFloat {
         12

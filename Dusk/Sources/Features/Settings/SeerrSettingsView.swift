@@ -9,7 +9,7 @@ struct SeerrSettingsView: View {
             settingsContent
         }
         .background(Color.duskBackground.ignoresSafeArea())
-        .duskNavigationTitle("Seerr")
+        .navigationTitle("Seerr")
         .task {
             viewModel.load(from: seerrService)
         }

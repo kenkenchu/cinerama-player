@@ -43,7 +43,7 @@ struct HomeHubItemsView: View {
                 itemsGrid
             }
         }
-        .duskNavigationTitle(viewModel.navigationTitle)
+        .navigationTitle(viewModel.navigationTitle)
 
         .task {
             await viewModel.loadItems()

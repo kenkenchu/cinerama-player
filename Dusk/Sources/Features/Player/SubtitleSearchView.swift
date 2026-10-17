@@ -76,9 +76,9 @@ struct SubtitleSearchView: View {
                 }
                 .listRowBackground(Color.duskSurface)
             }
-            .duskScrollContentBackgroundHidden()
+            .scrollContentBackground(.hidden)
             .background(Color.duskBackground)
-            .duskNavigationTitle("Download Subtitles")
+            .navigationTitle("Download Subtitles")
 
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

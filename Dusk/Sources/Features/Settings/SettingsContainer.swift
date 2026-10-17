@@ -21,7 +21,7 @@ struct SettingsContainer<Content: View>: View {
         .sheet(isPresented: homeUserPickerPresented) {
             homeUserPicker
         }
-        .duskNavigationTitle("Settings")
+        .navigationTitle("Settings")
 
     }
 
