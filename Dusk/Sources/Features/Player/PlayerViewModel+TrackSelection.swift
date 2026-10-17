@@ -16,7 +16,6 @@ extension PlayerViewModel {
             // A Plex sidecar in an AVPlayer session: the engine cannot mount
             // it, so the coordinator restarts this session on VLCKit at the
             // live position with the stream pre-selected.
-            showSubtitlePicker = false
             pendingExternalSubtitleStreamID = streamID
             externalSubtitleRestartHandler?(streamID)
             return
@@ -24,19 +23,16 @@ extension PlayerViewModel {
 
         if usesServerTrackSelection {
             selectedSubtitleTrackID = track?.id
-            showSubtitlePicker = false
             plexTrackSelectionHandler?(selectedAudioTrackID, track?.id)
             return
         }
         engine.selectSubtitleTrack(track)
         selectedSubtitleTrackID = engine.selectedSubtitleTrackID
-        showSubtitlePicker = false
         plexTrackSelectionHandler?(selectedAudioTrack?.plexStreamID, track?.plexStreamID)
     }
 
     func selectAudio(_ track: AudioTrack) {
         hasAppliedAutomaticAudioSelection = true
-        showAudioPicker = false
 
         if usesServerTrackSelection {
             selectedAudioTrackID = track.id

@@ -39,11 +39,6 @@ final class PlayerViewModel {
     var selectedAudioTrackID: Int?
     var showControls = true
     var aspectFillEnabled = false
-    var showSubtitlePicker = false
-    var showSubtitleSearch = false
-    var showAudioPicker = false
-    var showQualityPicker = false
-    var showPlaybackInfo = false
     var isControlsInteractionHeld = false
     var isScrubbing = false
     var scrubPosition: TimeInterval = 0
@@ -200,7 +195,6 @@ final class PlayerViewModel {
         isControlsInteractionHeld = false
         seekFeedbackTask = nil
         autoSkipCountdownTask = nil
-        showQualityPicker = false
         bufferingPresentationHandler?(false)
         bufferingStartedAt = nil
         stalledPlaybackStartedAt = nil

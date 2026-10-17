@@ -455,11 +455,6 @@ extension PlayerViewModel {
             !isScrubbing &&
             !isControlsInteractionHeld &&
             playbackError == nil &&
-            !showSubtitlePicker &&
-            !showSubtitleSearch &&
-            !showAudioPicker &&
-            !showQualityPicker &&
-            !showPlaybackInfo &&
             stateAllowsControlsAutoHide &&
             state != .stopped &&
             state != .error
