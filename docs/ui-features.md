@@ -67,9 +67,11 @@ start a tune session. Historical guide entries are not recordings.
 In native window fullscreen, the shell hides the sidebar and divider, and the
 player hides the window toolbar and extends through the safe area. Close and
 Exit Full Screen remain available over the video, below the native titlebar
-reveal area, and target the owning window. Fullscreen controls fade after the
-shared player idle timeout during playback; pointer movement or a click reveals
-them again. Hovering over the playback controls or scrubbing keeps them visible.
+reveal area, and target the owning window. In both windowed and fullscreen
+playback, controls fade after four seconds of inactivity; pointer movement or a
+click reveals them again. A stationary pointer over the controls does not hold
+them open, and repeated hover callbacks at the same position do not reset the
+timeout. Scrubbing keeps controls visible, and pausing reveals them.
 Leaving fullscreen restores the previous sidebar visibility without remounting
 playback; closing the player also restores the sidebar.
 The shell observes its own window, including fullscreen entered with the green

@@ -72,6 +72,7 @@ private struct MacPlayerSession: View {
     @Binding var controlsVisible: Bool
     @State private var model: PlayerViewModel
     @State private var activity: NSObjectProtocol?
+    @State private var lastPointerLocation: CGPoint?
 
     init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>) {
         self.isFullScreen = isFullScreen
@@ -110,13 +111,9 @@ private struct MacPlayerSession: View {
                     }.padding().background(.regularMaterial, in: .capsule)
                 }
                 controls
-                    .opacity(!isFullScreen || model.showControls ? 1 : 0)
-                    .allowsHitTesting(!isFullScreen || model.showControls)
-                    .accessibilityHidden(isFullScreen && !model.showControls)
-                    .onHover { hovering in
-                        if hovering { model.beginControlsInteractionHold() }
-                        else { model.endControlsInteractionHold() }
-                    }
+                    .opacity(model.showControls ? 1 : 0)
+                    .allowsHitTesting(model.showControls)
+                    .accessibilityHidden(!model.showControls)
             }.padding(24)
             if let error = model.playbackError, !playback.isAutomaticDirectPlayFallbackPending {
                 VStack {
@@ -127,7 +124,15 @@ private struct MacPlayerSession: View {
             }
         }
         .onContinuousHover { phase in
-            if case .active = phase { model.touchControls() }
+            switch phase {
+            case .active(let location):
+                // Layout updates can repeat hover callbacks without pointer movement.
+                guard location != lastPointerLocation else { return }
+                lastPointerLocation = location
+                model.touchControls()
+            case .ended:
+                lastPointerLocation = nil
+            }
         }
         .simultaneousGesture(TapGesture().onEnded { model.touchControls() })
         .onChange(of: model.showControls, initial: true) { _, visible in
