@@ -55,7 +55,10 @@ never become a persisted startup transcoding policy.
 Retain cancellation, stopped timelines, transcode keepalives/stop calls, selected
 track carry-over and presentation identity when changing engines or delivery.
 A video-copy decision is not proof that audio is copied: inspect both decisions
-before accepting a lossless remux.
+before accepting a lossless remux. `PlaybackDebugInfo` retains Plex stream
+decisions from startup, remux, quality and server-fallback responses so the
+overlay can distinguish video copying from audio/video transcoding. Metadata
+refreshes preserve these session decisions; unavailable decisions stay explicit.
 
 ## Engines and Rendering
 

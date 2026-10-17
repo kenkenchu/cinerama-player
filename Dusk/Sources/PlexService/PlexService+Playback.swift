@@ -256,7 +256,7 @@ extension PlexService {
         audioStreamID: Int? = nil,
         subtitleStreamID: Int? = nil,
         serverID: String? = nil
-    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome) {
+    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
         guard !preset.isOriginal else {
             throw PlexServiceError.invalidURL
         }
@@ -286,7 +286,7 @@ extension PlexService {
         audioStreamID: Int? = nil,
         subtitleStreamID: Int? = nil,
         serverID: String? = nil
-    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome) {
+    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
         try await transcodeLadderURL(
             ratingKey: ratingKey,
             mediaIndex: mediaIndex,
@@ -311,7 +311,7 @@ extension PlexService {
         audioStreamID: Int? = nil,
         subtitleStreamID: Int? = nil,
         serverID: String? = nil
-    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome) {
+    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
         try await transcodeLadderURL(
             ratingKey: ratingKey,
             mediaIndex: mediaIndex,
@@ -386,7 +386,7 @@ extension PlexService {
         sessionIdentifier: String,
         transcodeSessionID: String,
         serverID: String? = nil
-    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome) {
+    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
         try await transcodeLadderURL(
             ratingKey: sessionPath,
             mediaIndex: 0,
@@ -458,7 +458,7 @@ private extension PlexService {
         audioStreamID: Int?,
         subtitleStreamID: Int?,
         serverID: String?
-    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome) {
+    ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
         let session = try await transcodeLadderSession(
             ratingKey: ratingKey,
             mediaIndex: mediaIndex,
@@ -470,7 +470,7 @@ private extension PlexService {
             subtitleStreamID: subtitleStreamID,
             serverID: serverID
         )
-        return (session.url, session.outcome)
+        return (session.url, session.outcome, session.streams)
     }
 
     func transcodeLadderSession(

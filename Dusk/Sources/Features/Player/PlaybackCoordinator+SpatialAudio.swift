@@ -22,6 +22,7 @@ extension PlaybackCoordinator {
         /// Plex converts the audio (instead of copying it) in this remux.
         let convertsAudio: Bool
         let restoresDolbyAtmos: Bool
+        let streams: PlexService.TranscodeStreamDecisions
     }
 
     var isSpatialAudioSession: Bool {
@@ -208,7 +209,8 @@ extension PlaybackCoordinator {
                 transcodeSessionID: transcodeSessionID,
                 reason: reason,
                 convertsAudio: convertsAudio,
-                restoresDolbyAtmos: result.streams.hasDolbyAtmosAudio
+                restoresDolbyAtmos: result.streams.hasDolbyAtmosAudio,
+                streams: result.streams
             )
         } catch {
             stopTranscodeSessionInBackground(transcodeSessionID, serverID: serverID)
@@ -345,7 +347,8 @@ extension PlaybackCoordinator {
             resolverReason: remux.reason,
             videoEnhancementRequest: .disabled,
             startPosition: resumePosition,
-            shouldAutoPlay: wasPlaying
+            shouldAutoPlay: wasPlaying,
+            serverDecisions: remux.streams
         )
         return true
     }
@@ -425,7 +428,8 @@ extension PlaybackCoordinator {
             resolverReason: remux.reason,
             videoEnhancementRequest: .disabled,
             startPosition: resumePosition,
-            shouldAutoPlay: wasPlaying
+            shouldAutoPlay: wasPlaying,
+            serverDecisions: remux.streams
         )
         return true
     }

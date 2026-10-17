@@ -263,6 +263,7 @@ extension PlaybackCoordinator {
             let usesLocalDownload: Bool
             var engineType = resolverDecision.engine
             var resolverReason = resolverDecision.reason
+            var serverDecisions: PlexService.TranscodeStreamDecisions?
             var transcodeSessionID: String?
             var spatialAudioStreamIDs: (audio: Int?, subtitle: Int?, convertsAudio: Bool, restoresDolbyAtmos: Bool)?
 
@@ -317,6 +318,7 @@ extension PlaybackCoordinator {
                         return .hardFailure(airPlayUnavailableMessage(for: result.outcome))
                     }
 
+                    serverDecisions = result.streams
                     playbackURL = result.url
                     sanitizedURL = plexService.sanitizedPlaybackURLString(for: result.url)
                     playbackDecision = .airPlay
@@ -360,6 +362,7 @@ extension PlaybackCoordinator {
                         serverID: itemServerID
                     )
                     if let dolbyVisionRemux {
+                        serverDecisions = dolbyVisionRemux.streams
                         playbackURL = dolbyVisionRemux.url
                         sanitizedURL = plexService.sanitizedPlaybackURLString(for: dolbyVisionRemux.url)
                         playbackDecision = .spatialAudio
@@ -381,6 +384,7 @@ extension PlaybackCoordinator {
                                 serverID: itemServerID
                             )
                             if case .transcodeAvailable = result.outcome {
+                                serverDecisions = result.streams
                                 playbackURL = result.url
                                 sanitizedURL = plexService.sanitizedPlaybackURLString(for: result.url)
                                 playbackDecision = .serverStream
@@ -429,6 +433,7 @@ extension PlaybackCoordinator {
                         serverID: itemServerID
                     )
                     if let remux {
+                        serverDecisions = remux.streams
                         playbackURL = remux.url
                         sanitizedURL = plexService.sanitizedPlaybackURLString(for: remux.url)
                         playbackDecision = .spatialAudio
@@ -635,7 +640,8 @@ extension PlaybackCoordinator {
                 part: part,
                 attemptID: attemptID,
                 resolverReason: resolverReason,
-                sanitizedPlaybackURL: sanitizedURL
+                sanitizedPlaybackURL: sanitizedURL,
+                serverDecisions: serverDecisions
             )
             playerPresentationID = UUID()
             nowPlayingController.beginSession(
@@ -781,6 +787,7 @@ extension PlaybackCoordinator {
             let engineType: PlaybackEngineType
             let resolverReason: String
             let videoEnhancementRequest: VideoEnhancementRequest
+            var serverDecisions: PlexService.TranscodeStreamDecisions?
 
             if preset.isOriginal {
                 guard let directPlayURL = plexService.directPlayURL(
@@ -845,6 +852,7 @@ extension PlaybackCoordinator {
                         )
                     }
                     activeTranscodeSessionID = newTranscodeSessionID
+                    serverDecisions = result.streams
                     playbackURL = result.url
                 case .directPlayOnly:
                     presentQualitySwitchError("Plex reported that this item can only direct play.")
@@ -876,7 +884,8 @@ extension PlaybackCoordinator {
                 engineType: engineType,
                 resolverReason: resolverReason,
                 videoEnhancementRequest: videoEnhancementRequest,
-                startPosition: currentTime
+                startPosition: currentTime,
+                serverDecisions: serverDecisions
             )
         } catch {
             playbackSessionLogger.error(
@@ -1075,7 +1084,8 @@ extension PlaybackCoordinator {
                     : "AirPlay route selected; Plex receiver-compatible HLS",
                 videoEnhancementRequest: .disabled,
                 startPosition: resumePosition,
-                shouldAutoPlay: wasPlaying
+                shouldAutoPlay: wasPlaying,
+                serverDecisions: result.streams
             )
         } catch {
             stopTranscodeSessionInBackground(newTranscodeSessionID, serverID: activePlaybackServerID)
@@ -1119,7 +1129,8 @@ extension PlaybackCoordinator {
         startPosition: TimeInterval?,
         shouldAutoPlay: Bool = true,
         audioTrackPositionOverride: Int? = nil,
-        audioChannelCountOverride: Int? = nil
+        audioChannelCountOverride: Int? = nil,
+        serverDecisions: PlexService.TranscodeStreamDecisions? = nil
     ) {
         let attemptContext = PlaybackAttemptContext(
             attemptID: attemptID,
@@ -1198,7 +1209,8 @@ extension PlaybackCoordinator {
             part: part,
             attemptID: attemptID,
             resolverReason: resolverReason,
-            sanitizedPlaybackURL: sanitizedURL
+            sanitizedPlaybackURL: sanitizedURL,
+            serverDecisions: serverDecisions
         )
         if case .localDownload = playbackDecision {
             activePlaybackUsesLocalDownload = true
@@ -1284,7 +1296,8 @@ extension PlaybackCoordinator {
             part: part,
             attemptID: debugInfo.attemptID,
             resolverReason: debugInfo.resolverReason,
-            sanitizedPlaybackURL: debugInfo.sanitizedPlaybackURL
+            sanitizedPlaybackURL: debugInfo.sanitizedPlaybackURL,
+            serverDecisions: debugInfo.serverDecisions
         )
 
         let subtitleStreams = part.streams.filter { $0.streamType == .subtitle }
@@ -1368,7 +1381,8 @@ extension PlaybackCoordinator {
             resolverReason: "External subtitle selected; VLCKit mounts Plex sidecar files",
             videoEnhancementRequest: .disabled,
             startPosition: resumePosition,
-            shouldAutoPlay: wasPlaying
+            shouldAutoPlay: wasPlaying,
+            serverDecisions: debugInfo.serverDecisions
         )
     }
 
@@ -1551,7 +1565,8 @@ extension PlaybackCoordinator {
                 engineType: preferences.forceVLCKit ? .vlcKit : .avPlayer,
                 resolverReason: "Direct play failed (\(failureDescription)); automatic server-stream fallback",
                 videoEnhancementRequest: .disabled,
-                startPosition: resumePosition
+                startPosition: resumePosition,
+                serverDecisions: result.streams
             )
         } catch {
             playbackSessionLogger.error(

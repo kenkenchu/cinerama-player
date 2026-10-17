@@ -88,10 +88,13 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Escape | Close player |
 | Ctrl-Cmd-F | Native window fullscreen |
 
-The bug-icon toggle in the playback control bar opens a live Playback Debug Info
+The gear-icon toggle in the playback control bar opens a live Playback Debug Info
 overlay. It stays visible independently of control auto-hide and has its own close
 button. It shows the engine, route, source codecs, subtitle selection/codec,
-transport/buffering state, and renderer geometry/readiness. It never displays
+transport/buffering state, and renderer geometry/readiness. Plex playback is
+shown explicitly as Direct Play, Direct Stream/remux, or Server Transcoding,
+with separate video/audio copy-versus-transcode decisions when Plex reports
+them. Missing server decisions are marked as unavailable. It never displays
 media URLs, tokens, or credentials. This is session UI state, not a saved setting.
 
 Scrubbing previews locally and commits one seek on release. Audio, subtitle and

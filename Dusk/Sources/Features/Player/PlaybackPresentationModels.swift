@@ -158,6 +158,33 @@ struct PlaybackDebugInfo: Sendable {
     let attemptID: UUID
     let resolverReason: String
     let sanitizedPlaybackURL: String
+    var serverDecisions: PlexService.TranscodeStreamDecisions? = nil
+
+    var plexPlaybackLabel: String {
+        switch decision {
+        case .directPlay: return "Direct Play"
+        case .localDownload: return "Local download (no Plex stream)"
+        default:
+            if serverDecisions?.videoDecision == "transcode" || serverDecisions?.audioDecision == "transcode" {
+                return "Server Transcoding"
+            }
+            if serverDecisions?.isVideoCopyRemux == true { return "Direct Stream (remux)" }
+            if case .transcode = decision { return "Server Transcoding" }
+            if case .spatialAudio = decision { return "Direct Stream (remux)" }
+            return "Server HLS (decision unavailable)"
+        }
+    }
+
+    func processingLabel(_ value: String?) -> String {
+        if decision.isDirectPlay { return "Original (no server conversion)" }
+        if case .localDownload = decision { return "Local file" }
+        switch value {
+        case "copy", "directplay": return "Copied (no re-encoding)"
+        case "transcode": return "Transcoded by Plex"
+        case "burn": return "Burned into video"
+        default: return value ?? "Not reported by Plex"
+        }
+    }
 
     var engineLabel: String {
         switch engine {

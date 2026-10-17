@@ -185,7 +185,7 @@ private struct MacPlayerSession: View {
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
                 Spacer()
-                Toggle("Playback Debug Info", systemImage: "ladybug", isOn: $showsDebugInfo)
+                Toggle("Playback Debug Info", systemImage: "gearshape", isOn: $showsDebugInfo)
                     .toggleStyle(.button)
                     .help("Show playback engine and rendering diagnostics")
                 if model.liveTVContext != nil { Button("Go Live") { model.goLive() } }
@@ -254,6 +254,9 @@ private struct MacPlayerSession: View {
             rows.insert(contentsOf: [
                 ("Engine", info.engineLabel),
                 ("Route", info.decisionLabel),
+                ("Plex playback", info.plexPlaybackLabel),
+                ("Plex video", info.processingLabel(info.serverDecisions?.videoDecision)),
+                ("Plex audio", info.processingLabel(info.serverDecisions?.audioDecision)),
                 ("Video", "\(info.videoLabel) · \(info.resolutionLabel)"),
                 ("Audio", info.audioLabel),
                 ("Container", info.containerLabel),
