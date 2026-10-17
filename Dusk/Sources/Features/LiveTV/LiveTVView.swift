@@ -67,8 +67,11 @@ struct LiveTVRootContent: View {
                     LiveTVChannelGuideRow(
                         guide: guide,
                         imageURL: viewModel.imageURL,
-                        selectProgram: { selectedProgram = $0 },
-                        play: { play(program: $0, channel: guide.channel) }
+                        selectProgram: { program in
+                            if program.isAiring() { play(program: program, channel: guide.channel) }
+                            else { selectedProgram = program }
+                        },
+                        watchChannel: { play(channel: guide.channel) }
                     )
                 }
             }
@@ -118,6 +121,14 @@ struct LiveTVRootContent: View {
         }
     }
 
+    private func play(channel: PlexLiveChannel) {
+        guard let lineup = viewModel.lineup else { return }
+        let program = lineup.guides.first { $0.channel.id == channel.id }?.currentProgram()
+        Task {
+            await playback.playLiveTV(channel: channel, program: program, lineup: lineup)
+        }
+    }
+
     private func channel(for program: PlexLiveProgram) -> PlexLiveChannel? {
         viewModel.lineup?.channels.first {
             $0.gridKey == program.channelGridKey ||
@@ -137,36 +148,40 @@ struct LiveTVChannelGuideRow: View {
     let guide: PlexLiveChannelGuide
     let imageURL: (String?, Int, Int) -> URL?
     let selectProgram: (PlexLiveProgram) -> Void
-    let play: (PlexLiveProgram) -> Void
+    let watchChannel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
-                channelLogo
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(guide.channel.displayTitle)
-                        .font(DuskFont.rowTitle(style: .headline))
-                        .foregroundStyle(Color.duskTextPrimary)
-                        .lineLimit(1)
-                    if let number = guide.channel.displayNumber {
-                        Text(number)
-                            .font(DuskFont.caption(style: .subheadline))
-                            .foregroundStyle(Color.duskTextSecondary)
+                Button(action: watchChannel) {
+                    HStack(spacing: 12) {
+                        channelLogo
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(guide.channel.displayTitle)
+                                .font(DuskFont.rowTitle(style: .headline))
+                                .foregroundStyle(Color.duskTextPrimary)
+                                .lineLimit(1)
+                            if let number = guide.channel.displayNumber {
+                                Text(number)
+                                    .font(DuskFont.caption(style: .subheadline))
+                                    .foregroundStyle(Color.duskTextSecondary)
+                            }
+                        }
                     }
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .pointerStyle(.link)
+                .help("Watch \(guide.channel.displayTitle)")
+                .accessibilityLabel("Watch \(guide.channel.displayTitle)")
 
                 Spacer()
 
-                if let current = guide.currentProgram() {
-                    Button {
-                        play(current)
-                    } label: {
-                        Label("Watch", systemImage: "play.fill")
-                            .foregroundStyle(Color.duskPrimaryActionLabel)
-                    }
-                    .detailHeroNativePrimaryButtonStyle()
+                Button(action: watchChannel) {
+                    Label("Watch", systemImage: "play.fill")
+                        .foregroundStyle(Color.duskPrimaryActionLabel)
                 }
+                .detailHeroNativePrimaryButtonStyle()
             }
 
             if guide.programs.isEmpty {
@@ -188,6 +203,7 @@ struct LiveTVChannelGuideRow: View {
                                 )
                             }
                             .buttonStyle(.plain)
+                            .pointerStyle(.link)
 
                         }
                     }

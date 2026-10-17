@@ -79,8 +79,11 @@ changes. Use the shared route rather than presenting a new detail stack manually
 
 Search uses the shared carousel presentation and merged Plex/Seerr results.
 Seerr pages are request-only and never expose Plex playback/download actions.
-Live TV guide behavior belongs in `LiveTVViewModel`; only an airing program can
-start a tune session. Historical guide entries are not recordings.
+Live TV guide behavior belongs in `LiveTVViewModel`. Clicking a channel's
+logo/name or its always-available Watch button tunes the live channel, even
+without current-program metadata. Current program cards also tune directly;
+past/future program cards open details and cannot play that scheduled program.
+Historical guide entries are not recordings.
 
 ## Player
 

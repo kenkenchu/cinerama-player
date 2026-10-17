@@ -128,6 +128,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 
 ## Git and Documentation
 
+- Commit completed changes automatically after required verification; do not
+  wait for user confirmation. Push periodically at sensible checkpoints, and
+  whenever explicitly requested. This is the user's standing preference.
 - Check `git status --short` before editing and finishing. Preserve unrelated
   changes; do not revert, stage, or publish another contributor's work.
 - `origin` is `kenkenchu/dusk-player-mac`; `upstream` is `marvinvr/dusk-player`.
