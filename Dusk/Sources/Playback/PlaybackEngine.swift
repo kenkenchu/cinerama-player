@@ -109,6 +109,8 @@ protocol PlaybackEngine: AnyObject {
     var isBuffering: Bool { get }
     var error: PlaybackError? { get }
     var videoEnhancementStatus: VideoEnhancementStatus { get }
+    /// Safe renderer facts only; never include media URLs or credentials.
+    var renderingDiagnostics: [(String, String)] { get }
     var onPlaybackEnded: (@MainActor () -> Void)? { get set }
     var playbackDiagnostics: [PlaybackEngineDiagnostic] { get }
 
@@ -193,6 +195,8 @@ protocol PlaybackEngine: AnyObject {
 }
 
 extension PlaybackEngine {
+    var renderingDiagnostics: [(String, String)] { [] }
+
     var seekableTimeRange: ClosedRange<TimeInterval>? {
         duration > 0 ? 0...duration : nil
     }

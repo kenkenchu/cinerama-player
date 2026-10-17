@@ -59,6 +59,11 @@ before accepting a lossless remux.
 
 ## Engines and Rendering
 
+- Native video surfaces fill the player layout. The AVPlayer AppKit bridge
+  reattaches its layer on view/window updates and only lets the current host
+  resize or detach it, preventing outgoing SwiftUI hosts from changing the
+  replacement surface. `PlaybackEngine.renderingDiagnostics` exposes safe
+  renderer facts for the optional debug overlay, without URLs or credentials.
 - `AVPlayerEngine`: standard-codec/container playback and HLS, native media
   selection, an `NSViewRepresentable` hosting `AVPlayerLayer`, remux resource
   loader, Dolby Vision proxy, and optional shared Metal enhancement renderer.

@@ -73,6 +73,7 @@ private struct MacPlayerSession: View {
     @State private var model: PlayerViewModel
     @State private var activity: NSObjectProtocol?
     @State private var lastPointerLocation: CGPoint?
+    @State private var showsDebugInfo = false
 
     init(engine: any PlaybackEngine, source: PlaybackSource, playback: PlaybackCoordinator, isFullScreen: Bool, controlsVisible: Binding<Bool>) {
         self.isFullScreen = isFullScreen
@@ -84,6 +85,7 @@ private struct MacPlayerSession: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             model.engineView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             VStack(spacing: 12) {
                 Spacer()
                 if let marker = model.activeSkipMarker {
@@ -121,6 +123,14 @@ private struct MacPlayerSession: View {
                     Button("Close") { playback.showPlayer = false }
                 }.padding(32).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .overlay(alignment: .topTrailing) {
+            if showsDebugInfo {
+                debugOverlay
+                    .padding(24)
+                    .padding(.top, isFullScreen ? 32 : 0)
             }
         }
         .onContinuousHover { phase in
@@ -175,6 +185,9 @@ private struct MacPlayerSession: View {
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
                 Spacer()
+                Toggle("Playback Debug Info", systemImage: "ladybug", isOn: $showsDebugInfo)
+                    .toggleStyle(.button)
+                    .help("Show playback engine and rendering diagnostics")
                 if model.liveTVContext != nil { Button("Go Live") { model.goLive() } }
                 Menu("Audio", systemImage: "speaker.wave.2") {
                     ForEach(model.audioTracks) { track in
@@ -199,6 +212,56 @@ private struct MacPlayerSession: View {
         }
         .padding(18)
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
+    }
+
+    private var debugOverlay: some View {
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Text("Playback Debug Info").font(.headline)
+                    Spacer()
+                    Button("Close Debug Info", systemImage: "xmark") { showsDebugInfo = false }
+                        .labelStyle(.iconOnly)
+                }
+                ScrollView {
+                    Grid(alignment: .leading, horizontalSpacing: 12, verticalSpacing: 6) {
+                        ForEach(Array(debugRows.enumerated()), id: \.offset) { _, row in
+                            GridRow {
+                                Text(row.0).foregroundStyle(.secondary)
+                                Text(row.1).textSelection(.enabled)
+                            }
+                        }
+                    }
+                    .font(.caption.monospaced())
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .padding(18)
+            .frame(width: 380, height: 380)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
+        }
+    }
+
+    private var debugRows: [(String, String)] {
+        var rows: [(String, String)] = [
+            ("State", String(describing: model.state)),
+            ("Position", String(format: "%.1f / %.1f s", model.currentTime, model.duration)),
+            ("Buffering", model.isBuffering ? "Yes" : "No"),
+            ("Subtitle", model.selectedSubtitleTrack?.displayTitle ?? "Off"),
+            ("Subtitle codec", model.selectedSubtitleTrack?.codec ?? "Unknown")
+        ]
+        if let info = playback.debugInfo {
+            rows.insert(contentsOf: [
+                ("Engine", info.engineLabel),
+                ("Route", info.decisionLabel),
+                ("Video", "\(info.videoLabel) · \(info.resolutionLabel)"),
+                ("Audio", info.audioLabel),
+                ("Container", info.containerLabel),
+                ("Reason", info.resolverLabel)
+            ], at: 0)
+        }
+        rows.append(contentsOf: model.engine.renderingDiagnostics)
+        return rows
     }
 
     private func configure() {

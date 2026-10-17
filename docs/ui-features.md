@@ -88,6 +88,12 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Escape | Close player |
 | Ctrl-Cmd-F | Native window fullscreen |
 
+The bug-icon toggle in the playback control bar opens a live Playback Debug Info
+overlay. It stays visible independently of control auto-hide and has its own close
+button. It shows the engine, route, source codecs, subtitle selection/codec,
+transport/buffering state, and renderer geometry/readiness. It never displays
+media URLs, tokens, or credentials. This is session UI state, not a saved setting.
+
 Scrubbing previews locally and commits one seek on release. Audio, subtitle and
 per-session Quality menus use shared selection methods. Intro/credits and
 Up Next actions use the coordinator's session identity guards. A ProcessInfo

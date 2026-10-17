@@ -408,6 +408,19 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
         selectedAudioTrackID = track.id
     }
 
+    var renderingDiagnostics: [(String, String)] {
+        let size = player.currentItem?.presentationSize ?? .zero
+        return [
+            ("Video ready", playerLayer.isReadyForDisplay ? "Yes" : "No"),
+            ("Decoded video", "\(Int(size.width)) × \(Int(size.height))"),
+            ("Video layer", "\(Int(playerLayer.bounds.width)) × \(Int(playerLayer.bounds.height))"),
+            ("Layer attached", playerLayer.superlayer == nil ? "No" : "Yes"),
+            ("Rendering", videoEnhancementRenderer != nil && !isRenderingNativeSubtitles ? "Metal enhancement" : "Native AVPlayerLayer"),
+            ("Transport", String(describing: player.timeControlStatus)),
+            ("Waiting", player.reasonForWaitingToPlay?.rawValue ?? "None")
+        ]
+    }
+
     // MARK: - Rendering
 
     func makePlayerView() -> AnyView {
@@ -1032,7 +1045,15 @@ extension AVPlayerEngine: AVPlayerPlaybackCoordinatorDelegate {
 private struct AVPlayerLayerRepresentable: NSViewRepresentable {
     let playerLayer: AVPlayerLayer
     func makeNSView(context: Context) -> AVPlayerMacView { AVPlayerMacView(playerLayer: playerLayer) }
-    func updateNSView(_ view: AVPlayerMacView, context: Context) {}
+    func updateNSView(_ view: AVPlayerMacView, context: Context) {
+        view.attachPlayerLayer()
+    }
+    static func dismantleNSView(_ view: AVPlayerMacView, coordinator: ()) {
+        // A newer SwiftUI host may already own the shared layer.
+        if view.playerLayer.superlayer === view.layer {
+            view.playerLayer.removeFromSuperlayer()
+        }
+    }
 }
 
 private final class AVPlayerMacView: NSView {
@@ -1042,11 +1063,30 @@ private final class AVPlayerMacView: NSView {
         super.init(frame: .zero)
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
-        layer?.addSublayer(playerLayer)
+        attachPlayerLayer()
     }
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    func attachPlayerLayer() {
+        guard let layer else { return }
+        if playerLayer.superlayer !== layer {
+            layer.addSublayer(playerLayer)
+        }
+        resizePlayerLayer()
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil { attachPlayerLayer() }
+    }
+
     override func layout() {
         super.layout()
+        resizePlayerLayer()
+    }
+
+    private func resizePlayerLayer() {
+        // An outgoing host must not resize a layer reparented to its replacement.
+        guard playerLayer.superlayer === layer else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
         playerLayer.frame = bounds

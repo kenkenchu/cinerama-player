@@ -104,6 +104,14 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
         pendingSlaveURL = url
         return true
     }
+    var renderingDiagnostics: [(String, String)] {
+        [
+            ("Video surface", "\(Int(videoView.bounds.width)) × \(Int(videoView.bounds.height))"),
+            ("Surface attached", videoView.window == nil ? "No" : "Yes"),
+            ("VLC state", String(describing: player.state)),
+            ("Subtitle index", String(player.currentVideoSubTitleIndex))
+        ]
+    }
     func makePlayerView() -> AnyView { AnyView(VLCMacSurface(view: videoView)) }
     func configureCoordinatedPlayback(itemIdentifier: String?) {
         self.itemIdentifier = itemIdentifier
