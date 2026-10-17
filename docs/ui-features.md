@@ -36,8 +36,8 @@ Interactive media thumbnails use the system link cursor and a subtle neutral
 hover outline, confined to artwork; card titles, subtitles, and spacing keep the
 normal cursor. Season episode rows apply the hand cursor only to playable
 artwork; episode text and summary links explicitly use the normal cursor while
-retaining their navigation actions. The Home hero Play/Resume button also uses the link cursor;
-disabled cards do not advertise a click action. Details links and Show All tiles
+retaining their navigation actions. The Home hero Play/Resume button also uses
+the link cursor; disabled cards do not advertise a click action. Details links and Show All tiles
 include pointer help. Reuse these primitives rather than copying feature-local
 implementations.
 System controls and neutral states follow `STYLE.md`.
@@ -112,15 +112,14 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 
 The playback control bar uses two compact rows (timeline, then transport and
 menus with an inline title showing series name, season/episode numbers, and
-episode title for TV episodes),
-regular native controls with modest padding, and a translucent neutral
-black background confined to the padded control bounds. The fill composites over
+episode title for TV episodes), regular native controls with modest padding,
+and a translucent neutral black background confined to the padded control bounds. The fill composites over
 both native video and letterboxing without sampling a separate AppKit backdrop.
 The player explicitly supplies the dark color environment even when the shell
 uses light appearance. Reduce Transparency makes the bar's background opaque.
 
-The monitor-and-waveform icon toggle in the playback control bar opens a live Playback Debug Info
-overlay. It stays visible independently of control auto-hide and has its own close
+The monitor-and-waveform icon toggle in the playback control bar opens a live
+Playback Debug Info overlay. It stays visible independently of control auto-hide and has its own close
 button. It shows the engine, route, source codecs, subtitle selection/codec,
 transport/buffering state, and renderer geometry/readiness. Plex playback is
 shown explicitly as Direct Play, Direct Stream/remux, or Server Transcoding,
@@ -129,16 +128,14 @@ them. Missing server decisions are marked as unavailable. It never displays
 media URLs, tokens, or credentials. This is session UI state, not a saved setting.
 
 The video surface uses a link cursor to advertise its click action, without a
-hover tooltip covering the video. Video clicks
-are handled separately from controls: clicking menus, scrubbing, and toggling
+hover tooltip covering the video. Video clicks are handled separately from controls: clicking menus, scrubbing, and toggling
 debug info do not toggle play/pause. Double-click is exclusive of single-click.
 Player controls include native tooltips naming their keyboard shortcuts.
 
 Scrubbing previews locally and commits one seek on release. Audio, subtitle and
 per-session Quality menus use shared selection methods. The subtitle menu uses
 a native single-selection picker bound to the active track ID, with a checkmark
-on the selected track or Off. Intro/credits and
-Up Next actions use the coordinator's session identity guards. A ProcessInfo
+on the selected track or Off. Intro/credits and Up Next actions use the coordinator's session identity guards. A ProcessInfo
 activity prevents display sleep while the player is mounted.
 
 There are currently no PiP/AirPlay/outgoing SharePlay controls or system media-key
@@ -159,10 +156,9 @@ editors; do not reintroduce remote focus-driven ordering.
 
 Downloads remain a fixed sidebar destination, including when empty or offline.
 Their queue, metadata, disk paths and delayed watch-state sync stay in the
-manager layer; see `downloads-and-offline.md`. Subtitle appearance is configured only in macOS System Settings → Accessibility
-→ Captions; see `playback.md` for renderer support and limitations.
-The settings form currently
-exposes download resolution and network constraints; additional persisted
+manager layer; see `downloads-and-offline.md`. Subtitle appearance is configured
+only in macOS System Settings → Accessibility → Captions; see `playback.md` for
+renderer support and limitations. The settings form currently exposes download resolution and network constraints; additional persisted
 manager preferences do not imply an existing UI control.
 
 ## Verification

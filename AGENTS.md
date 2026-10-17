@@ -100,13 +100,27 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   stack. Keep catalog stacks mounted but hidden/disabled underneath; replacing
   the split-view detail root can leave a pushed catalog page in front of active
   playback (audio without the player or controls). See `docs/ui-features.md`.
-- Fullscreen playback hides the sidebar/divider/toolbar and uses the owning
-  window for fullscreen actions. The controls use the shared idle timeout;
-  pointer movement or a click reveals them. The user confirmed the current build
-  is good; this does not establish HDR or offline runtime verification.
-- The subsequent Mac-only cleanup passed a signed build and compiled the
-  retained tests without running them. Playback, HDR, and offline behavior
-  still need runtime verification; do not describe compilation as runtime QA.
+- The user confirmed catalog player presentation, fullscreen entry/exit,
+  windowed/fullscreen control-bar alignment, and Home Resume progress-fill
+  corners. The player uses one canvas with no navigation toolbar; keep the
+  fullscreen toggle in the bottom control bar and Close over the video.
+- Controls hide after two seconds, but stay visible while hovered, paused, or
+  scrubbing. The compact bar shows series name, season/episode numbers and title.
+  The monitor-and-waveform button (Cmd-I) opens safe playback diagnostics.
+- Pointer feedback on media cards/episode rows belongs only on artwork; the Home
+  hero Play/Resume button also has a hand cursor. Video click toggles play/pause,
+  double-click toggles fullscreen, and video hover has no tooltip.
+- Subtitle choice persists per Plex profile/server/movie or TV series, including
+  Off. Appearance comes only from macOS Captions preferences, with a VLC adapter;
+  there is no app subtitle-size setting. The menu marks the active selection.
+- Pending investigation: after the system-caption-style change the user reported
+  selected subtitles missing on some files. This was deferred for the catalog
+  presentation fix and remains unresolved. Identify an affected file/track and
+  engine using the overlay before changing rendering or routing again. Do not
+  describe the subtitle issue as fixed or assume all files/engines are affected.
+- Latest source changes passed Apple Development-signed compile-only builds;
+  agents did not launch the app or run tests. Basic user-confirmed playback is
+  not HDR/Atmos fidelity, offline, or comprehensive subtitle runtime verification.
 - The user handles browser-based actions. Provide instructions when a browser
   step is needed; use local CLI workflows for authorized repository work.
 
