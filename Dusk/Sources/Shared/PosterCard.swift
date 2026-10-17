@@ -194,6 +194,7 @@ struct PosterCard: View {
     var availabilityBadge: String? = nil
     var isDimmed: Bool = false
     var isWatched: Bool = false
+    var showsPointerFeedback = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -206,6 +207,7 @@ struct PosterCard: View {
                 availabilityBadge: availabilityBadge,
                 isDimmed: isDimmed
             )
+            .modifier(MacMediaCardInteraction(isInteractive: showsPointerFeedback))
 
             PosterCardText(
                 title: title,
@@ -314,5 +316,25 @@ extension PlexItem {
         default:
             return nil
         }
+    }
+}
+
+/// Pointer feedback is confined to interactive artwork, excluding card text.
+private struct MacMediaCardInteraction: ViewModifier {
+    let isInteractive: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .pointerStyle(isInteractive && isEnabled ? .link : nil)
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.primary.opacity(isInteractive && isHovered && isEnabled ? 0.2 : 0), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .onHover { isHovered = $0 }
+            .animation(.easeOut(duration: 0.12), value: isHovered)
     }
 }

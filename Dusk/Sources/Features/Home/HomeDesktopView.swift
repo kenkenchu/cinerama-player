@@ -54,6 +54,7 @@ struct HomeDesktopView: View {
                                         )
                                     }
                                     .homeHeroNativeButtonStyle()
+                                    .pointerStyle(.link)
                                     .frame(
                                         maxWidth: DuskPlatform.usesWideLayout ? 300 : 240,
                                         alignment: .leading

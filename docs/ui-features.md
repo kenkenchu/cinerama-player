@@ -32,7 +32,9 @@ On Mac, unreachable-server UI includes Local Network permission guidance.
 - `DuskFont` roles resolve native system styles. Theme providers are AppKit
   colors in `Shared/MacPlatform.swift`.
 
-Plain media cards use the system link cursor and a subtle neutral hover outline;
+Interactive media thumbnails use the system link cursor and a subtle neutral
+hover outline, confined to artwork; card titles, subtitles, and spacing keep the
+normal cursor. The Home hero Play/Resume button also uses the link cursor;
 disabled cards do not advertise a click action. Details links and Show All tiles
 include pointer help. Reuse these primitives rather than copying feature-local
 implementations.
