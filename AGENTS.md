@@ -116,6 +116,10 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - The user subsequently confirmed that the previously reported missing-subtitle
   issue works now. It is no longer an open investigation; no specific root cause
   was isolated, and this confirmation is not an exhaustive subtitle-format audit.
+- Cleanup removed unused player selection/info views, their dormant UI flags and
+  diagnostics contract, Mac-only forwarding wrappers, and upstream website/mobile
+  screenshot assets. Historical Markdown stays under `docs/upstream/`; the
+  current player menus, overlay, subtitle search, and native build inputs remain.
 - Latest source changes passed Apple Development-signed compile-only builds;
   agents did not launch the app or run tests. Basic user-confirmed playback is
   not HDR/Atmos fidelity, offline, or comprehensive subtitle runtime verification.

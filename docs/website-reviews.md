@@ -1,7 +1,8 @@
 # Upstream Website Material
 
 This fork does not deploy `getdusk.app` or operate the original App Store listing.
-Any inherited `website/` and review assets describe the upstream project.
+The inherited `website/` source and marketing screenshots have been removed
+from this Mac-only fork. Their historical descriptions concern upstream.
 A push to this fork is not a website deployment workflow.
 
 The former review/deployment guide is preserved in `upstream/website-reviews.md`

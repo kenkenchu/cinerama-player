@@ -18,5 +18,7 @@ for current ownership, build commands, verification, and publishing decisions.
   [website reviews](website-reviews.md): original App Store/website material.
 
 The fork does not publish the original App Store listing or upstream website.
+The old `website/` and mobile/TV `screenshots/` assets have been removed; paths
+to them in these archived guides describe the historical upstream tree.
 Source in the original repository and Git history remain the references for
 future upstream merges.

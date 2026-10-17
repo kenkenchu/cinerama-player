@@ -130,7 +130,10 @@ media URLs, tokens, or credentials. This is session UI state, not a saved settin
 The video surface uses a link cursor to advertise its click action, without a
 hover tooltip covering the video. Video clicks are handled separately from controls: clicking menus, scrubbing, and toggling
 debug info do not toggle play/pause. Double-click is exclusive of single-click.
-Player controls include native tooltips naming their keyboard shortcuts.
+Player controls include native tooltips naming their keyboard shortcuts. Audio
+and subtitle selection use the native menus in `PlayerView`; the old shared
+selection sheet and standalone playback-info views have been removed. Auto-hide
+is gated by live playback/scrub/hover state, not unused sheet-presentation flags.
 
 Scrubbing previews locally and commits one seek on release. Audio, subtitle and
 per-session Quality menus use shared selection methods. The subtitle menu uses
