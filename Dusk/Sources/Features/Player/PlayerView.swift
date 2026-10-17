@@ -213,10 +213,24 @@ private struct MacPlayerSession: View {
                 }
                 .help("Choose an audio track")
                 Menu("Subtitles", systemImage: "captions.bubble") {
-                    Button("Off") { model.selectSubtitle(nil) }
-                    ForEach(model.subtitleTracks) { track in
-                        Button(track.displayTitle) { model.selectSubtitle(track) }
+                    Picker("Subtitle track", selection: Binding<Int?>(
+                        get: { model.selectedSubtitleTrackID },
+                        set: { trackID in
+                            if let trackID {
+                                guard let track = model.subtitleTracks.first(where: { $0.id == trackID }) else { return }
+                                model.selectSubtitle(track)
+                            } else {
+                                model.selectSubtitle(nil)
+                            }
+                        }
+                    )) {
+                        Text("Off").tag(Optional<Int>.none)
+                        ForEach(model.subtitleTracks) { track in
+                            Text(track.displayTitle).tag(Optional(track.id))
+                        }
                     }
+                    .pickerStyle(.inline)
+                    .labelsHidden()
                 }
                 .help("Choose a subtitle track")
                 if let info = playback.debugInfo, info.canSelectPlaybackQuality {

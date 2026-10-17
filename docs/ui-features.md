@@ -126,7 +126,9 @@ debug info do not toggle play/pause. Double-click is exclusive of single-click.
 Player controls include native tooltips naming their keyboard shortcuts.
 
 Scrubbing previews locally and commits one seek on release. Audio, subtitle and
-per-session Quality menus use shared selection methods. Intro/credits and
+per-session Quality menus use shared selection methods. The subtitle menu uses
+a native single-selection picker bound to the active track ID, with a checkmark
+on the selected track or Off. Intro/credits and
 Up Next actions use the coordinator's session identity guards. A ProcessInfo
 activity prevents display sleep while the player is mounted.
 
