@@ -59,6 +59,14 @@ struct HomeDesktopView: View {
                                         maxWidth: DuskPlatform.usesWideLayout ? 300 : 240,
                                         alignment: .leading
                                     )
+                                    .overlay {
+                                        if let progress = item.posterProgress {
+                                            HomeHeroResumeProgress(progress: progress)
+                                        }
+                                    }
+                                    .accessibilityValue(item.posterProgress.map {
+                                        "\(Int((min(1, max(0, $0)) * 100).rounded())) percent watched"
+                                    } ?? "")
                                     .simultaneousGesture(
                                         DragGesture(minimumDistance: 0)
                                             .onChanged { _ in callbacks.pauseRotation() }

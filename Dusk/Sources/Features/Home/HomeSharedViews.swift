@@ -73,6 +73,23 @@ struct HomeHeroActionButtonLabel: View {
     }
 }
 
+/// A neutral progress tint over the native button, with no separate hit target.
+struct HomeHeroResumeProgress: View {
+    let progress: Double
+
+    var body: some View {
+        GeometryReader { geometry in
+            Rectangle()
+                .fill(.primary.opacity(0.14))
+                .frame(width: geometry.size.width * min(1, max(0, progress)))
+                .frame(maxHeight: .infinity)
+        }
+        .clipShape(Capsule())
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
 struct HomeHeroSecondaryActionButtonLabel: View {
     let title: String
 

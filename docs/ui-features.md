@@ -46,7 +46,10 @@ System controls and neutral states follow `STYLE.md`.
 
 `HomeView` owns loading and refresh; `HomeDesktopView` composes the cinematic hero,
 optional Live TV shelf, Plex hubs, then personalized shelves. The desktop hero
-responds to window dimensions and uses `HomeCinematicHeroLayout.desktop`.
+Resume button shades its watched fraction using Plex view offset and duration,
+clamped to the button bounds. The neutral overlay preserves pointer/context-menu
+actions and exposes percent watched to accessibility; fresh Play buttons have no
+fill. The hero responds to window dimensions and uses `HomeCinematicHeroLayout.desktop`.
 
 `HomeViewModel` merges server payloads and uses `HomeFirstPaintGate` to avoid
 rearranging the hero as late servers answer. Preserve the first-paint deadline,
