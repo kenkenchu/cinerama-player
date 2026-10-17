@@ -178,6 +178,11 @@ extension PlayerViewModel {
         formatTime(displayPosition)
     }
 
+    var formattedRemainingTime: String {
+        guard duration.isFinite, duration > 0, displayPosition.isFinite else { return "—:—" }
+        return "−" + formatTime(max(0, duration - max(0, displayPosition)))
+    }
+
     var formattedDuration: String {
         formatTime(duration)
     }

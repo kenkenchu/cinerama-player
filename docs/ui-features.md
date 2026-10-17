@@ -110,6 +110,11 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Escape | Close player |
 | Ctrl-Cmd-F | Native window fullscreen |
 
+The timeline shows elapsed time on the left and remaining time (with a minus
+sign) on the right, as M:SS or H:MM:SS. Both preview the scrub position; unknown
+duration shows a placeholder. Live TV uses LIVE or time behind live instead of
+a finite remaining duration.
+
 The playback control bar uses two compact rows (timeline, then transport and
 menus with an inline title showing series name, season/episode numbers, and
 episode title for TV episodes), regular native controls with modest padding,

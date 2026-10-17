@@ -193,7 +193,10 @@ private struct MacPlayerSession: View {
     private var controls: some View {
         VStack(spacing: 8) {
             HStack {
-                Text(MediaTextFormatter.playbackDuration(milliseconds: Int(model.currentTime * 1000)) ?? "0:00").monospacedDigit()
+                Text(model.formattedTime)
+                    .monospacedDigit()
+                    .help("Elapsed time")
+                    .accessibilityLabel("Elapsed time: \(model.formattedTime)")
                 Slider(value: Binding(get: { model.isScrubbing ? model.scrubPosition : model.currentTime },
                                       set: { model.updateScrub(to: $0) }),
                        in: (model.seekableRange ?? 0...max(model.duration, 1)),
@@ -201,7 +204,12 @@ private struct MacPlayerSession: View {
                            if editing { model.beginScrub() } else { model.endScrub() }
                        })
                     .accessibilityLabel("Playback position")
-                Text(MediaTextFormatter.playbackDuration(milliseconds: Int(model.duration * 1000)) ?? "0:00").monospacedDigit()
+                Text(model.isLiveTV ? model.formattedLiveOffset : model.formattedRemainingTime)
+                    .monospacedDigit()
+                    .help(model.isLiveTV ? "Position relative to live" : "Time remaining")
+                    .accessibilityLabel(model.isLiveTV
+                        ? "Live position: \(model.formattedLiveOffset)"
+                        : "Time remaining: \(model.formattedRemainingTime)")
             }
             .font(.caption.monospacedDigit())
             HStack(spacing: 14) {
