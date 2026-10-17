@@ -247,16 +247,11 @@ struct PlaybackDebugInfo: Sendable {
     }
 
     var availableQualityPresets: [PlaybackQualityPreset] {
-        PlaybackQualityPreset.displayOrder(forOriginalMedia: media)
+        [.original]
     }
 
     var canSelectPlaybackQuality: Bool {
-        switch decision {
-        case .localDownload, .airPlay, .liveTV:
-            false
-        case .directPlay, .transcode, .serverStream, .spatialAudio:
-            true
-        }
+        false // Server re-encoding is prohibited; playback always uses original quality.
     }
 
     var canLoadScrubPreviews: Bool {

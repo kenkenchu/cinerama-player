@@ -908,42 +908,9 @@ extension PlaybackCoordinator {
         }
     }
 
-    /// Restarts the current session as a server transcode pinned to the given
-    /// audio stream (nil = the part's default audio stream). Used when the
-    /// local engine cannot decode a track (TrueHD on a stock VLCKit build, or
-    /// Dusk's TrueHD decoder failing to open): the server decodes it to an
-    /// AVPlayer-friendly stream, so the user's choice produces sound instead
-    /// of a dead local decoder.
+    /// A locally undecodable track must never trigger server re-encoding.
     func transcodeForUndecodableAudio(_ track: AudioTrack?) async {
-        guard let debugInfo else {
-            presentQualitySwitchError("Audio transcoding is unavailable for this playback.")
-            return
-        }
-
-        let audioStreams = debugInfo.part.streams.filter { $0.streamType == .audio }
-        let fallbackStream = audioStreams.first { $0.isSelected ?? false }
-            ?? audioStreams.first { $0.isDefault ?? false }
-            ?? audioStreams.first
-        let streamID = track?.plexStreamID ?? fallbackStream?.id
-
-        // Preferred: keep the original video (copied, HDR intact) and have
-        // Plex convert only the audio. The quality-preset transcode below
-        // re-encodes the video and is the last resort — on servers without
-        // HDR tone mapping it also fails outright for HDR sources (Plex tags
-        // the 8-bit H.264 output PQ, which AVPlayer rejects with -12927).
-        if await playConvertedAudioRemux(audioStreamID: streamID) {
-            return
-        }
-
-        guard let preset = debugInfo.availableQualityPresets.first(where: { !$0.isOriginal }) else {
-            presentQualitySwitchError("No transcode quality is available for this item.")
-            return
-        }
-
-        playbackSessionLogger.notice(
-            "Switching to server transcode for locally undecodable audio (streamID \(streamID.map(String.init) ?? "default", privacy: .public), preset \(preset.displayName, privacy: .public))"
-        )
-        await switchQuality(to: preset, audioStreamID: streamID)
+        presentQualitySwitchError("This audio track cannot be decoded locally. Server transcoding is disabled. Choose another audio track.")
     }
 
     // MARK: - AirPlay delivery
@@ -1469,6 +1436,9 @@ extension PlaybackCoordinator {
 
         let expectedPresentationID = playerPresentationID
         directPlayFallbackWatchTask = Task { @MainActor [weak self] in
+            var startedAt = ContinuousClock.now
+            var previousPosition: TimeInterval?
+            var hasAdvanced = false
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
                 if Task.isCancelled { return }
@@ -1478,7 +1448,15 @@ extension PlaybackCoordinator {
                       let engine = self.engine else {
                     return
                 }
-                guard engine.state == .error || engine.error != nil else { continue }
+                if let previousPosition, engine.currentTime > previousPosition + 0.05 {
+                    hasAdvanced = true
+                }
+                previousPosition = engine.currentTime
+                if engine.state == .paused { startedAt = .now }
+                let liveStartupStalled = self.activeLiveTVContext != nil &&
+                    self.debugInfo?.engine == .avPlayer && !hasAdvanced &&
+                    engine.state != .paused && startedAt.duration(to: .now) >= .seconds(12)
+                guard engine.state == .error || engine.error != nil || liveStartupStalled else { continue }
 
                 // One-shot: consume the watch before attempting the swap so a
                 // failed fallback leaves the normal error surface alone.

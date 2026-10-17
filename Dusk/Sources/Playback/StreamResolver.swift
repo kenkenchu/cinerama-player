@@ -272,6 +272,9 @@ enum StreamResolver {
         // than the delivered HLS. Prefer Plex's actual stream decision.
         let videoStreams = media.parts.flatMap(\.streams).filter { $0.streamType == .video }
         if let codec = streamDecisions?.videoCodec {
+            if codec.lowercased() == "hevc", streamDecisions?.container?.lowercased() == "mpegts" {
+                return Decision(engine: .vlcKit, reason: "Live HEVC in MPEG-TS uses VLC without server conversion")
+            }
             let source = streamDecisions?.videoDecision == "copy" ? videoStreams.first : nil
             if let decision = videoDecision(codec: codec, stream: source) { return decision }
         } else if videoStreams.isEmpty {

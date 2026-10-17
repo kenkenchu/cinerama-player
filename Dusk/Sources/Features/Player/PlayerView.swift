@@ -59,6 +59,14 @@ private struct MacPlayerSession: View {
                 .overlay { videoInteractionSurface }
                 .overlay(alignment: .bottom) {
                     VStack(spacing: 12) {
+                        if let message = playback.qualitySwitchError {
+                            Text(message)
+                                .font(.callout)
+                                .multilineTextAlignment(.center)
+                                .padding(12)
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                                .accessibilityAddTraits(.updatesFrequently)
+                        }
                         if let marker = model.activeSkipMarker {
                             HStack {
                                 Spacer()

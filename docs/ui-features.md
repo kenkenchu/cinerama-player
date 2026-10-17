@@ -154,8 +154,10 @@ and subtitle selection use the native menus in `PlayerView`; the old shared
 selection sheet and standalone playback-info views have been removed. Auto-hide
 is gated by live playback/scrub/hover state, not unused sheet-presentation flags.
 
-Scrubbing previews locally and commits one seek on release. Audio, subtitle and
-per-session Quality menus use shared selection methods. The subtitle menu uses
+Scrubbing previews locally and commits one seek on release. Audio and subtitle
+menus use shared selection methods. Playback stays at original quality: no
+server-conversion Quality menu is exposed. Undecodable audio choices show a
+visible explanation instead of starting server conversion. The subtitle menu uses
 a native single-selection picker bound to the active track ID, with a checkmark
 on the selected track or Off. Intro/credits and Up Next actions use the coordinator's session identity guards. A ProcessInfo
 activity prevents display sleep while the player is mounted.

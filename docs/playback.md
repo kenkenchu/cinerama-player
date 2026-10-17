@@ -48,9 +48,16 @@ copies. Live timeline and transcode calls stay on the active playback server.
 
 Direct play is the online startup baseline. Locally unplayable media, eligible
 lossless remuxes and completed downloads take their documented routes. A failed
-online direct attempt may retry through Plex HLS with `directStream=1`; video
-is copied where the server can do so. Manual Quality is per session and must
-never become a persisted startup transcoding policy.
+online direct attempt may retry through Plex HLS with `directStream=1`.
+Server video/audio re-encoding is prohibited for every Dusk playback route.
+`transcodeLadderSession` rejects manual conversion and audio-conversion modes
+before requesting a decision, and never constructs a start URL unless Plex
+confirms both A/V streams are copied (`isLosslessRemux`). Missing decisions fail
+closed. Subtitle text repackaging is allowed; burning subtitles is not.
+The legacy universal "transcode" endpoint is still used for lossless HLS
+packaging, with its existing session keepalives/cleanup; its name does not imply
+encoding. The policy is client-scoped and does not change Plex server settings
+or other clients. Quality presets are limited to Original and the menu is hidden.
 
 Retain cancellation, stopped timelines, transcode keepalives/stop calls, selected
 track carry-over and presentation identity when changing engines or delivery.
@@ -92,7 +99,7 @@ when AVPlayer omits them. Synthetic menu IDs are never passed to AVPlayer.
 Changing tracks re-evaluates direct/local sessions through the coordinator;
 when the required engine changes, the same URL and delivery decision are kept,
 with the engine position, pause state and explicit Plex track IDs carried over.
-Changing back to compatible tracks can restore AVPlayer. TrueHD decoder rescue,
+Changing back to compatible tracks can restore AVPlayer. TrueHD decoder errors,
 HDR/Atmos remux, server HLS, AirPlay and Live TV keep their existing specialized
 track/fallback paths. Existing engine overrides still take precedence.
 
@@ -104,7 +111,8 @@ hooks for future PiP/external output do not imply a supported Mac UI.
 
 The fetched desktop framework is stock VideoLAN VLCKit 3.7.3. It lacks the Dusk
 TrueHD capability stamp; `VLCKitBuildInfo.decodesTrueHD` therefore defaults false.
-Keep the existing metadata/track checks and Plex audio-conversion fallback.
+Keep the existing metadata/track checks. An undecodable selection shows a visible
+message requesting another audio track; server audio conversion is prohibited.
 Never mark a track decodable just because it appears in VLC's track list.
 
 The archived mobile audio postmortem does not describe this desktop Core Audio
@@ -205,10 +213,16 @@ state but never scrobble a program as library content.
 The tune result retains Plex's HLS stream decisions for diagnostics and engine
 selection. Delivered codecs take priority over tuner-input metadata; missing
 codecs alone do not disqualify AVPlayer. Known incompatible codecs still route
-to VLC. An AVPlayer Live HLS error gets one VLC retry using the same URL and
+to VLC. An AVPlayer Live HLS error, or 12 seconds without advancing playback
+during startup (excluding pause), gets one VLC retry using the same URL and
 tuner/transcode session at the live edge (unless AVPlayer/AirPlay was forced),
 without tuning a second channel session. The existing failure watch owns this
 retry and is cancelled on dismissal or engine replacement.
+
+Live HLS advertises original MPEG-2/H.264/HEVC and common tuner audio as copy
+targets rather than imposing an H.264/AAC conversion target. HEVC in MPEG-TS
+uses VLC. If Plex cannot confirm a copy-only session, tuning reports the policy
+error rather than starting a converted stream.
 
 Live diagnostics label the seekable buffer separately from playback position;
 it is not the program's total duration. They show Plex's reported output codecs,

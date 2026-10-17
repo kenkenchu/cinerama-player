@@ -13,15 +13,17 @@ extension PlexService {
         case failed(String?)
     }
 
-    /// How the server should deliver an HLS session.
+    /// HLS request shapes. The execution boundary enforces copy-only A/V:
+    /// legacy manual/audio-conversion modes are rejected before server access.
     enum TranscodeDeliveryMode: Sendable {
         /// User-selected quality preset: full server transcode with hard
-        /// bitrate/resolution caps (directPlay=0, directStream=0).
+        /// bitrate/resolution caps (directPlay=0, directStream=0). Not executable
+        /// under the current copy-only policy; retained for request compatibility.
         case manualTranscode(PlaybackQualityPreset)
         /// Automatic delivery-ladder rung below direct play: the server copies
         /// the original tracks into HLS when the profile allows
-        /// (directStream=1, directStreamAudio=1) and only re-encodes what it
-        /// must. No bitrate/resolution caps are applied.
+        /// (directStream=1, directStreamAudio=1). Any plan to re-encode is
+        /// rejected before start. No bitrate/resolution caps are applied.
         case directStreamFallback
         /// User-selected AirPlay route: package the original as HLS for native
         /// AVPlayer external playback. Plex may copy compatible tracks, but the
@@ -484,6 +486,11 @@ private extension PlexService {
         subtitleStreamID: Int?,
         serverID: String?
     ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
+        switch mode {
+        case .manualTranscode, .spatialAudioRemux(convertsAudio: true):
+            throw PlexServiceError.decodingError("Server video and audio transcoding is disabled in Dusk. Choose a locally playable track or file.")
+        default: break
+        }
         let targetID = try resolveServerID(serverID)
         guard let connection = pool.connection(for: targetID) else {
             throw PlexServiceError.noServerConnected
@@ -515,6 +522,13 @@ private extension PlexService {
             return (baseURL, outcome, streams)
         }
 
+        // The decision endpoint only plans delivery. Never construct a start
+        // URL unless both original A/V tracks are confirmed copied. Request
+        // flags alone are insufficient: Plex may otherwise choose to encode.
+        guard streams.isLosslessRemux else {
+            return (baseURL, .failed("Plex could not confirm original video and audio copying. Server transcoding is disabled in Dusk."), streams)
+        }
+
         guard let url = buildURL(
             base: baseURL.absoluteString,
             path: "/video/:/transcode/universal/start.m3u8",
@@ -544,9 +558,11 @@ extension PlexService {
         subtitleStreamID: Int?,
         token: String?
     ) -> [URLQueryItem] {
-        let clientProfileExtra = transcodeClientProfileExtra(for: mode)
         let resolvedSourcePath = sourcePath ?? "/library/metadata/\(ratingKey)"
         let isLiveTVSource = resolvedSourcePath.hasPrefix("/livetv/sessions/")
+        let clientProfileExtra = isLiveTVSource
+            ? "add-transcode-target(type=videoProfile&context=streaming&protocol=hls&container=mpegts&videoCodec=h264,mpeg2video,mpeg2,hevc&audioCodec=aac,ac3,eac3,mp2,mp3,dts,dca)"
+            : transcodeClientProfileExtra(for: mode)
 
         // Manual transcodes force a full re-encode; the direct-stream fallback
         // lets the server copy the original tracks into HLS when it can.

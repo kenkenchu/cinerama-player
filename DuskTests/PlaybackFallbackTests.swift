@@ -7,6 +7,43 @@ import Testing
 @Suite("Automatic playback recovery presentation")
 @MainActor
 struct PlaybackFallbackTests {
+    @Test func explicitServerConversionsAreRejectedBeforeServerAccess() async {
+        let service = PlexService()
+        let modes: [PlexService.TranscodeDeliveryMode] = [
+            .manualTranscode(.original), .spatialAudioRemux(convertsAudio: true)
+        ]
+        for mode in modes {
+            do {
+                _ = try await service.transcodeLadderSession(
+                    ratingKey: "1", mediaIndex: 0, mode: mode,
+                    sessionIdentifier: "test", transcodeSessionID: "test",
+                    audioStreamID: nil, subtitleStreamID: nil, serverID: nil
+                )
+                Issue.record("Server conversion must be rejected")
+            } catch {
+                #expect(error.localizedDescription.contains("transcoding is disabled"))
+            }
+        }
+    }
+
+    @Test func remuxGateRequiresConfirmedAudioAndVideoCopies() {
+        var streams = PlexService.TranscodeStreamDecisions(
+            container: "mpegts", videoDecision: "copy", videoCodec: "mpeg2video",
+            audioDecision: "copy", audioCodec: "ac3", subtitleDecision: nil, subtitleLocation: nil
+        )
+        #expect(streams.isLosslessRemux)
+        streams.audioDecision = "transcode"
+        #expect(!streams.isLosslessRemux)
+        streams.audioDecision = "copy"
+        streams.videoDecision = "transcode"
+        #expect(!streams.isLosslessRemux)
+        streams.videoDecision = nil
+        #expect(!streams.isLosslessRemux)
+        streams.videoDecision = "copy"
+        streams.audioDecision = nil
+        #expect(!streams.isLosslessRemux)
+    }
+
     @Test func liveHLSDoesNotTreatMissingCodecsAsIncompatibility() throws {
         let media = try JSONDecoder().decode(PlexMedia.self, from: Data(#"""
             {"id":1,"container":"mpegts","Part":[{"id":1,"key":"/live"}]}

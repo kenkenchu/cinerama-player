@@ -101,6 +101,7 @@ New Mac-specific UI belongs beside its feature. Engine behavior stays behind
 - Downloads/cache/watch sync are profile- and server-scoped.
 - Plex account settings such as library order stay on Plex; local display and
   playback preferences stay in UserDefaults.
-- Direct play is the baseline; per-session Quality never becomes startup policy.
+- Direct play is the baseline; server A/V re-encoding is prohibited. HLS remuxes
+  require confirmed video and audio copying before a start URL is constructed.
 - XcodeGen must run after source changes. Verify the native Mac build and update
   the relevant guide in the same change.

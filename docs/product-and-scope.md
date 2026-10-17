@@ -18,7 +18,8 @@ targets, no mobile framework requirement, and no Mac App Store release.
   and caches are explicit, documented exceptions to otherwise stateless use.
 - Library order belongs to the Plex account, not a private Dusk sync service.
 - Start playback direct. Remuxes may copy compatible video/audio into HLS;
-  manual transcoding remains a per-session action, never a stored startup rule.
+  server video/audio re-encoding is prohibited for all Dusk playback. Refuse
+  incompatible streams rather than silently converting them on the server.
 - Keep view models observable and Plex-specific services straightforward.
 - Use native Mac navigation, menus, keyboard/pointer controls, and AppKit bridges
   where SwiftUI needs a native rendering host. Follow `STYLE.md`.
@@ -29,13 +30,13 @@ targets, no mobile framework requirement, and no Mac App Store release.
 
 The Mac app provides Plex authentication and Home profiles, merged multi-server
 Home/library/search data, detail screens, hybrid AVPlayer/VLCKit playback,
-track selection, manual Quality, timeline/watch-state reporting, intro/credits
+track selection, original-quality playback, timeline/watch-state reporting, intro/credits
 skipping, continuous play, downloads/offline sync, Plex Live TV, and optional
 Seerr requests. Availability depends on server capabilities and media.
 
 AVPlayer retains HDR/Atmos remux and DuskDovi conversion paths. The stock desktop
-VLC build does not advertise local TrueHD support; the shared routing can use
-Plex for undecodable audio. HDR/audio output must be verified with actual media,
+VLC build does not advertise local TrueHD support; undecodable audio requires
+another locally playable track rather than Plex conversion. HDR/audio output must be verified with actual media,
 display, and audio hardware; compiling does not validate format fidelity.
 
 The Mac UI has no PiP controls, AirPlay route picker, outgoing SharePlay invites,

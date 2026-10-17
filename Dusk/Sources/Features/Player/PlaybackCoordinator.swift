@@ -478,7 +478,7 @@ final class PlaybackCoordinator {
         replacement.setPictureInPictureDelegate(self)
         let context = PlaybackAttemptContext(
             attemptID: UUID(), title: info.title, ratingKey: ratingKey ?? live.sessionID,
-            engine: .vlcKit, resolverReason: "AVPlayer could not play Live HLS; retrying the same stream with VLC",
+            engine: .vlcKit, resolverReason: "AVPlayer failed or stalled starting Live HLS; retrying the same stream with VLC",
             mediaID: info.media.id, partID: info.part.id, sanitizedPlaybackURL: info.sanitizedPlaybackURL
         )
         engine = replacement

@@ -31,8 +31,9 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   not globally unique: use `PlexItemID` (server ID + rating key).
 - Playback starts direct, except for documented unsupported-format, remux, and
   local-download routes. Failed online direct play may fall back to Plex HLS.
-  Manual transcoding is a per-session Quality action; never persist a startup
-  quality default that automatically re-encodes future playback.
+  Server video/audio re-encoding is prohibited for all Dusk playback, including
+  Live TV, manual quality and audio rescue. HLS may start only after Plex confirms
+  both tracks are copied; missing decisions fail closed. Remuxing is allowed.
 - Both engines conform to `PlaybackEngine`. Resolver decisions belong in
   `StreamResolver`; orchestration belongs in `PlaybackCoordinator`.
 - Minimal dependencies: desktop VLCKit and DuskDovi. New Rust dependencies need
