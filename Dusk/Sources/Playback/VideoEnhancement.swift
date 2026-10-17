@@ -10,7 +10,7 @@ enum VideoEnhancementMode: String, CaseIterable, Identifiable, Sendable {
     var id: String { rawValue }
 
     static var defaultForPlatform: VideoEnhancementMode {
-        .disabled
+        .automatic
     }
 
     var displayName: String {

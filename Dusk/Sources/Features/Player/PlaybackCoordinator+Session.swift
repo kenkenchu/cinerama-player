@@ -250,8 +250,17 @@ extension PlaybackCoordinator {
                 return .hardFailure("No playable media found.")
             }
 
-            let resolverDecision = StreamResolver.evaluate(
+            let resolverDecision = StreamResolver.evaluateForDirectPlayback(
                 media: media,
+                part: part,
+                enhancementMode: preferences.videoEnhancementMode,
+                selectedSubtitleStreamID: PlayerViewModel.preferredSubtitleStreamID(
+                    inPart: part, preferredLanguage: preferences.defaultSubtitleLanguage,
+                    forcedOnly: preferences.subtitleForcedOnly, savedPreference: savedSubtitlePreference
+                ),
+                selectedAudioStreamID: PlayerViewModel.preferredAudioStreamID(
+                    inPart: part, preferredLanguage: preferences.defaultAudioLanguage
+                ),
                 forceAVPlayer: preferences.forceAVPlayer,
                 forceVLCKit: preferences.forceVLCKit
             )
@@ -472,6 +481,9 @@ extension PlaybackCoordinator {
                         preferredLanguage: preferences.defaultSubtitleLanguage,
                         forcedOnly: preferences.subtitleForcedOnly,
                         savedPreference: savedSubtitlePreference
+                    ),
+                    selectedAudioStreamID: PlayerViewModel.preferredAudioStreamID(
+                        inPart: part, preferredLanguage: preferences.defaultAudioLanguage
                     ),
                     forceAVPlayer: preferences.forceAVPlayer,
                     forceVLCKit: preferences.forceVLCKit
@@ -803,6 +815,7 @@ extension PlaybackCoordinator {
                     part: part,
                     enhancementMode: preferences.videoEnhancementMode,
                     selectedSubtitleStreamID: activeSubtitleStreamID,
+                    selectedAudioStreamID: activeAudioStreamID,
                     forceAVPlayer: preferences.forceAVPlayer,
                     forceVLCKit: preferences.forceVLCKit
                 )
@@ -1237,6 +1250,51 @@ extension PlaybackCoordinator {
         }
     }
 
+
+    /// Re-evaluate only direct/local sessions. HLS/remux sessions retain their
+    /// server track handling and HDR/Atmos preservation rules.
+    func rerouteDirectPlaybackForTracks(audioStreamID: Int?, subtitleStreamID: Int?) -> Bool {
+        guard !didFinalizeCurrentSession, !isSwitchingQuality, !isPreparingAirPlay,
+              !isAirPlaySession,
+              let details = activeItemDetails, let ratingKey,
+              let debugInfo, let source = playbackSource, let engine else { return false }
+        switch debugInfo.decision {
+        case .directPlay, .localDownload: break
+        default: return false
+        }
+        let audioID = audioStreamID ?? activeAudioStreamID
+        let decision = StreamResolver.evaluateForDirectPlayback(
+            media: debugInfo.media, part: debugInfo.part,
+            enhancementMode: preferences.videoEnhancementMode,
+            selectedSubtitleStreamID: subtitleStreamID, selectedAudioStreamID: audioID,
+            forceAVPlayer: preferences.forceAVPlayer, forceVLCKit: preferences.forceVLCKit
+        )
+        guard decision.engine != debugInfo.engine, !decision.requiresServerTranscode else { return false }
+        let position = engine.currentTime > 0 ? engine.currentTime : source.startPosition
+        let wasPlaying = engine.state != .paused
+        activeAudioStreamID = audioID
+        activeSubtitleStreamID = subtitleStreamID
+        pendingExplicitTrackSelection = ExplicitTrackSelection(
+            audioStreamID: audioID, subtitleStreamID: subtitleStreamID
+        )
+        let audioStreams = debugInfo.part.streams.filter { $0.streamType == .audio }
+        let audioPosition = audioStreams.firstIndex { $0.id == audioID }
+        activateReplacementAttempt(
+            transitionLabel: "switching engine for selected tracks", attemptID: UUID(),
+            details: details, ratingKey: ratingKey, media: debugInfo.media, part: debugInfo.part,
+            playbackURL: source.url, sanitizedURL: debugInfo.sanitizedPlaybackURL,
+            playbackDecision: debugInfo.decision, engineType: decision.engine,
+            resolverReason: decision.reason,
+            videoEnhancementRequest: VideoEnhancementRequest.make(
+                mode: preferences.videoEnhancementMode, media: debugInfo.media, part: debugInfo.part
+            ),
+            startPosition: position, shouldAutoPlay: wasPlaying,
+            audioTrackPositionOverride: audioPosition,
+            audioChannelCountOverride: audioPosition.map { audioStreams[$0].channels } ?? nil,
+            serverDecisions: debugInfo.serverDecisions
+        )
+        return true
+    }
 
     // MARK: - External (sidecar) subtitles
 

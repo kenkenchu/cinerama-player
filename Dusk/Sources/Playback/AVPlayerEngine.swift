@@ -39,6 +39,10 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
         ) {
             return subtitleStatus
         }
+        if videoEnhancementRenderer != nil, videoEnhancementRequest.mode == .automatic,
+           !isEnhancementUpscaling {
+            return VideoEnhancementStatus(state: .disabled, reason: "Source already matches output")
+        }
         if let videoEnhancementRenderer {
             return videoEnhancementRenderer.status
         }
@@ -54,12 +58,13 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
     @ObservationIgnored private let player = AVPlayer()
     @ObservationIgnored nonisolated(unsafe) private let playerLayer = AVPlayerLayer()
     @ObservationIgnored nonisolated(unsafe) private var coordinatedItemIdentifier: String?
-    /// The user's subtitle size preference, pushed in by the coordinator.
+    /// Source eligibility and enhancement preference, supplied by the coordinator.
     @ObservationIgnored private var videoEnhancementRequest: VideoEnhancementRequest = .disabled
     @ObservationIgnored private var videoEnhancementRenderer: VideoEnhancementRenderer?
     @ObservationIgnored private var enhancedVideoOutput: AVPlayerItemVideoOutput?
     @ObservationIgnored private var needsEnhancedVideoRefresh = false
     private var isRenderingNativeSubtitles = false
+    private var isEnhancementUpscaling = false
     /// Front for `.spatialAudio` sessions (see `RemuxHLSLoader`). The
     /// asset's resource loader holds its delegate weakly, so the engine owns it
     /// for as long as the item plays.
@@ -200,6 +205,7 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
 
     func configureVideoEnhancement(_ request: VideoEnhancementRequest) {
         videoEnhancementRequest = request
+        isEnhancementUpscaling = false
         videoEnhancementRenderer = VideoEnhancementRenderer(request: request)
     }
 
@@ -415,13 +421,18 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
             ("Decoded video", "\(Int(size.width)) × \(Int(size.height))"),
             ("Video layer", "\(Int(playerLayer.bounds.width)) × \(Int(playerLayer.bounds.height))"),
             ("Layer attached", playerLayer.superlayer == nil ? "No" : "Yes"),
-            ("Rendering", videoEnhancementRenderer != nil && !isRenderingNativeSubtitles ? "Metal enhancement" : "Native AVPlayerLayer"),
+            ("Rendering", shouldPresentEnhancement ? "Metal enhancement" : "Native AVPlayerLayer"),
             ("Transport", String(describing: player.timeControlStatus)),
             ("Waiting", player.reasonForWaitingToPlay?.rawValue ?? "None")
         ]
     }
 
     // MARK: - Rendering
+
+    private var shouldPresentEnhancement: Bool {
+        videoEnhancementRenderer != nil && !isRenderingNativeSubtitles &&
+            (videoEnhancementRequest.mode != .automatic || isEnhancementUpscaling)
+    }
 
     func makePlayerView() -> AnyView {
         if let videoEnhancementRenderer {
@@ -444,7 +455,7 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
         var body: some View {
             ZStack {
                 AVPlayerLayerRepresentable(playerLayer: engine.playerLayer)
-                if !engine.isRenderingNativeSubtitles {
+                if engine.shouldPresentEnhancement {
                     VideoEnhancementRepresentable(renderer: renderer)
                 }
             }
@@ -832,6 +843,25 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
             return
         }
 
+        // Use backing pixels and the fitted picture, not window points or the
+        // letterbox area. Re-evaluate each tick for resize, fullscreen and zoom.
+        if videoEnhancementRequest.mode == .automatic {
+            let sourceSize = player.currentItem?.presentationSize ?? .zero
+            let outputSize = playerLayer.bounds.size
+            guard sourceSize.width > 0, sourceSize.height > 0,
+                  outputSize.width > 0, outputSize.height > 0 else { return }
+            let widthScale = outputSize.width * playerLayer.contentsScale / sourceSize.width
+            let heightScale = outputSize.height * playerLayer.contentsScale / sourceSize.height
+            let scale = playerLayer.videoGravity == .resizeAspectFill
+                ? max(widthScale, heightScale) : min(widthScale, heightScale)
+            let needsUpscaling = scale >= 1.08
+            if isEnhancementUpscaling != needsUpscaling {
+                isEnhancementUpscaling = needsUpscaling
+                needsEnhancedVideoRefresh = true
+            }
+            guard needsUpscaling else { return }
+        }
+
         let itemTime = enhancedVideoOutput.itemTime(forHostTime: hostTime)
         // Turning subtitles off while paused must redraw the current frame,
         // even if this output already delivered it before captions were on.
@@ -1084,11 +1114,17 @@ private final class AVPlayerMacView: NSView {
         resizePlayerLayer()
     }
 
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        resizePlayerLayer()
+    }
+
     private func resizePlayerLayer() {
         // An outgoing host must not resize a layer reparented to its replacement.
         guard playerLayer.superlayer === layer else { return }
         CATransaction.begin()
         CATransaction.setDisableActions(true)
+        playerLayer.contentsScale = window?.backingScaleFactor ?? 1
         playerLayer.frame = bounds
         CATransaction.commit()
     }

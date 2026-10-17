@@ -24,7 +24,7 @@ import VideoToolbox
 enum StreamResolver {
     struct Decision: Sendable {
         let engine: PlaybackEngineType
-        let reason: String
+        var reason: String
         /// True when neither local engine can render this media correctly
         /// (e.g. Dolby Vision profile 5, whose IPTPQc2 color neither AVPlayer
         /// from a remux nor libvlc can tone-map). The coordinator should start
@@ -42,10 +42,21 @@ enum StreamResolver {
         part: PlexMediaPart,
         enhancementMode: VideoEnhancementMode,
         selectedSubtitleStreamID: Int?,
+        selectedAudioStreamID: Int? = nil,
         forceAVPlayer: Bool = false,
         forceVLCKit: Bool = false
     ) -> Decision {
-        let decision = evaluate(media: media, forceAVPlayer: forceAVPlayer, forceVLCKit: forceVLCKit)
+        if forceAVPlayer || forceVLCKit {
+            return evaluate(media: media, forceAVPlayer: forceAVPlayer, forceVLCKit: forceVLCKit)
+        }
+        var decision = localEngineDecision(
+            for: media, selectedPart: part,
+            audioStreamID: selectedAudioStreamID, subtitleStreamID: selectedSubtitleStreamID
+        )
+        if isDolbyVisionProfile5(media) {
+            decision.requiresServerTranscode = true
+            decision.reason = "Dolby Vision profile 5 requires a server remux or transcode (no local reshaping)"
+        }
         return decision
     }
 
@@ -166,7 +177,18 @@ enum StreamResolver {
         return decision
     }
 
-    private static func localEngineDecision(for media: PlexMedia) -> Decision {
+    static func isAVPlayerAudioCodec(_ codec: String?) -> Bool {
+        codec.map { avAudioCodecs.contains($0.lowercased()) } ?? false
+    }
+
+    static func isAVPlayerSubtitleCodec(_ codec: String?) -> Bool {
+        codec.map { avSubtitleCodecs.contains($0.lowercased()) } ?? false
+    }
+
+    private static func localEngineDecision(
+        for media: PlexMedia, selectedPart: PlexMediaPart? = nil,
+        audioStreamID: Int? = nil, subtitleStreamID: Int? = nil
+    ) -> Decision {
         // Container check
         guard let container = media.container?.lowercased(),
               avContainers.contains(container) else {
@@ -183,6 +205,22 @@ enum StreamResolver {
         }
 
         // Audio codec check — per stream across all parts
+        if let selectedPart {
+            let audioStreams = selectedPart.streams.filter { $0.streamType == .audio }
+            let audio = audioStreams.first { $0.id == audioStreamID }
+                ?? audioStreams.first { $0.isSelected == true }
+                ?? audioStreams.first { $0.isDefault == true }
+                ?? audioStreams.first
+            if let decision = audioDecision(codec: audio?.codec ?? media.audioCodec) {
+                return decision
+            }
+            if let subtitle = selectedPart.streams.first(where: {
+                $0.streamType == .subtitle && $0.id == subtitleStreamID
+            }), subtitle.key != nil || !isAVPlayerSubtitleCodec(subtitle.codec) {
+                return Decision(engine: .vlcKit, reason: "Selected subtitle requires VLCKit")
+            }
+            return Decision(engine: .avPlayer, reason: "Container, video and selected tracks are AVPlayer-compatible")
+        }
         if let audioDecision = audioDecision(for: media) {
             return audioDecision
         }

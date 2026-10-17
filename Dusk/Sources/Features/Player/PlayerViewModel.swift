@@ -138,6 +138,8 @@ final class PlayerViewModel {
     var serverSelectedAudioStreamID: Int?
     var serverSelectedSubtitleStreamID: Int?
     var plexTrackSelectionHandler: (@MainActor (Int?, Int?) -> Void)?
+    /// Returns true when selection restarted direct playback on another engine.
+    var trackRoutingHandler: (@MainActor (Int?, Int?) -> Bool)?
     var pendingPlaybackState: PlaybackState?
     var pendingPlaybackStateExpiration: Date?
     var playbackSnapshotHandler: (@MainActor (PlaybackState, TimeInterval, TimeInterval) -> Void)?

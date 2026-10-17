@@ -12,7 +12,13 @@ extension PlayerViewModel {
         hasAppliedAutomaticSubtitleSelection = true
         hasUserSelectedSubtitleTrack = true
 
+        if !usesServerTrackSelection,
+           trackRoutingHandler?(selectedAudioTrack?.plexStreamID, track?.plexStreamID) == true {
+            return
+        }
+
         if let track, track.requiresEngineSwitch, let streamID = track.plexStreamID {
+            guard track.isExternal else { return }
             // A Plex sidecar in an AVPlayer session: the engine cannot mount
             // it, so the coordinator restarts this session on VLCKit at the
             // live position with the stream pre-selected.
@@ -48,6 +54,11 @@ extension PlayerViewModel {
             transcodeAudioFallbackHandler?(track)
             return
         }
+
+        if trackRoutingHandler?(track.plexStreamID, selectedSubtitleTrack?.plexStreamID) == true {
+            return
+        }
+        guard !track.requiresEngineSwitch else { return }
 
         engine.selectAudioTrack(track)
         selectedAudioTrackID = track.id
@@ -254,7 +265,7 @@ extension PlayerViewModel {
     /// undecodable one reroutes through the server-transcode fallback in
     /// `selectAudio` instead of silencing playback.
     var selectableAudioTracks: [AudioTrack] {
-        audioTracks.filter(\.isDecodable)
+        audioTracks.filter { $0.isDecodable && !$0.requiresEngineSwitch }
     }
 
     func preferredAudioTrack() -> AudioTrack? {
@@ -414,7 +425,7 @@ extension PlayerViewModel {
 
         var remaining = Array(sourceStreams.enumerated())
 
-        return engineTracks.enumerated().map { index, track in
+        var merged = engineTracks.enumerated().map { index, track in
             guard let source = popBestMatch(
                 for: track,
                 at: index,
@@ -435,9 +446,27 @@ extension PlayerViewModel {
                 plexStreamID: source.id,
                 // Plex's codec is authoritative even when the engine's own
                 // fourcc check misses a TrueHD variant.
-                isDecodable: track.isDecodable && !Self.isLocallyUndecodableAudioCodec(source.codec)
+                isDecodable: track.isDecodable && !Self.isLocallyUndecodableAudioCodec(source.codec),
+                requiresEngineSwitch: engine is AVPlayerEngine && !StreamResolver.isAVPlayerAudioCodec(source.codec)
             )
         }
+        if engine is AVPlayerEngine {
+            // AVFoundation may omit unsupported tracks entirely. Preserve them
+            // as menu choices without handing their synthetic IDs to AVPlayer.
+            for (offset, stream) in remaining where !StreamResolver.isAVPlayerAudioCodec(stream.codec) {
+                var track = AudioTrack(stream: stream)
+                track = AudioTrack(
+                    id: -900_000_000 - offset, displayTitle: track.displayTitle,
+                    language: track.language, languageCode: track.languageCode,
+                    codec: track.codec, channels: track.channels, channelLayout: track.channelLayout,
+                    plexStreamID: stream.id,
+                    isDecodable: !Self.isLocallyUndecodableAudioCodec(stream.codec),
+                    requiresEngineSwitch: true
+                )
+                merged.append(track)
+            }
+        }
+        return merged
     }
 
     /// Merges Plex stream metadata onto the engine's subtitle tracks, from two
@@ -496,10 +525,24 @@ extension PlayerViewModel {
                 isHearingImpaired: source.isHearingImpaired ?? track.isHearingImpaired,
                 isExternal: track.isExternal,
                 plexStreamID: source.id,
-                externalURL: track.externalURL
+                externalURL: track.externalURL,
+                requiresEngineSwitch: engine is AVPlayerEngine && !StreamResolver.isAVPlayerSubtitleCodec(source.codec)
             ))
         }
 
+        if engine is AVPlayerEngine {
+            for (offset, stream) in remaining where !StreamResolver.isAVPlayerSubtitleCodec(stream.codec) {
+                var track = SubtitleTrack(stream: stream)
+                track = SubtitleTrack(
+                    id: -900_000_000 - offset, displayTitle: track.displayTitle,
+                    language: track.language, languageCode: track.languageCode,
+                    codec: track.codec, isForced: track.isForced,
+                    isHearingImpaired: track.isHearingImpaired, isExternal: false,
+                    plexStreamID: stream.id, externalURL: nil, requiresEngineSwitch: true
+                )
+                merged.append(track)
+            }
+        }
         merged.append(contentsOf: unmountableExternalSubtitleTracks())
         return merged
     }

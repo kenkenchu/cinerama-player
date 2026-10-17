@@ -83,15 +83,38 @@ struct VideoEnhancementSubtitleTests {
         #expect(!decision.usesEnhancedSubtitleRenderer)
     }
 
-    @Test func subtitleOffSidecarsAndDisabledEnhancementKeepTheNormalEngine() throws {
+    @Test func subtitleOffAndDisabledEnhancementKeepTheNormalEngine() throws {
         let media = try engineSelectionMedia(videoFields: #","bitDepth":8"#)
         // Metadata says selected/default/forced, but an actual Off choice wins.
-        for subtitleID: Int? in [nil, 4, 999] {
+        for subtitleID: Int? in [nil, 999] {
             let decision = directDecision(media, mode: .enabled, subtitleID: subtitleID)
             #expect(decision.engine == .avPlayer)
             #expect(!decision.usesEnhancedSubtitleRenderer)
         }
         #expect(directDecision(media, mode: .disabled, subtitleID: 3).engine == .avPlayer)
+        #expect(directDecision(media, mode: .automatic, subtitleID: 4).engine == .vlcKit)
+    }
+
+    @Test func unusedIncompatibleTracksDoNotChooseTheEngine() throws {
+        let media = try mediaWithStreams(#"""
+            {"id":2,"streamType":1,"codec":"h264","bitDepth":8},
+            {"id":10,"streamType":2,"codec":"aac","default":true},
+            {"id":11,"streamType":2,"codec":"dts"},
+            {"id":12,"streamType":3,"codec":"ass"},
+            {"id":13,"streamType":3,"codec":"mov_text"}
+            """#)
+        func resolve(audio: Int, subtitle: Int?) -> PlaybackEngineType {
+            StreamResolver.evaluateForDirectPlayback(
+                media: media, part: media.parts[0], enhancementMode: .automatic,
+                selectedSubtitleStreamID: subtitle, selectedAudioStreamID: audio
+            ).engine
+        }
+        #expect(resolve(audio: 10, subtitle: nil) == .avPlayer)
+        #expect(resolve(audio: 10, subtitle: 13) == .avPlayer)
+        #expect(resolve(audio: 11, subtitle: nil) == .vlcKit)
+        #expect(resolve(audio: 10, subtitle: 12) == .vlcKit)
+        // Returning to compatible tracks makes native playback eligible again.
+        #expect(resolve(audio: 10, subtitle: nil) == .avPlayer)
     }
 
     @Test(arguments: [
@@ -179,7 +202,7 @@ struct VideoEnhancementSubtitleTests {
 
     private func mediaWithStreams(_ streams: String) throws -> PlexMedia {
         try JSONDecoder().decode(PlexMedia.self, from: Data("""
-            {"id":1,"Part":[{"id":1,"key":"/clip","Stream":[\(streams)]}]}
+            {"id":1,"container":"mp4","videoCodec":"h264","audioCodec":"aac","Part":[{"id":1,"key":"/clip","Stream":[\(streams)]}]}
             """.utf8))
     }
 }

@@ -353,6 +353,9 @@ private struct MacPlayerSession: View {
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .idleDisplaySleepDisabled], reason: "Playing video")
         model.externalSubtitleURLProvider = { playback.plexService.externalSubtitleURL(for: $0, serverID: playback.activePlaybackServerID) }
         model.externalSubtitleRestartHandler = { playback.switchToVLCKitForExternalSubtitle(streamID: $0) }
+        model.trackRoutingHandler = { audio, subtitle in
+            playback.rerouteDirectPlaybackForTracks(audioStreamID: audio, subtitleStreamID: subtitle)
+        }
         // Capture the session scope so a later profile/item change cannot redirect the write.
         let profileID = playback.plexService.activeProfileID
         let serverID = playback.activePlaybackServerID

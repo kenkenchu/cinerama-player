@@ -72,8 +72,29 @@ refreshes preserve these session decisions; unavailable decisions stay explicit.
   loader, Dolby Vision proxy, and optional shared Metal enhancement renderer.
 - `VLCKitEngine`: desktop `VLCMediaPlayer`/`VLCVideoView` in AppKit, Core Audio,
   per-source buffering, polled time/state/track lists, and sidecar subtitles.
+  Opening/buffering states are reconciled with VLC's `isPlaying` flag; an
+  actively playing transport must not remain in app-level startup/loading.
+  Genuine buffering still uses the existing debounced loading presentation.
+  The user confirmed the stuck spinner is resolved for the reported RM video;
+  this is not a comprehensive VLC format/runtime audit.
 - `PlaybackEngineFactory` may prewarm engines. The protocol keeps the view model
   independent of the selected engine.
+
+Direct/local playback uses `StreamResolver.evaluateForDirectPlayback` with the
+preferred audio and remembered/preferred subtitle IDs (nil subtitle means Off).
+Container/video compatibility is still required, but unused audio/subtitle
+tracks no longer force VLC. A selected sidecar requires VLC because AVPlayer
+cannot mount it. The conservative whole-file `evaluate` remains available for
+capability/remux checks; it does not represent the direct session's active tracks.
+
+The player retains unsupported audio/embedded-subtitle choices from Plex metadata
+when AVPlayer omits them. Synthetic menu IDs are never passed to AVPlayer.
+Changing tracks re-evaluates direct/local sessions through the coordinator;
+when the required engine changes, the same URL and delivery decision are kept,
+with the engine position, pause state and explicit Plex track IDs carried over.
+Changing back to compatible tracks can restore AVPlayer. TrueHD decoder rescue,
+HDR/Atmos remux, server HLS, AirPlay and Live TV keep their existing specialized
+track/fallback paths. Existing engine overrides still take precedence.
 
 The fork has no mobile raw-video bridge, mobile audio-session recovery pipeline,
 TV renderer/HUD, display-mode matcher, or touch input bridge. Existing protocol
@@ -157,10 +178,21 @@ entitlements for the loopback path as well as Plex traffic.
 ## Video Enhancement
 
 The shared Metal renderer can enhance AVPlayer video on an AppKit layer host,
-paced by a screen display link. Respect source HDR/frame-rate limitations and
-native subtitle rendering requirements. Desktop VLC uses its native renderer
+paced by a screen display link. Auto is the default for an unset preference;
+existing explicit preferences are preserved. Auto applies Lanczos scaling and
+adaptive sharpening to SDR video at up to 50 fps only when the fitted picture
+needs at least 8% upscaling. The decision uses display backing pixels, accounts
+for letterboxing/aspect-fill, and updates during resize, fullscreen and display
+changes. Otherwise AVPlayer's native layer remains visible and Metal frame
+submission is skipped. Native rendering also handles HDR and selected AVPlayer
+subtitles; existing remux/HLS route exclusions remain in effect.
+Desktop VLC uses its native renderer
 and does not run that Metal path. A control/setting in shared state is not a
 claim that desktop VLC implements the feature.
+
+The diagnostics overlay reports the active rendering path and enhancement
+reason. This policy has compile-only verification; actual image quality, colour
+accuracy and performance on the M2 still require real-media comparison.
 
 ## Live TV Play Flow and Timeline
 

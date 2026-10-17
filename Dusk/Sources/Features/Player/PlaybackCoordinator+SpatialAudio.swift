@@ -477,6 +477,9 @@ extension PlaybackCoordinator {
                 preferredLanguage: preferences.defaultSubtitleLanguage,
                 forcedOnly: preferences.subtitleForcedOnly
             ),
+            selectedAudioStreamID: keepsExplicitTracks ? activeAudioStreamID : PlayerViewModel.preferredAudioStreamID(
+                inPart: part, preferredLanguage: preferences.defaultAudioLanguage
+            ),
             forceAVPlayer: preferences.forceAVPlayer,
             forceVLCKit: preferences.forceVLCKit
         )

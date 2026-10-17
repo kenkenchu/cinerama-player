@@ -109,6 +109,7 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
             ("Video surface", "\(Int(videoView.bounds.width)) × \(Int(videoView.bounds.height))"),
             ("Surface attached", videoView.window == nil ? "No" : "Yes"),
             ("VLC state", String(describing: player.state)),
+            ("VLC playing", player.isPlaying ? "Yes" : "No"),
             ("Subtitle index", String(player.currentVideoSubTitleIndex))
         ]
     }
@@ -120,19 +121,28 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
     }
     private func sync() {
         let rawState = player.state
-        isBuffering = rawState == .buffering && !player.isPlaying
+        let isPlaying = player.isPlaying
+        isBuffering = rawState == .buffering && !isPlaying
         switch rawState {
         case .playing: state = .playing
         case .paused: state = .paused
-        case .opening: state = .loading
-        case .buffering: if state != .playing { state = .loading }
+        case .opening, .buffering:
+            // libVLC can retain its opening/buffering state while the transport
+            // is already playing. Use the same playing
+            // signal as isBuffering so startup cannot leave a permanent spinner.
+            if isPlaying {
+                state = .playing
+            } else if rawState == .opening || state != .playing {
+                state = .loading
+            }
         case .error:
             error = .unknown("VLC could not play this media.")
             state = .error
         case .ended:
             state = .stopped
             if !ended { ended = true; onPlaybackEnded?() }
-        default: break
+        default:
+            if isPlaying { state = .playing }
         }
         currentTime = max(0, Double(player.time.intValue) / 1000)
         duration = max(0, Double(player.media?.length.intValue ?? 0) / 1000)

@@ -22,6 +22,8 @@ struct AudioTrack: Sendable, Identifiable, Hashable {
     /// skips undecodable tracks; picking one in the picker reroutes playback
     /// through a server transcode pinned to the stream instead.
     var isDecodable: Bool = true
+    /// This choice is available through Plex metadata but needs another engine.
+    var requiresEngineSwitch: Bool = false
 
     var compactDisplayTitle: String {
         let title = Self.trimmed(displayTitle)
