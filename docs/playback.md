@@ -240,6 +240,12 @@ from the live clock snapshot, not directly to the segment-stepped HLS seekable
 bounds. Watching live keeps the thumb at the live edge instead of jumping back
 on playlist updates; actual seeks still clamp to the reachable buffer.
 
+The user confirmed a real Live TV channel plays through VLC as copied MPEG-2
+video and AC3 6-channel audio after the copy-only policy change. That confirms
+this channel's delivery, not all tuner formats or hardware decoding. The later
+channel-browser and live-slider changes have signed compile-only verification;
+their visual layout and the slider's runtime behavior still need confirmation.
+
 ## Timeline, Scrobble, and Up Next
 
 Online sessions report on the active server and maintain transcode keepalives.

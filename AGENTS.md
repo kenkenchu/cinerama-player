@@ -104,13 +104,30 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - The user confirmed catalog player presentation, fullscreen entry/exit,
   windowed/fullscreen control-bar alignment, and Home Resume progress-fill
   corners. The player uses one canvas with no navigation toolbar; keep the
-  fullscreen toggle and Close icon button in the bottom control bar.
+  fullscreen toggle and Close icon (`rectangle.portrait.and.arrow.right`) in the
+  bottom control bar. Escape closes playback; there is no top-left Close overlay.
 - Controls hide after two seconds, but stay visible while hovered, paused, or
   scrubbing. The compact bar shows series name, season/episode numbers and title.
   The monitor-and-waveform button (Cmd-I) opens safe playback diagnostics.
 - Live TV is a searchable channel grid with direct tuning and a channel-card
   Home shelf. This server has no guide data: do not require EPG requests, dates
   or scheduled programs for browsing, tuning or playback titles.
+- The user confirmed Live TV plays through VLC with MPEG-2 video and AC3 6ch,
+  both copied by Plex without re-encoding. VLC is intentional for this codec.
+  The newer channel-grid layout and steady live-slider change passed signed
+  builds but have not received explicit runtime/visual confirmation. The slider
+  uses the live clock, not the segment-stepped playlist bounds; preserve seek
+  clamping to the actual buffer and avoid adding an unseekable five-minute zone.
+- Direct/local engine routing considers preferred audio and remembered/current
+  subtitles rather than unused tracks. Unsupported choices remain in the menus;
+  engine handoffs carry Plex track IDs, position and pause state. Server A/V
+  conversion remains prohibited, even for undecodable TrueHD audio.
+- Metal enhancement defaults to Auto: eligible SDR up to 50 fps needs at least
+  8% upscaling in display backing pixels. Resizing can restore native rendering;
+  HDR, selected AVPlayer subtitles and VLC retain native output. M2 image quality,
+  hardware decode use and energy performance have not been runtime-profiled.
+- Home Recently Added TV resolves episode/season entries to actual show metadata
+  on their source server, once per series, including expansion and Show All.
 - Pointer feedback on media cards/episode rows belongs only on artwork; the Home
   hero Play/Resume button also has a hand cursor. Video click toggles play/pause,
   double-click toggles fullscreen, and video hover has no tooltip.
