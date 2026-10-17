@@ -320,12 +320,14 @@ enum SubtitleFontSize: String, CaseIterable, Identifiable, Sendable {
 enum PlaybackSubtitleStyle {
     /// The Medium baseline, in percent of the renderer's default size.
     static var baseAVPlayerRelativeFontSize: Int {
-        switch userInterfaceIdiom {
-        case .pad, .mac:
-            return 75
-        default:
-            return 100
+        #if os(macOS)
+        return 75
+        #else
+        switch UIDevice.current.userInterfaceIdiom {
+        case .pad, .mac: return 75
+        default: return 100
         }
+        #endif
     }
 
     static func avPlayerRelativeFontSize(for size: SubtitleFontSize) -> Int {
@@ -340,11 +342,4 @@ enum PlaybackSubtitleStyle {
         return max(1, Int((16 / scale).rounded()))
     }
 
-    private static var userInterfaceIdiom: UIUserInterfaceIdiom {
-        #if canImport(UIKit)
-        UIDevice.current.userInterfaceIdiom
-        #else
-        .unspecified
-        #endif
-    }
 }

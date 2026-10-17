@@ -20,7 +20,7 @@ enum AppNavigationRoute: Hashable {
     case person(PlexPersonReference, serverID: String?)
     case seerrMedia(type: SeerrMediaType, id: Int)
     case seerrSeason(tvID: Int, seasonNumber: Int)
-    #if DEBUG
+    #if DEBUG && !os(macOS)
     /// Screenshot mode only (`ScreenshotMode`): Settings › Server Priority is
     /// otherwise reached through a plain NavigationLink.
     case screenshotServerPriority
@@ -116,7 +116,7 @@ struct AppNavigationDestinationView: View {
                 seasonNumber: seasonNumber,
                 service: seerrService
             )
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         case .screenshotServerPriority:
             ServerPrioritySettingsView()
         #endif

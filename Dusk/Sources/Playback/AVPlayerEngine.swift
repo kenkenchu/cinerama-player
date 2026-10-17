@@ -3,7 +3,11 @@ import AudioToolbox
 import CoreMedia
 import OSLog
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
 import UIKit
+#endif
 #if os(iOS)
 import AVKit
 #endif
@@ -895,7 +899,11 @@ final class AVPlayerEngine: NSObject, PlaybackEngine {
     private func startEnhancedVideoDisplayLink() {
         enhancedVideoDisplayLink?.invalidate()
         let target = AVPlayerDisplayLinkTarget(engine: self)
+        #if os(macOS)
+        guard let displayLink = NSScreen.main?.displayLink(target: target, selector: #selector(AVPlayerDisplayLinkTarget.tick(_:))) else { return }
+        #else
         let displayLink = CADisplayLink(target: target, selector: #selector(AVPlayerDisplayLinkTarget.tick(_:)))
+        #endif
         displayLink.add(to: .main, forMode: .common)
         enhancedVideoDisplayLinkTarget = target
         enhancedVideoDisplayLink = displayLink
@@ -1240,6 +1248,7 @@ extension AVPlayerEngine: AVPlayerPlaybackCoordinatorDelegate {
 // MARK: - SwiftUI Bridge
 
 /// Wraps an `AVPlayerLayer` for use in SwiftUI.
+#if !os(macOS)
 private struct AVPlayerLayerRepresentable: UIViewRepresentable {
     let playerLayer: AVPlayerLayer
 
@@ -1275,6 +1284,33 @@ final class AVPlayerUIView: UIView {
         CATransaction.commit()
     }
 }
+
+#else
+private struct AVPlayerLayerRepresentable: NSViewRepresentable {
+    let playerLayer: AVPlayerLayer
+    func makeNSView(context: Context) -> AVPlayerMacView { AVPlayerMacView(playerLayer: playerLayer) }
+    func updateNSView(_ view: AVPlayerMacView, context: Context) {}
+}
+
+private final class AVPlayerMacView: NSView {
+    let playerLayer: AVPlayerLayer
+    init(playerLayer: AVPlayerLayer) {
+        self.playerLayer = playerLayer
+        super.init(frame: .zero)
+        wantsLayer = true
+        layer?.backgroundColor = NSColor.black.cgColor
+        layer?.addSublayer(playerLayer)
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layout() {
+        super.layout()
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        playerLayer.frame = bounds
+        CATransaction.commit()
+    }
+}
+#endif
 
 private final class AVPlayerDisplayLinkTarget: NSObject {
     weak var engine: AVPlayerEngine?

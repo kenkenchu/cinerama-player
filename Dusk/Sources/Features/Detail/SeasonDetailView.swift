@@ -41,8 +41,8 @@ struct SeasonDetailView: View {
             }
         }
         .duskNavigationBarTitleDisplayModeInline()
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
+        .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
             await viewModel.load()
         }
@@ -264,7 +264,7 @@ struct SeasonDetailView: View {
     }
 
     private var usesInlineEpisodeSummaryLayout: Bool {
-        UIDevice.current.userInterfaceIdiom == .pad
+        DuskPlatform.usesWideLayout
     }
 
     @ViewBuilder

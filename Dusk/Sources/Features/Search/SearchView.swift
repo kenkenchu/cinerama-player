@@ -40,7 +40,7 @@ struct SearchRootContent: View {
                     plexService: plexService,
                     seerrService: seerrService
                 )
-                #if DEBUG
+                #if DEBUG && !os(macOS)
                 if let query = ScreenshotMode.searchQuery, let viewModel {
                     viewModel.query = query
                     viewModel.searchDebounced()
@@ -74,11 +74,11 @@ struct SearchRootContent: View {
     private func platformResults(_ vm: SearchViewModel) -> some View {
         @Bindable var vm = vm
 
-        #if os(tvOS)
+        #if os(tvOS) || os(macOS)
         carouselResults(vm)
             .searchable(text: $vm.query, prompt: searchPrompt)
         #else
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if DuskPlatform.usesWideLayout {
             carouselResults(vm)
                 .searchable(
                     text: $vm.query,

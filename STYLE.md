@@ -215,7 +215,9 @@ screens); `homeHeroNativeButtonStyle()` + `HomeHeroActionButtonLabel(fillsWidth:
 ## 5. Implementation
 
 Theme tokens live in `Dusk/Sources/App/DuskApp.swift` as dynamic `Color`s backed
-by `UIColor { traitCollection in ... }`.
+by `UIColor { traitCollection in ... }`. The native Mac target defines the same
+light/dark hex values through dynamic `NSColor` providers in
+`Dusk/Sources/Mac/MacPlatform.swift`.
 
 * `Color.duskBackground`: root screen backgrounds.
 * `Color.duskSurface`: list rows, cards, sheets, elevated surfaces.

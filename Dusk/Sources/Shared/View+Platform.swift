@@ -18,7 +18,7 @@ extension View {
 
     @ViewBuilder
     func duskNavigationBarTitleDisplayModeInline() -> some View {
-        #if os(tvOS)
+        #if !os(iOS)
         self
         #else
         self.navigationBarTitleDisplayMode(.inline)
@@ -27,7 +27,7 @@ extension View {
 
     @ViewBuilder
     func duskNavigationBarTitleDisplayModeLarge() -> some View {
-        #if os(tvOS)
+        #if !os(iOS)
         self
         #else
         self.navigationBarTitleDisplayMode(.large)
@@ -54,7 +54,7 @@ extension View {
 
     @ViewBuilder
     func duskStatusBarHidden(_ hidden: Bool = true) -> some View {
-        #if os(tvOS)
+        #if !os(iOS)
         self
         #else
         self.statusBarHidden(hidden)

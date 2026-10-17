@@ -584,7 +584,7 @@ final class PlaybackCoordinator {
         )
     }
 
-    #if DEBUG
+    #if DEBUG && !os(macOS)
     /// Screenshot mode (`ScreenshotMode`): starts at an exact position instead
     /// of the item's resume point. With `-DuskScreenshotUpNext` it then raises
     /// the full-screen Up Next screen for the following episode.

@@ -1,6 +1,8 @@
-#if os(iOS)
+#if os(iOS) || os(macOS)
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 struct HomeIOSView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -21,7 +23,7 @@ struct HomeIOSView: View {
     var body: some View {
         applyNavigationChrome(to: content, showsHero: showsCinematicHero)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: DuskPlatform.trailingToolbarPlacement) {
                     SearchToolbarLink()
                 }
             }
@@ -57,7 +59,7 @@ struct HomeIOSView: View {
                                     }
                                     .homeHeroNativeButtonStyle()
                                     .frame(
-                                        maxWidth: UIDevice.current.userInterfaceIdiom == .pad ? 300 : 240,
+                                        maxWidth: DuskPlatform.usesWideLayout ? 300 : 240,
                                         alignment: .leading
                                     )
                                     .simultaneousGesture(
@@ -195,22 +197,26 @@ struct HomeIOSView: View {
             content
                 .duskNavigationTitle("")
                 .duskNavigationBarTitleDisplayModeInline()
-                .toolbarColorScheme(.dark, for: .navigationBar)
-                .toolbarBackground(.hidden, for: .navigationBar)
+                .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
+                .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         } else {
             content
                 .duskNavigationTitle("Home")
                 .duskNavigationBarTitleDisplayModeLarge()
-                .toolbarBackground(.visible, for: .navigationBar)
+                .toolbarBackground(.visible, for: DuskPlatform.navigationToolbarPlacement)
         }
     }
 
     /// Regular-width iPad gets the near-full-screen hero; iPhone and compact
     /// iPad multitasking keep the shorter banner.
     private var heroLayout: HomeCinematicHeroLayout {
-        UIDevice.current.userInterfaceIdiom == .pad && horizontalSizeClass == .regular
+        #if os(macOS)
+        .iPad
+        #else
+        DuskPlatform.usesWideLayout && horizontalSizeClass == .regular
             ? .iPad
             : .ios
+        #endif
     }
 
     private var showsCinematicHero: Bool {

@@ -1,6 +1,10 @@
 import SwiftUI
 #if canImport(UIKit)
 import UIKit
+typealias DuskPlatformImage = UIImage
+#else
+import AppKit
+typealias DuskPlatformImage = NSImage
 #endif
 
 enum DuskAsyncImagePhase {
@@ -36,7 +40,11 @@ struct DuskAsyncImage<Content: View>: View {
         do {
             let image = try await DuskImageLoader.shared.image(for: url, using: plexService)
             guard !Task.isCancelled else { return }
+            #if os(macOS)
+            phase = .success(Image(nsImage: image))
+            #else
             phase = .success(Image(uiImage: image))
+            #endif
         } catch {
             guard !Task.isCancelled else { return }
             phase = .failure(error)
@@ -48,9 +56,7 @@ actor DuskImageLoader {
     static let shared = DuskImageLoader()
 
     private let session: URLSession
-    #if canImport(UIKit)
     private let memoryCache = NSCache<NSURL, CachedMemoryImage>()
-    #endif
     private var inFlightTasks: [URL: Task<LoadedImage, Error>] = [:]
 
     init() {
@@ -62,13 +68,10 @@ actor DuskImageLoader {
         configuration.timeoutIntervalForResource = 30
 
         session = URLSession(configuration: configuration)
-        #if canImport(UIKit)
         memoryCache.countLimit = 512
-        #endif
     }
 
-    func image(for url: URL, using plexService: PlexService? = nil) async throws -> UIImage {
-        #if canImport(UIKit)
+    func image(for url: URL, using plexService: PlexService? = nil) async throws -> DuskPlatformImage {
         let cacheKey = url as NSURL
         if let cachedImage = memoryCache.object(forKey: cacheKey) {
             if cachedImage.isFresh {
@@ -76,16 +79,13 @@ actor DuskImageLoader {
             }
             memoryCache.removeObject(forKey: cacheKey)
         }
-        #endif
 
         if url.isFileURL {
             let data = try Data(contentsOf: url)
-            guard let image = UIImage(data: data) else {
+            guard let image = DuskPlatformImage(data: data) else {
                 throw URLError(.cannotDecodeContentData)
             }
-            #if canImport(UIKit)
             memoryCache.setObject(CachedMemoryImage(image: image), forKey: cacheKey)
-            #endif
             return image
         }
 
@@ -101,7 +101,7 @@ actor DuskImageLoader {
             )
 
             if let cachedResponse = AppImageCache.cachedResponse(for: request),
-               let cachedImage = UIImage(data: cachedResponse.data) {
+               let cachedImage = DuskPlatformImage(data: cachedResponse.data) {
                 return LoadedImage(
                     image: cachedImage,
                     cachedAt: AppImageCache.cachedAt(for: cachedResponse) ?? .now
@@ -122,7 +122,7 @@ actor DuskImageLoader {
                 data = fetchedData
             }
 
-            guard let image = UIImage(data: data) else {
+            guard let image = DuskPlatformImage(data: data) else {
                 throw URLError(.cannotDecodeContentData)
             }
 
@@ -136,12 +136,10 @@ actor DuskImageLoader {
 
         do {
             let loadedImage = try await task.value
-            #if canImport(UIKit)
             memoryCache.setObject(
                 CachedMemoryImage(image: loadedImage.image, cachedAt: loadedImage.cachedAt),
                 forKey: cacheKey
             )
-            #endif
             inFlightTasks[url] = nil
             return loadedImage.image
         } catch {
@@ -151,22 +149,21 @@ actor DuskImageLoader {
     }
 }
 
-#if canImport(UIKit)
 private struct LoadedImage: @unchecked Sendable {
-    let image: UIImage
+    let image: DuskPlatformImage
     let cachedAt: Date
 
-    init(image: UIImage, cachedAt: Date = .now) {
+    init(image: DuskPlatformImage, cachedAt: Date = .now) {
         self.image = image
         self.cachedAt = cachedAt
     }
 }
 
 private final class CachedMemoryImage: @unchecked Sendable {
-    let image: UIImage
+    let image: DuskPlatformImage
     let cachedAt: Date
 
-    init(image: UIImage, cachedAt: Date = .now) {
+    init(image: DuskPlatformImage, cachedAt: Date = .now) {
         self.image = image
         self.cachedAt = cachedAt
     }
@@ -175,4 +172,3 @@ private final class CachedMemoryImage: @unchecked Sendable {
         Date().timeIntervalSince(cachedAt) <= AppImageCache.maxAge
     }
 }
-#endif

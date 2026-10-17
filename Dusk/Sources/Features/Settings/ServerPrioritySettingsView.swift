@@ -123,7 +123,9 @@ struct ServerPrioritySettingsView: View {
         .duskScrollContentBackgroundHidden()
         .toolbar {
             if !viewModel.isSingleServer {
+                #if os(iOS)
                 EditButton()
+                #endif
             }
         }
     }

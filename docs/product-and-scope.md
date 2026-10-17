@@ -38,10 +38,11 @@ boundaries.
 
 - `Dusk`: iOS/iPadOS app target, currently iOS 18.0 minimum.
 - `Dusk-tvOS`: tvOS app target, currently tvOS 26.0 minimum.
+- `Dusk-macOS`: native macOS 26.0 app target, Apple silicon (arm64).
 
-macOS support should be checked against current project and App Store settings
-before making implementation claims. There is no separate native macOS target in
-`project.yml` today.
+The Mac target uses SwiftUI and AppKit, with a desktop VLCKit framework; it
+does not depend on the iOS app or Mac Catalyst. Local compile verification is
+not a claim of playback validation or Mac App Store availability.
 
 ## Feature Scope
 
@@ -62,13 +63,13 @@ Current product pillars:
   library video, with per-participant local streaming and synchronized transport.
 
 Future ideas such as Jellyfin, collections, playlists, DVR scheduling,
-native macOS work, or broader provider abstractions are not current architecture
+broader provider abstractions are not current architecture
 requirements. Do not shape today's code around them without an explicit task.
 
 ## Dependency And Licensing Decisions
 
-- VLCKit is checked in as dynamic xcframeworks under `Frameworks/` and linked
-  dynamically for LGPL compliance.
+- VLCKit is fetched into git-ignored dynamic xcframeworks under `Frameworks/`
+  and linked dynamically for LGPL compliance.
 - XcodeGen owns the generated Xcode project; edit `project.yml`, then regenerate
   when project structure changes.
 - Image loading uses the app's Plex-aware image pipeline and URL caching rather

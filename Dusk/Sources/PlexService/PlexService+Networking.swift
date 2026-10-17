@@ -19,7 +19,10 @@ extension PlexService {
     var plexRequestHeaders: [String: String] {
         var headers = basePlexHeaders
 
-        #if os(tvOS)
+        #if os(macOS)
+        headers["X-Plex-Platform"] = "macOS"
+        headers["X-Plex-Device-Name"] = "Mac"
+        #elseif os(tvOS)
         headers["X-Plex-Platform"] = "tvOS"
         headers["X-Plex-Device-Name"] = "Apple TV"
         #elseif canImport(UIKit)

@@ -954,3 +954,32 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 - If adding/removing/renaming source files under `Dusk/Sources`, run `xcodegen generate`.
 - After code changes, run the compile-only `xcodebuild` command from `AGENTS.md`.
 - Documentation-only changes do not require an Xcode build.
+
+## Native macOS Shell
+
+`Mac/MainTabMacView.swift` supplies a single resizable window with a native
+sidebar and per-destination navigation paths. Browsing/detail/search/download
+screens reuse the shared feature views. Search is also available with Cmd-F.
+`Mac/SettingsMacView.swift` uses a grouped native form, shared preference and
+account state, Plex Home switching, and the existing server/library editors.
+The Mac sidebar currently has fixed destinations rather than the mobile tab
+visibility/order preferences.
+
+`Mac/PlayerMacView.swift` presents playback in the detail area. Space toggles
+playback, Left/Right seek 10 seconds, Escape closes the player, and Ctrl-Cmd-F
+switches native window fullscreen. Audio, subtitle, and per-session Quality
+menus use the shared player view model/coordinator. Scrubbing previews locally
+and commits one seek on release. A ProcessInfo activity prevents display sleep
+while the player is mounted. The native Mac palette lives in
+`Mac/MacPlatform.swift`, matching the existing light/dark design tokens.
+
+The first Mac port has no supporter purchase/icon picker UI, outgoing SharePlay
+invitation UI, AirPlay route picker, or Picture in Picture controls. The shared
+Now Playing controller remains mobile-only, so Mac system media-key/Now Playing
+integration is not provided. These are not implied by a successful compile.
+Runtime playback and light/dark layout still require manual Mac validation.
+
+Mac server-unreachable states include a Local Network permission hint. Plex
+account sign-in uses the internet, so it can succeed while macOS denies the
+LAN connection. The usage description and network sandbox entitlement do not
+replace the user's Local Network permission.

@@ -37,6 +37,25 @@ A native Swift/SwiftUI Plex client for Apple platforms, with AI upscaling for lo
 
 - [ ] Apple Vision Pro App
 
+## Native Mac build
+
+The `Dusk-macOS` scheme is a native SwiftUI/AppKit app for **Apple silicon Macs
+running macOS 26 or later**. It does not require an iPhone or iPad build.
+With Xcode, XcodeGen, rustup, and the Metal toolchain installed:
+
+```bash
+./scripts/build_macos.sh
+```
+
+The script bootstraps desktop VLC and DuskDovi, then builds and signs for local
+use without launching. Allow Dusk’s Local Network access when macOS asks, or
+enable it in System Settings → Privacy & Security → Local Network.
+The app is written to `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+You can also open `Dusk.xcodeproj` and choose **Dusk-macOS → My Mac**.
+This is a locally signed development build; distribution signing/notarization and runtime playback
+validation are separate. See [Mac UI notes](docs/ui-features.md#native-macos-shell)
+for the initial port's platform differences.
+
 ## Setup
 
 ```bash

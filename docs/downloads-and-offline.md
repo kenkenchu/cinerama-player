@@ -111,7 +111,8 @@ validation must leave the record `failed`, not `completed`.
 `DownloadTransferController` owns `URLSessionDownloadDelegate`. iOS uses
 background session id `com.dusk-player.app.downloads.background`; `DuskAppDelegate`
 stores completion handlers in `DownloadBackgroundSessionRegistry`, and
-`urlSessionDidFinishEvents` calls them. Other platforms use a default session.
+`urlSessionDidFinishEvents` calls them. Other platforms, including native macOS, use a default session; Mac downloads
+run while the app is open and do not claim iOS background-transfer behavior.
 Progress is throttled in the delegate and persisted less frequently by
 `DownloadManager`. Pause uses `cancel(byProducingResumeData:)`; resume data is
 saved under `ResumeData/` and deleted after reuse. Task descriptions carry the

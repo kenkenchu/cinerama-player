@@ -450,7 +450,7 @@ struct HomeCinematicHero: View {
     }
 
     private static var initialHeroIndex: Int {
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         ScreenshotMode.heroIndex ?? 0
         #else
         0
@@ -779,7 +779,7 @@ struct HomeCinematicHero: View {
     }
 
     private func rotateHeroIfNeeded() async {
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         // Screenshot mode holds the first slide so captures are deterministic.
         if ScreenshotMode.isActive { return }
         #endif

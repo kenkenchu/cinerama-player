@@ -475,7 +475,7 @@ extension PlayerViewModel {
     }
 
     private var canAutoHideControls: Bool {
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         if ScreenshotMode.keepsPlayerHUD { return false }
         #endif
         return showControls &&

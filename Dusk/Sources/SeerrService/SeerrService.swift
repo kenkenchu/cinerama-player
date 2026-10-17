@@ -46,7 +46,7 @@ final class SeerrService {
         self.configuredPlexServerID = UserDefaults.standard.string(
             forKey: Self.defaultsServerIDKey
         )
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         if let url = ScreenshotMode.seerrBaseURL {
             self.configuredBaseURL = url
         }
@@ -506,7 +506,7 @@ final class SeerrService {
               let profileID = plexService.activeProfileID else {
             return nil
         }
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         // Screenshot mode: a signed-in session against the demo Seerr, never
         // read from or written to the Keychain.
         if ScreenshotMode.seerrBaseURL != nil {
@@ -573,7 +573,7 @@ final class SeerrService {
     }
 
     private func upsertSession(_ stored: SeerrStoredSession) {
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         if ScreenshotMode.seerrBaseURL != nil { return }
         #endif
         if storedSessions.contains(stored) {

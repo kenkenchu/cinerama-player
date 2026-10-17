@@ -58,6 +58,14 @@ struct ServerAvailabilityStateView: View {
             FeatureErrorView(message: message) {
                 Task { await connections.refresh() }
             }
+            #if os(macOS)
+            Text("For a local Plex server, allow Dusk in System Settings → Privacy & Security → Local Network, then choose Retry.")
+                .font(DuskFont.caption(ios: .callout))
+                .foregroundStyle(Color.duskTextSecondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 480)
+                .padding(.horizontal, 24)
+            #endif
             serverPriorityButton("Server Priority")
         }
     }

@@ -40,7 +40,9 @@ struct LibraryTabSettingsView: View {
         .contentMargins(.top, 12, for: .scrollContent)
         .duskScrollContentBackgroundHidden()
         .toolbar {
-            EditButton()
+            #if os(iOS)
+                EditButton()
+                #endif
         }
     }
     #endif

@@ -91,7 +91,7 @@ final class PlexService {
     let encoder: JSONEncoder
 
     static var plexTVBase: String {
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         if let override = ScreenshotMode.plexTVBase { return override }
         #endif
         return "https://plex.tv"
@@ -147,7 +147,7 @@ final class PlexService {
            let token = String(data: data, encoding: .utf8) {
             primaryAccountToken = token.nilIfEmpty
         }
-        #if DEBUG
+        #if DEBUG && !os(macOS)
         // Screenshot mode signs in to the mock server's demo account and never
         // touches a real Plex sign-in stored in the Keychain.
         if ScreenshotMode.isActive {

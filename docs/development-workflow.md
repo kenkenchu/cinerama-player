@@ -155,15 +155,14 @@ Prefer existing files and same-type extension patterns for small additions. Add 
 
 ## DuskDovi Bootstrap
 
-- `Frameworks/DuskDovi.xcframework` is a static library (iOS + tvOS, device + simulator,
+- `Frameworks/DuskDovi.xcframework` is a static library (macOS + iOS + tvOS, device + simulator,
   arm64 only) built from `Native/DuskDovi` and linked into both apps, never embedded.
   It is git-ignored; after cloning run `./ci_scripts/install_dusk_dovi.sh` once (needs
   [rustup](https://rustup.rs)). `ci_post_clone.sh` runs it too, installing rustup on CI.
 - The installer stamps a hash of the crate, `Cargo.lock`, the toolchain pin, the build
   script and the `project.yml` deployment targets into the xcframework, and is a no-op
   until one of them changes. `scripts/build_dusk_dovi_xcframework.sh` forces a rebuild.
-- Toolchain: pinned in `Native/DuskDovi/rust-toolchain.toml`, installed with the four
-  Apple targets on demand. Deployment targets are read from `project.yml`.
+- Toolchain: pinned in `Native/DuskDovi/rust-toolchain.toml`, installed with the Apple targets on demand. Deployment targets are read from `project.yml`.
 - Homebrew trap: `/opt/homebrew/bin/cargo` and `rustc` usually come first on PATH and
   have no iOS/tvOS standard library (`can't find crate for core`). Recent rustup no
   longer puts the toolchain first on PATH for `rustup run`, so even
@@ -191,6 +190,45 @@ Prefer existing files and same-type extension patterns for small additions. Add 
   `xcrun --sdk iphoneos metal --version`, not with the exit code of either
   command — that is what the script checks, and it fails the post-clone step
   loudly rather than letting the build die in `CompileMetalFile`.
+
+## Native macOS
+
+The `Dusk-macOS` scheme builds an Apple silicon app for macOS 26+, independently
+of the iOS/tvOS app targets. Run `scripts/build_macos.sh` after installing Xcode,
+XcodeGen, rustup, and the Metal toolchain. It fetches checksum-pinned stock
+VideoLAN desktop VLCKit 3.7.3, builds DuskDovi, regenerates the project, and runs
+a build signed for local use, then verifies the signature. It never launches the
+app or runs tests. Set `DUSK_MACOS_SIGNING_IDENTITY` to an installed Apple-issued
+identity when available; the default is ad hoc signing.
+
+```bash
+./scripts/build_macos.sh
+# Equivalent compile-only verification after bootstrap:
+xcodebuild -project Dusk.xcodeproj -scheme Dusk-macOS -configuration Debug \
+  -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath .build/macos/DerivedData CODE_SIGNING_ALLOWED=NO build
+```
+
+The local app is `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+`CODE_SIGNING_ALLOWED=NO` is only a compiler check, not the app to hand to a
+user. Use `scripts/build_macos.sh` for a locally runnable app. It signs the whole
+bundle (including sandbox/network entitlements) and verifies nested signatures.
+Distribution signing and notarization are separate. Mac disables
+`ENABLE_DEBUG_DYLIB` so the main executable contains app-specific code and has
+its own UUID. Local-network privacy uses the signature and executable UUID to
+identify the app; Apple-issued signing identities are preferred for consistent
+permission tracking across builds. See [Apple TN3179](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy).
+
+If Plex sign-in works but servers time out, check System Settings → Privacy &
+Security → Local Network and allow Dusk, then Retry. The usage description is
+already in `Info-macOS.plist`; it does not itself grant permission. A log entry
+containing “Local network prohibited” identifies an OS privacy block. Do not
+work around it by changing system-wide privacy defaults or running as root.
+Desktop VLC is downloaded by
+`ci_scripts/install_macos_vlckit.sh`; the mobile frameworks are not required for
+this scheme. DuskDovi's combined xcframework now also includes `macos-arm64`.
+Keep mobile UI/renderer exclusions in `project.yml`; do not link MobileVLCKit
+into a native Mac target.
 
 ## TestFlight (`scripts/testflight.sh`)
 
@@ -304,3 +342,21 @@ For docs-only changes, a build is normally unnecessary. Verify the file and `git
 - Assuming docs platform versions are newer than `project.yml`.
 - Editing vendored VLCKit binaries or unrelated worktree changes.
 - Building `Native/DuskDovi` with Homebrew's `cargo` (see DuskDovi Bootstrap).
+
+## Maintaining the Mac Fork
+
+This checkout maintains the native Mac work on `kenkenchu/dusk-player-mac`'s `main`.
+`origin` is that fork; `upstream` is `marvinvr/dusk-player`. New work is committed
+and pushed to `origin`, and upstream changes are fetched explicitly:
+
+```bash
+git fetch upstream
+git merge upstream/main
+./scripts/build_macos.sh
+git push origin main
+```
+
+Start with a clean working tree, review incoming changes, and resolve conflicts
+in `project.yml` and shared Swift code deliberately. Regenerate the project and
+complete the Mac build after a merge. Do not force-push shared `main` or push
+fork-specific changes to `upstream`. Frameworks and local app builds stay ignored.

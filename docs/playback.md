@@ -2079,3 +2079,19 @@ so the whole live HUD is derived from one instant.
 - Check both iOS and tvOS presentation paths for control or settings changes.
 - For code changes, run the repo's compile-only `xcodebuild` command from
   `AGENTS.md`. Do not run tests or launch the app unless explicitly asked.
+
+## Native macOS Playback
+
+The `Dusk-macOS` scheme reuses the resolver, coordinator, timeline/scrobble,
+remux/Dolby Vision conversion, offline playback, and track-selection view model.
+AVPlayer renders through an `NSViewRepresentable` hosting `AVPlayerLayer`;
+the shared Metal enhancement renderer has an AppKit layer host and a screen
+CADisplayLink on Mac. Desktop VLC is implemented in `Mac/VLCKitMacEngine.swift`
+with `VLCVideoView`, not the mobile raw-video/audio-session pipeline.
+
+Desktop VLCKit is the checksum-pinned stock VideoLAN 3.7.3 framework. It has no
+Dusk TrueHD capability stamp, so the shared undecodable-audio fallback keeps
+TrueHD server-assisted. VLC subtitle size is applied when opening media; its
+native desktop renderer does not run Dusk's Metal enhancement path. Mac AVPlayer
+retains remux and DuskDovi support, but HDR/Atmos output must be checked with the
+actual Mac, display, and audio route; compilation alone does not validate it.

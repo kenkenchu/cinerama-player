@@ -95,7 +95,7 @@ retention and countries dashboards are driven by it. Everything else is a
 | `supporter_icon_picker_opened` | custom | `/supporter/icons` | — |
 | `supporter_icon_applied` | custom | `/supporter/icons` | `icon` |
 
-Every event also carries `app_version`, `platform` (`ios`/`ipados`/`tvos`) and
+Every event also carries `app_version`, `platform` (`ios`/`ipados`/`tvos`/`macos`) and
 `language`. Descriptions live as doc comments on the `AnalyticsEventName` cases.
 
 ### The two questions this set was built to answer

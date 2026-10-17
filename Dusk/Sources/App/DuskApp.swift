@@ -1,7 +1,9 @@
 import AppIntents
 import AVFoundation
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#endif
 
 enum AppImageCache {
     static let memoryCapacity = 0
@@ -127,79 +129,87 @@ struct DuskApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .environment(plexService)
-                .environment(seerrService)
-                .environment(playbackCoordinator)
-                .environment(downloadManager)
-                .environment(offlinePlaybackSyncManager)
-                .environment(userPreferences)
-                .environment(supporterStore)
-                .environment(analytics)
-                #if os(tvOS)
-                .environment(topShelfLinks)
-                .onOpenURL { url in
-                    topShelfLinks.open(url)
+        #if os(macOS)
+        Window("Dusk", id: "main") { appContent }
+            .defaultSize(width: 1200, height: 800)
+            .commands { DuskMacCommands() }
+        #else
+        WindowGroup { appContent }
+        #endif
+    }
+
+    private var appContent: some View {
+        ContentView()
+            .environment(plexService)
+            .environment(seerrService)
+            .environment(playbackCoordinator)
+            .environment(downloadManager)
+            .environment(offlinePlaybackSyncManager)
+            .environment(userPreferences)
+            .environment(supporterStore)
+            .environment(analytics)
+            #if os(tvOS)
+            .environment(topShelfLinks)
+            .onOpenURL { url in
+                topShelfLinks.open(url)
+            }
+            #endif
+            .preferredColorScheme(userPreferences.appearanceMode.preferredColorScheme)
+            .task {
+                analytics.recordAppOpenedIfNeeded()
+            }
+            .task {
+                await supporterStore.start()
+            }
+            .task {
+                PlaybackEngineFactory.prewarmIfNeeded()
+            }
+            .task(
+                id: seerrContextID
+            ) {
+                await seerrService.contextDidChange()
+            }
+            .task(
+                id: offlineContextID
+            ) {
+                guard plexService.homeBootstrapCompleted else {
+                    offlinePlaybackSyncManager.stopAutomaticSync()
+                    return
                 }
-                #endif
-                .preferredColorScheme(userPreferences.appearanceMode.preferredColorScheme)
-                .task {
+
+                downloadManager.activateProfile()
+                offlinePlaybackSyncManager.activateProfile()
+
+                guard plexService.isSessionReady else {
+                    offlinePlaybackSyncManager.stopAutomaticSync()
+                    return
+                }
+
+                offlinePlaybackSyncManager.startAutomaticSync()
+                await offlinePlaybackSyncManager.syncPendingActions(force: true)
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
                     analytics.recordAppOpenedIfNeeded()
+                    Task { await supporterStore.sceneDidBecomeActive() }
                 }
-                .task {
-                    await supporterStore.start()
-                }
-                .task {
-                    PlaybackEngineFactory.prewarmIfNeeded()
-                }
-                .task(
-                    id: seerrContextID
-                ) {
-                    await seerrService.contextDidChange()
-                }
-                .task(
-                    id: offlineContextID
-                ) {
-                    guard plexService.homeBootstrapCompleted else {
-                        offlinePlaybackSyncManager.stopAutomaticSync()
-                        return
-                    }
 
-                    downloadManager.activateProfile()
-                    offlinePlaybackSyncManager.activateProfile()
-
-                    guard plexService.isSessionReady else {
-                        offlinePlaybackSyncManager.stopAutomaticSync()
-                        return
-                    }
-
+                if newPhase == .active,
+                   plexService.isSessionReady {
                     offlinePlaybackSyncManager.startAutomaticSync()
-                    await offlinePlaybackSyncManager.syncPendingActions(force: true)
-                }
-                .onChange(of: scenePhase) { _, newPhase in
-                    if newPhase == .active {
-                        analytics.recordAppOpenedIfNeeded()
-                        Task { await supporterStore.sceneDidBecomeActive() }
+                    Task {
+                        await offlinePlaybackSyncManager.syncPendingActions(force: true)
                     }
-
-                    if newPhase == .active,
-                       plexService.isSessionReady {
-                        offlinePlaybackSyncManager.startAutomaticSync()
-                        Task {
-                            await offlinePlaybackSyncManager.syncPendingActions(force: true)
-                        }
-                    } else {
-                        offlinePlaybackSyncManager.stopAutomaticSync()
-                    }
+                } else {
+                    offlinePlaybackSyncManager.stopAutomaticSync()
                 }
-                .onChange(of: userPreferences.downloadsWifiOnly) {
-                    downloadManager.evaluateNetworkConstraints()
-                }
-                .onChange(of: userPreferences.analyticsEnabled) {
-                    analytics.reportingPreferenceDidChange()
-                }
-        }
+            }
+            .onChange(of: userPreferences.downloadsWifiOnly) {
+                downloadManager.evaluateNetworkConstraints()
+            }
+            .onChange(of: userPreferences.analyticsEnabled) {
+                analytics.reportingPreferenceDidChange()
+            }
     }
 }
 
@@ -227,6 +237,7 @@ private extension DuskApp {
     }
 
     static func configurePlaybackAudioSession() {
+        #if !os(macOS)
         let audioSession = AVAudioSession.sharedInstance()
 
         do {
@@ -241,6 +252,7 @@ private extension DuskApp {
         } catch {
             assertionFailure("Failed to configure playback audio session: \(error.localizedDescription)")
         }
+        #endif
     }
 }
 
@@ -272,6 +284,7 @@ private extension DuskApp {
 }
 #endif
 
+#if !os(macOS)
 extension Color {
     static let duskBackground = Color(
         uiColor: UIColor { traits in
@@ -374,3 +387,5 @@ private extension UIColor {
         self.init(red: red, green: green, blue: blue, alpha: 1)
     }
 }
+
+#endif

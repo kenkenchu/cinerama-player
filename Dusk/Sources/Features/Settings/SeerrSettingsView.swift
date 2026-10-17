@@ -36,9 +36,11 @@ struct SeerrSettingsView: View {
         List {
             Section {
                 TextField("Server URL", text: $viewModel.serverURL)
+                    #if os(iOS)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.URL)
+                    #endif
                     .disabled(seerrService.isConnected || viewModel.isWorking)
 
                 connectionRow

@@ -467,7 +467,9 @@ private struct IOSHomeUserPINView: View {
                 }
 
                 SecureField("PIN", text: $pin)
+                    #if os(iOS)
                     .keyboardType(.numberPad)
+                    #endif
                     .textContentType(.oneTimeCode)
                     .font(.system(.title, design: .monospaced, weight: .bold))
                     .multilineTextAlignment(.center)

@@ -47,8 +47,8 @@ struct ShowDetailView: View {
             }
         }
         .duskNavigationBarTitleDisplayModeInline()
-        .toolbarColorScheme(.dark, for: .navigationBar)
-        .toolbarBackground(.hidden, for: .navigationBar)
+        .toolbarColorScheme(.dark, for: DuskPlatform.navigationToolbarPlacement)
+        .toolbarBackground(.hidden, for: DuskPlatform.navigationToolbarPlacement)
         .task {
             await viewModel.load()
         }

@@ -728,7 +728,9 @@ private extension PlexService {
     // MARK: - Honest client identity
 
     static var transcodeClientPlatform: String {
-        #if os(tvOS)
+        #if os(macOS)
+        "macOS"
+        #elseif os(tvOS)
         "tvOS"
         #else
         "iOS"

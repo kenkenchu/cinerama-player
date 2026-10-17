@@ -2146,7 +2146,7 @@ final class DownloadManager {
     }
 }
 
-#if DEBUG
+#if DEBUG && !os(macOS)
 extension DownloadManager {
     /// Screenshot mode only (`ScreenshotMode`): records a movie, an episode or
     /// every episode of a season as a finished download. Metadata and artwork

@@ -2,6 +2,8 @@
 import MobileVLCKit
 #elseif canImport(TVVLCKit)
 import TVVLCKit
+#elseif canImport(VLCKit)
+import VLCKit
 #endif
 import Foundation
 
@@ -22,7 +24,7 @@ enum VLCKitBuildInfo {
     static let decodesTrueHD: Bool = frameworkInfo["DuskVLCKitTrueHD"] as? Bool ?? false
 
     private static var frameworkInfo: [String: Any] {
-        #if canImport(MobileVLCKit) || canImport(TVVLCKit)
+        #if canImport(MobileVLCKit) || canImport(TVVLCKit) || canImport(VLCKit)
         Bundle(for: VLCMediaPlayer.self).infoDictionary ?? [:]
         #else
         [:]

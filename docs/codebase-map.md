@@ -9,6 +9,7 @@ ownership and flow, not a full symbol index.
 Dusk/Sources
   App/                 App entry, dependency injection, tabs, routes, server connect pass
   Analytics/           Anonymous event vocabulary and fire-and-forget reporting
+  Mac/                 Native Mac sidebar, player controls, settings, theme, desktop VLC engine
   Models/              Plex response models and app-facing media structs
   PlexService/         Plex auth, the multi-server session pool, API calls, images, playback + subtitle URLs
     MultiServer/       Cross-server merging (continue watching, hubs, search),
@@ -331,3 +332,12 @@ piece has a clear name and owner.
 - iOS and tvOS can have different shells, but shared state and reusable UI should
   stay common where practical.
 - Keep docs in this directory aligned with meaningful changes.
+
+## Native Mac Boundary
+
+`Dusk-macOS` shares the app services, view models, routing, browsing/detail UI,
+downloads, resolver, and playback coordinator. `Mac/` owns the desktop shell,
+player UI, settings, and `VLCKitEngine` implementation; the mobile shell/VLC
+engine are excluded only from the Mac target. `AVPlayerEngine` and the Metal
+renderer use AppKit view hosts on Mac. `DuskPlatform` also supplies shared
+layout/toolbar decisions to iOS/tvOS, so keep that enum available on all targets.

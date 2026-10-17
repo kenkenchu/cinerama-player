@@ -3,7 +3,11 @@ import Foundation
 import Metal
 import QuartzCore
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
 import UIKit
+#endif
 import simd
 
 @MainActor
@@ -560,6 +564,7 @@ final class VideoEnhancementRenderer {
     }
 }
 
+#if !os(macOS)
 @MainActor
 final class VideoEnhancementMetalView: UIView {
     private weak var renderer: VideoEnhancementRenderer?
@@ -632,3 +637,42 @@ struct VideoEnhancementRepresentable: UIViewRepresentable {
 
     func updateUIView(_ uiView: VideoEnhancementMetalView, context: Context) {}
 }
+
+#else
+@MainActor
+final class VideoEnhancementMetalView: NSView {
+    private weak var renderer: VideoEnhancementRenderer?
+    var metalLayer: CAMetalLayer { layer as! CAMetalLayer }
+    init(renderer: VideoEnhancementRenderer, device: MTLDevice, colorSpace: CGColorSpace?) {
+        self.renderer = renderer
+        super.init(frame: .zero)
+        wantsLayer = true
+        layer = CAMetalLayer()
+        metalLayer.device = device
+        metalLayer.pixelFormat = .bgra8Unorm
+        metalLayer.framebufferOnly = true
+        metalLayer.colorspace = colorSpace
+        metalLayer.backgroundColor = NSColor.black.cgColor
+    }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    override func layout() {
+        super.layout()
+        updateDrawableSize()
+        renderer?.renderCurrentFrame()
+    }
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        updateDrawableSize()
+    }
+    private func updateDrawableSize() {
+        let scale = window?.backingScaleFactor ?? 2
+        metalLayer.contentsScale = scale
+        metalLayer.drawableSize = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+    }
+}
+struct VideoEnhancementRepresentable: NSViewRepresentable {
+    let renderer: VideoEnhancementRenderer
+    func makeNSView(context: Context) -> VideoEnhancementMetalView { renderer.makeView() }
+    func updateNSView(_ view: VideoEnhancementMetalView, context: Context) {}
+}
+#endif

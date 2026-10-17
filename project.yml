@@ -4,6 +4,7 @@ options:
   deploymentTarget:
     iOS: "18.0"
     tvOS: "26.0"
+    macOS: "26.0"
   xcodeVersion: "16.0"
   generateEmptyDirectories: true
   groupSortPosition: top
@@ -54,6 +55,65 @@ targets:
       - script: ./scripts/verify_embedded_vlckit.sh
         name: Verify embedded VLCKit is not stale
         basedOnDependencyAnalysis: false
+
+  Dusk-macOS:
+    type: application
+    platform: macOS
+    sources:
+      - path: Dusk/Sources
+        excludes:
+          - App/MainTabView.swift
+          - App/MainTabShells.swift
+          - App/MoreView.swift
+          - App/ScreenshotMode.swift
+          - Playback/VLCKitEngine.swift
+          - Playback/VLCKitRendererIOS.swift
+          - Playback/VLCKitRendererTVOS.swift
+          - Playback/VLCKitEnhancedPictureInPicture.swift
+          - Playback/DuskVLCRawVideoOutput.h
+          - Playback/DuskVLCRawVideoOutput.m
+          - Features/Player/PlayerControlsOverlay.swift
+          - Features/Player/PlayerView.swift
+          - Features/Player/PlayerLoadingView.swift
+          - Features/Player/PlayerUpNextPosterView.swift
+          - Features/Settings/SettingsTVView.swift
+          - Features/Player/PlayerControlsSharedViews.swift
+          - Features/Player/PlayerControlsIOSOverlay.swift
+          - Features/Player/PlayerControlsTVOverlay.swift
+          - Features/Player/PlayerUpNextOverlayView.swift
+          - Features/Settings/SettingsIOSView.swift
+          - Features/Supporter/AppIconPickerView.swift
+          - Features/Supporter/SupporterPrompt.swift
+          - Features/Supporter/SupporterView.swift
+      - path: Dusk/Resources
+        buildPhase: resources
+        excludes:
+          - LaunchScreen.storyboard
+          - LaunchScreen-tvOS.storyboard
+    settings:
+      base:
+        ARCHS: arm64
+        # Keep the app's real code in its executable. A shared debug launcher
+        # UUID can confuse macOS local-network privacy attribution.
+        ENABLE_DEBUG_DYLIB: NO
+        CODE_SIGN_IDENTITY: "-"
+        CODE_SIGN_STYLE: Manual
+        PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.mac
+        PRODUCT_NAME: Dusk
+        INFOPLIST_FILE: Dusk/Support/Info-macOS.plist
+        GENERATE_INFOPLIST_FILE: false
+        CODE_SIGN_ENTITLEMENTS: Dusk/Support/Dusk-macOS.entitlements
+        DEVELOPMENT_TEAM: ""
+        ASSETCATALOG_COMPILER_APPICON_NAME: DuskIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Frameworks"
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+        SWIFT_STRICT_CONCURRENCY: complete
+    dependencies:
+      - framework: Frameworks/VLCKit.xcframework
+        embed: true
+      - framework: Frameworks/DuskDovi.xcframework
+        embed: false
 
   Dusk-tvOS:
     type: application
@@ -172,6 +232,14 @@ targets:
 # Explicit schemes so the StoreKit configuration file is attached to Run;
 # without it the supporter purchases can't be exercised in the simulator.
 schemes:
+  Dusk-macOS:
+    build:
+      targets:
+        Dusk-macOS: all
+    run:
+      config: Debug
+    archive:
+      config: Release
   Dusk:
     build:
       targets:
