@@ -575,7 +575,6 @@ extension PlexService {
             URLQueryItem(name: "directPlay", value: "0"),
             URLQueryItem(name: "directStream", value: allowsDirectStream ? "1" : "0"),
             URLQueryItem(name: "directStreamAudio", value: allowsDirectStreamAudio ? "1" : "0"),
-            URLQueryItem(name: "subtitleSize", value: "100"),
             URLQueryItem(name: "audioBoost", value: "100"),
             URLQueryItem(name: "location", value: "lan"),
             URLQueryItem(name: "addDebugOverlay", value: "0"),

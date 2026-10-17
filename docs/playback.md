@@ -20,7 +20,7 @@ playback from the coordinator; they do not construct URLs or engines themselves.
 3. `StreamResolver` chooses AVPlayer or VLC and flags locally unplayable formats.
    Explicit versions remain bound to their requested server/file.
 4. The coordinator constructs `PlaybackSource` and debug context, builds an
-   engine, configures tracks/subtitle size, reporting and session identity, then
+   engine, configures tracks, reporting and session identity, then
    commits under the player presentation ID.
 5. `MacPlayerSession` creates its view model, wires coordinator callbacks and
    calls `startPlaybackIfNeeded`. The engine loads a source once per session.
@@ -84,8 +84,28 @@ new desktop evidence.
 The player maps Plex stream metadata to engine tracks. Desktop VLC can mount
 sidecars via playback slaves; AVPlayer cannot attach them to an already-playing
 item, so an explicit selection may restart through VLC. Preserve stream IDs and
-selected/off state across engine changes. Subtitle size is applied to desktop
-VLC when opening media. Downloaded subtitle search/install remains Plex-owned.
+selected/off state across engine changes. Downloaded subtitle search/install remains Plex-owned.
+
+## System Caption Appearance
+
+macOS System Settings → Accessibility → Captions is the sole source of subtitle
+appearance. Dusk has no subtitle size/style picker or stored appearance override;
+the obsolete `subtitleFontSize` preference is removed at preferences startup.
+AVPlayer leaves `textStyleRules` unset so native caption rendering uses the
+system settings and their content-override behavior.
+
+VLC does not consume macOS caption preferences itself. `SystemCaptionStyle`
+reads MediaAccessibility's user-domain font family, relative size, text/background
+colors and opacity, and text edge style, then translates these to VLC FreeType
+options. The player uses a private VLC instance so font options are applied at
+renderer initialization, and refreshes it on the next load if the system style
+changed. Raised/depressed edges use VLC's shadow approximation; caption-window
+geometry and advanced authored ASS styling do not have a complete native match.
+This adapter exposes no independent Dusk or VLC styling preferences.
+
+Bitmap subtitles and text already burned into video cannot adopt system styles.
+Verify caption appearance with real text tracks on both engines; a successful
+build does not establish visual parity.
 
 ## Dolby Atmos and Spatial Audio
 
@@ -152,7 +172,7 @@ The Mac player prevents display sleep with a ProcessInfo activity while mounted.
 
 ## Settings and Preferences
 
-`UserPreferences` persists language, subtitle sizing, skip/continuous-play,
+`UserPreferences` persists language, skip/continuous-play,
 remux/enhancement and download preferences. `SettingsMacView` exposes the current
 Mac controls. Manual subtitle selections persist a local preference scoped to the
 Plex profile, server, and movie rating key or TV series rating key. This remembers

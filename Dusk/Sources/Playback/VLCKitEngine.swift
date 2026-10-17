@@ -20,12 +20,12 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
     var playbackCoordinator: AVPlaybackCoordinator { coordinator }
 
     @ObservationIgnored private let videoView = VLCVideoView()
-    @ObservationIgnored private let player: VLCMediaPlayer
+    @ObservationIgnored private var captionOptions: [String]
+    @ObservationIgnored private var player: VLCMediaPlayer
     @ObservationIgnored private var coordinator: AVDelegatingPlaybackCoordinator!
     @ObservationIgnored nonisolated(unsafe) private var timer: Timer?
     @ObservationIgnored private var source: PlaybackSource?
     @ObservationIgnored private var ended = false
-    @ObservationIgnored private var subtitleSize: SubtitleFontSize = .default
     @ObservationIgnored private var itemIdentifier: String?
     @ObservationIgnored private var commandGeneration = UUID()
     @ObservationIgnored private var slaves: [(URL, Bool)] = []
@@ -34,7 +34,9 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
     @ObservationIgnored private var pendingSlaveURL: URL?
 
     override init() {
-        player = VLCMediaPlayer()
+        let options = SystemCaptionStyle.vlcOptions
+        captionOptions = options
+        player = VLCMediaPlayer(options: options)
         super.init()
         videoView.fillScreen = false
         player.drawable = videoView
@@ -44,6 +46,14 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
 
     func load(source: PlaybackSource) {
         stop()
+        // Read the current system style for each new media session.
+        let options = SystemCaptionStyle.vlcOptions
+        if options != captionOptions {
+            player.drawable = nil
+            player = VLCMediaPlayer(options: options)
+            player.drawable = videoView
+            captionOptions = options
+        }
         self.source = source
         ended = false
         error = nil
@@ -54,7 +64,6 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
         state = .loading
         let media = VLCMedia(url: source.url)
         media.addOption(":network-caching=\(PlaybackBufferPolicy.vlcCachingMilliseconds(for: source.locality))")
-        media.addOption(":freetype-rel-fontsize=\(PlaybackSubtitleStyle.vlcRelativeFontSize(for: subtitleSize))")
         if let start = source.startPosition, start > 0 { media.addOption(":start-time=\(start)") }
         if let audio = source.preferredAudioTrackPosition { media.addOption(":audio-track=\(audio)") }
         if !source.shouldAutoPlay { media.addOption(":start-paused") }
@@ -85,10 +94,6 @@ final class VLCKitEngine: NSObject, PlaybackEngine {
     func recoverFromStall() { player.play() }
     func handleReturnToForeground() { videoView.needsDisplay = true }
     func setVideoFillEnabled(_ enabled: Bool) { videoView.fillScreen = enabled }
-    func applySubtitleFontSize(_ size: SubtitleFontSize) {
-        subtitleSize = size
-        // The desktop text renderer reads its relative size when opening media.
-    }
     func selectSubtitleTrack(_ track: SubtitleTrack?) { player.currentVideoSubTitleIndex = Int32(track?.id ?? -1) }
     func selectAudioTrack(_ track: AudioTrack) { player.currentAudioTrackIndex = Int32(track.id) }
     func attachExternalSubtitle(_ url: URL, select: Bool) -> Bool {

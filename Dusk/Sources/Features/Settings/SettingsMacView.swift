@@ -22,9 +22,6 @@ struct SettingsMacView: View {
                     ForEach(AutoSkipIntroMode.allCases) { Text($0.displayName).tag($0) }
                 }
                 Toggle("Skip credits", isOn: $preferences.autoSkipCredits)
-                Picker("Subtitle size", selection: $preferences.subtitleFontSize) {
-                    ForEach(SubtitleFontSize.allCases) { Text($0.displayName).tag($0) }
-                }
                 Picker("Audio language", selection: $preferences.defaultAudioLanguage) {
                     ForEach(SettingsSupport.audioLanguageOptions, id: \.self) { code in
                         Text(SettingsSupport.languageDisplayName(for: code)).tag(code)

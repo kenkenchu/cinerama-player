@@ -37,13 +37,9 @@ final class PlayerViewModel {
     var audioTracks: [AudioTrack] = []
     var selectedSubtitleTrackID: Int?
     var selectedAudioTrackID: Int?
-    /// Mirrors `UserPreferences.subtitleFontSize` so the in-player picker can
-    /// observe it. Changing it there writes straight back to preferences.
-    var subtitleFontSize: SubtitleFontSize = .default
     var showControls = true
     var aspectFillEnabled = false
     var showSubtitlePicker = false
-    var showSubtitleSizePicker = false
     var showSubtitleSearch = false
     var showAudioPicker = false
     var showQualityPicker = false
@@ -248,7 +244,6 @@ final class PlayerViewModel {
         preferredSubtitleLanguage = Self.normalizedLanguageCode(preferences.defaultSubtitleLanguage)
         preferredAudioLanguage = Self.normalizedLanguageCode(preferences.defaultAudioLanguage)
         subtitleForcedOnly = preferences.subtitleForcedOnly
-        subtitleFontSize = preferences.subtitleFontSize
         autoSkipIntroMode = preferences.autoSkipIntroMode
         isFirstEpisodeInSeason = mediaDetails?.type == .episode && mediaDetails?.index == 1
         self.spentAutoSkipMarkerIDs = spentAutoSkipMarkerIDs

@@ -34,17 +34,6 @@ extension PlayerViewModel {
         plexTrackSelectionHandler?(selectedAudioTrack?.plexStreamID, track?.plexStreamID)
     }
 
-    /// The in-player size picker edits the same stored preference as Settings
-    /// (there is no per-session override), then asks the engine to apply it to
-    /// the running session.
-    func selectSubtitleFontSize(_ size: SubtitleFontSize) {
-        showSubtitleSizePicker = false
-        guard subtitleFontSize != size else { return }
-        subtitleFontSize = size
-        userPreferences?.subtitleFontSize = size
-        engine.applySubtitleFontSize(size)
-    }
-
     func selectAudio(_ track: AudioTrack) {
         hasAppliedAutomaticAudioSelection = true
         showAudioPicker = false

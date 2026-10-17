@@ -531,7 +531,6 @@ extension PlaybackCoordinator {
                 )
             }
             newEngine.configureVideoEnhancement(videoEnhancementRequest)
-            newEngine.applySubtitleFontSize(preferences.subtitleFontSize)
             newEngine.onPlaybackEnded = { [weak self] in
                 Task { @MainActor [weak self] in
                     await self?.handlePlaybackEnded()
@@ -1139,7 +1138,6 @@ extension PlaybackCoordinator {
 
         let newEngine = PlaybackEngineFactory.makeEngine(type: engineType)
         newEngine.configureVideoEnhancement(videoEnhancementRequest)
-        newEngine.applySubtitleFontSize(preferences.subtitleFontSize)
         newEngine.onPlaybackEnded = { [weak self] in
             Task { @MainActor [weak self] in
                 await self?.handlePlaybackEnded()

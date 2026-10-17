@@ -100,7 +100,7 @@ features. HDR/audio output and visual layout require runtime validation.
 ## Settings and Downloads
 
 `SettingsMacView` uses a grouped native form for appearance, playback behavior,
-languages/subtitle size, remux toggles, Home settings, downloads, privacy, Seerr,
+languages, remux toggles, Home settings, downloads, privacy, Seerr,
 and account/profile actions. `SettingsContainer` presents Plex Home selection.
 The fork has no StoreKit purchasing, supporter prompts or alternate icon picker.
 
@@ -111,7 +111,9 @@ editors; do not reintroduce remote focus-driven ordering.
 
 Downloads remain a fixed sidebar destination, including when empty or offline.
 Their queue, metadata, disk paths and delayed watch-state sync stay in the
-manager layer; see `downloads-and-offline.md`. The settings form currently
+manager layer; see `downloads-and-offline.md`. Subtitle appearance is configured only in macOS System Settings → Accessibility
+→ Captions; see `playback.md` for renderer support and limitations.
+The settings form currently
 exposes download resolution and network constraints; additional persisted
 manager preferences do not imply an existing UI control.
 

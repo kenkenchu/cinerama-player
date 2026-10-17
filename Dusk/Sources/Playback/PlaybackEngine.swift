@@ -1,4 +1,7 @@
+import AppKit
 import AVFoundation
+import CoreText
+import MediaAccessibility
 import SwiftUI
 
 /// Which concrete engine to use for playback.
@@ -94,14 +97,6 @@ protocol PlaybackEngine: AnyObject {
     func handleReturnToForeground()
 
     func setVideoFillEnabled(_ enabled: Bool)
-
-    /// Applies the user's subtitle size preference. The coordinator calls this
-    /// once with the stored preference right after building the engine (before
-    /// `load(source:)`, so per-media options can carry it); the in-player picker
-    /// calls it again for a live change. A change made in Settings reaches the
-    /// engine on the next session, since Settings is not reachable while the
-    /// player is up.
-    func applySubtitleFontSize(_ size: SubtitleFontSize)
 
     // MARK: - State
 
@@ -205,10 +200,6 @@ extension PlaybackEngine {
     var playbackDiagnostics: [PlaybackEngineDiagnostic] { [] }
     func setVideoFillEnabled(_ enabled: Bool) {}
 
-    // Default: subtitle sizing is engine-specific; engines that render text
-    // subtitles themselves override this.
-    func applySubtitleFontSize(_ size: SubtitleFontSize) {}
-
     // Bumped when the engine replaces its rendering view mid-session (VLCKit
     // entering Picture in Picture support mode); `PlayerViewModel` re-calls
     // `makePlayerView()` when it changes. Engines with a stable view keep 0.
@@ -246,60 +237,39 @@ extension PlaybackEngine {
     func stopPictureInPicture() {}
 }
 
-/// User-facing subtitle size preference. `medium` is the historical default
-/// and reproduces the platform baseline exactly; the other cases scale it.
-enum SubtitleFontSize: String, CaseIterable, Identifiable, Sendable {
-    case extraSmall
-    case small
-    case medium
-    case large
-
-    static let `default`: SubtitleFontSize = .medium
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .extraSmall: "Extra Small"
-        case .small: "Small"
-        case .medium: "Medium"
-        case .large: "Large"
-        }
-    }
-
-    /// Multiplier applied to the platform baseline in `PlaybackSubtitleStyle`.
-    var scale: Float {
-        switch self {
-        case .extraSmall: 0.6
-        case .small: 0.8
-        case .medium: 1.0
-        case .large: 1.25
-        }
-    }
-
-    /// Secondary label for the player pickers.
-    var detailTitle: String? {
-        self == .medium ? "Default" : nil
-    }
-}
-
+/// Adapts the system caption preferences for VLC, which does not read them itself.
+/// There is no Dusk-owned style or persisted renderer preference.
 @MainActor
-enum PlaybackSubtitleStyle {
-    /// The Medium baseline, in percent of the renderer's default size.
-    static var baseAVPlayerRelativeFontSize: Int {
-        return 75
+enum SystemCaptionStyle {
+    static var vlcOptions: [String] {
+        let domain = MACaptionAppearanceDomain.user
+        let foreground = MACaptionAppearanceCopyForegroundColor(domain, nil).takeRetainedValue()
+        let background = MACaptionAppearanceCopyBackgroundColor(domain, nil).takeRetainedValue()
+        let descriptor = MACaptionAppearanceCopyFontDescriptorForStyle(domain, nil, .default).takeRetainedValue()
+        let family = CTFontDescriptorCopyAttribute(descriptor, kCTFontFamilyNameAttribute) as? String
+        let scale = MACaptionAppearanceGetRelativeCharacterSize(domain, nil)
+        let edge = MACaptionAppearanceGetTextEdgeStyle(domain, nil)
+        let hasOutline = edge == .uniform
+        let hasShadow = edge == .dropShadow || edge == .raised || edge == .depressed
+        var options = [
+            "--freetype-rel-fontsize=\(max(1, Int((16 / max(scale, 0.1)).rounded())))",
+            "--freetype-color=\(rgb(foreground))",
+            "--freetype-opacity=\(opacity(MACaptionAppearanceGetForegroundOpacity(domain, nil)))",
+            "--freetype-background-color=\(rgb(background))",
+            "--freetype-background-opacity=\(opacity(MACaptionAppearanceGetBackgroundOpacity(domain, nil)))",
+            "--freetype-outline-thickness=\(hasOutline ? 4 : 0)",
+            "--freetype-shadow-opacity=\(hasShadow ? 128 : 0)"
+        ]
+        if let family { options.append("--freetype-font=\(family)") }
+        return options
     }
 
-    static func avPlayerRelativeFontSize(for size: SubtitleFontSize) -> Int {
-        Int((Float(baseAVPlayerRelativeFontSize) * size.scale).rounded())
+    private static func opacity(_ value: CGFloat) -> Int {
+        Int((min(1, max(0, value)) * 255).rounded())
     }
 
-    /// libvlc's `freetype-rel-fontsize`: the font height is the video height
-    /// divided by this value, so a smaller number draws larger text. 16 is
-    /// libvlc's default and maps to 100%.
-    static func vlcRelativeFontSize(for size: SubtitleFontSize) -> Int {
-        let scale = Float(avPlayerRelativeFontSize(for: size)) / 100
-        return max(1, Int((16 / scale).rounded()))
+    private static func rgb(_ color: CGColor) -> Int {
+        guard let color = NSColor(cgColor: color)?.usingColorSpace(.deviceRGB) else { return 0 }
+        return (opacity(color.redComponent) << 16) | (opacity(color.greenComponent) << 8) | opacity(color.blueComponent)
     }
-
 }
