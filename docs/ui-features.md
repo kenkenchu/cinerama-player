@@ -32,7 +32,10 @@ On Mac, unreachable-server UI includes Local Network permission guidance.
 - `DuskFont` roles resolve native system styles. Theme providers are AppKit
   colors in `Shared/MacPlatform.swift`.
 
-Reuse these primitives rather than copying feature-local implementations.
+Plain media cards use the system link cursor and a subtle neutral hover outline;
+disabled cards do not advertise a click action. Details links and Show All tiles
+include pointer help. Reuse these primitives rather than copying feature-local
+implementations.
 System controls and neutral states follow `STYLE.md`.
 
 ## Home and Libraries
@@ -90,7 +93,9 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 
 | Input | Action |
 | --- | --- |
-| Space | Play/pause |
+| Click video / Space | Play/pause |
+| Double-click video | Toggle native window fullscreen |
+| Cmd-I | Toggle playback debug overlay |
 | Left / Right | Seek backward/forward 10 seconds |
 | Escape | Close player |
 | Ctrl-Cmd-F | Native window fullscreen |
@@ -110,6 +115,11 @@ shown explicitly as Direct Play, Direct Stream/remux, or Server Transcoding,
 with separate video/audio copy-versus-transcode decisions when Plex reports
 them. Missing server decisions are marked as unavailable. It never displays
 media URLs, tokens, or credentials. This is session UI state, not a saved setting.
+
+The video surface uses a link cursor to advertise its click action. Video clicks
+are handled separately from controls: clicking menus, scrubbing, and toggling
+debug info do not toggle play/pause. Double-click is exclusive of single-click.
+Player controls include native tooltips naming their keyboard shortcuts.
 
 Scrubbing previews locally and commits one seek on release. Audio, subtitle and
 per-session Quality menus use shared selection methods. Intro/credits and

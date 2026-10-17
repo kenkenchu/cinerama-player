@@ -29,6 +29,7 @@ struct PlayerView: View {
         .overlay(alignment: .topLeading) {
             Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
                 .keyboardShortcut(.escape, modifiers: [])
+                .help("Close Player (Esc)")
                 .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
                 .padding(24)
@@ -69,6 +70,7 @@ private struct MacPlayerSession: View {
         ZStack(alignment: .bottom) {
             model.engineView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay { videoInteractionSurface }
                 .overlay(alignment: .bottom) {
                     VStack(spacing: 12) {
                         if let marker = model.activeSkipMarker {
@@ -146,6 +148,30 @@ private struct MacPlayerSession: View {
         .onChange(of: playback.activeLiveTVContext) { _, context in model.liveTVContext = context }
     }
 
+    /// Capture video clicks separately from control/menu clicks. An exclusive
+    /// gesture keeps a fullscreen double-click from also toggling playback.
+    private var videoInteractionSurface: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .pointerStyle(.link)
+            .gesture(
+                TapGesture(count: 2).exclusively(before: TapGesture(count: 1))
+                    .onEnded { action in
+                        switch action {
+                        case .first:
+                            model.touchControls()
+                            toggleFullScreen()
+                        case .second:
+                            model.togglePlayPause()
+                        }
+                    }
+            )
+            .help("Click to play or pause; double-click for fullscreen")
+            .accessibilityLabel("Video playback")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { model.togglePlayPause() }
+    }
+
     private var controls: some View {
         VStack(spacing: 6) {
             HStack {
@@ -163,10 +189,13 @@ private struct MacPlayerSession: View {
             HStack(spacing: 12) {
                 Button("Back 10 Seconds", systemImage: "gobackward.10") { model.seek(to: model.currentTime - 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.leftArrow, modifiers: [])
+                    .help("Back 10 Seconds (←)")
                 Button(model.state == .playing ? "Pause" : "Play", systemImage: model.state == .playing ? "pause.fill" : "play.fill") { model.togglePlayPause() }
                     .keyboardShortcut(.space, modifiers: [])
+                    .help(model.state == .playing ? "Pause (Space)" : "Play (Space)")
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
+                    .help("Forward 10 Seconds (→)")
                 Text(playback.activeItemDetails?.title ?? source.liveTVContext?.channel.title ?? "Dusk")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -174,25 +203,29 @@ private struct MacPlayerSession: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                 Toggle("Playback Debug Info", systemImage: "gearshape", isOn: $showsDebugInfo)
                     .toggleStyle(.button)
-                    .help("Show playback engine and rendering diagnostics")
+                    .keyboardShortcut("i", modifiers: .command)
+                    .help("Playback Debug Info (⌘I)")
                 if model.liveTVContext != nil { Button("Go Live") { model.goLive() } }
                 Menu("Audio", systemImage: "speaker.wave.2") {
                     ForEach(model.audioTracks) { track in
                         Button(track.displayTitle) { model.selectAudio(track) }
                     }
                 }
+                .help("Choose an audio track")
                 Menu("Subtitles", systemImage: "captions.bubble") {
                     Button("Off") { model.selectSubtitle(nil) }
                     ForEach(model.subtitleTracks) { track in
                         Button(track.displayTitle) { model.selectSubtitle(track) }
                     }
                 }
+                .help("Choose a subtitle track")
                 if let info = playback.debugInfo, info.canSelectPlaybackQuality {
                     Menu("Quality", systemImage: "slider.horizontal.3") {
                         ForEach(info.availableQualityPresets) { preset in
                             Button(preset.displayName) { Task { await playback.switchQuality(to: preset) } }
                         }
                     }
+                    .help("Playback quality for this session")
                 }
                 Button(
                     isFullScreen ? "Exit Full Screen" : "Enter Full Screen",
@@ -202,7 +235,7 @@ private struct MacPlayerSession: View {
                     toggleFullScreen()
                 }
                 .keyboardShortcut("f", modifiers: [.control, .command])
-                .help(isFullScreen ? "Exit Full Screen" : "Enter Full Screen")
+                .help(isFullScreen ? "Exit Full Screen (⌃⌘F)" : "Enter Full Screen (⌃⌘F)")
             }
             .labelStyle(.iconOnly)
             .controlSize(.small)

@@ -31,6 +31,8 @@ struct PosterNavigationCard<ContextMenuContent: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .buttonStyle(.plain)
+        .modifier(MacMediaCardInteraction())
+        .help("Open details for \(title)")
 
         .contextMenu {
             contextMenuContent()
@@ -95,6 +97,7 @@ struct PosterActionCard<ContextMenuContent: View>: View {
             )
         }
         .buttonStyle(.plain)
+        .modifier(MacMediaCardInteraction())
 
         .contextMenu {
             contextMenuContent()
@@ -126,5 +129,24 @@ extension PosterActionCard where ContextMenuContent == EmptyView {
         self.availabilityBadge = availabilityBadge
         self.isDimmed = isDimmed
         self.contextMenuContent = { EmptyView() }
+    }
+}
+
+/// Pointer feedback for plain media links/buttons, scoped to their hit bounds.
+private struct MacMediaCardInteraction: ViewModifier {
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .contentShape(Rectangle())
+            .pointerStyle(isEnabled ? .link : nil)
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.primary.opacity(isHovered && isEnabled ? 0.2 : 0), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .onHover { isHovered = $0 }
+            .animation(.easeOut(duration: 0.12), value: isHovered)
     }
 }

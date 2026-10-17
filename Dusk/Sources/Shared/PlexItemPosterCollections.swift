@@ -35,6 +35,8 @@ struct ShowAllCarouselTile: View {
         .buttonStyle(.plain)
         .frame(width: width, alignment: .topLeading)
         .accessibilityLabel("Show all")
+        .pointerStyle(.link)
+        .help("Show all items")
     }
 
     private var label: some View {
