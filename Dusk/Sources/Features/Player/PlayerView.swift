@@ -27,35 +27,21 @@ struct PlayerView: View {
             }
         }
         .overlay(alignment: .topLeading) {
-            if isFullScreen {
-                HStack {
-                    Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
-                        .keyboardShortcut(.escape, modifiers: [])
-                }
+            Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
+                .keyboardShortcut(.escape, modifiers: [])
                 .labelStyle(.iconOnly)
                 .buttonStyle(.glass)
                 .padding(24)
-                // Keep interactive controls below the native fullscreen titlebar reveal area.
-                .padding(.top, 32)
+                .padding(.top, isFullScreen ? 32 : 0)
                 .opacity(controlsVisible ? 1 : 0)
                 .allowsHitTesting(controlsVisible)
                 .accessibilityHidden(!controlsVisible)
-            }
         }
-        .toolbarVisibility(isFullScreen ? .hidden : .visible, for: .windowToolbar)
+        .toolbarVisibility(.hidden, for: .windowToolbar)
         .preferredColorScheme(.dark)
         .environment(\.colorScheme, .dark)
         .playerSharePlayPresentation(isPlayer: true)
         .onChange(of: scenePhase) { _, phase in playback.flushTimelineForScenePhase(phase) }
-        .toolbar {
-            if !isFullScreen {
-                ToolbarItem(placement: .navigation) {
-                    Button("Close Player", systemImage: "xmark") { playback.showPlayer = false }
-                        .keyboardShortcut(.escape, modifiers: [])
-                }
-
-            }
-        }
     }
 }
 
@@ -83,37 +69,38 @@ private struct MacPlayerSession: View {
         ZStack(alignment: .bottom) {
             model.engineView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            VStack(spacing: 12) {
-                Spacer()
-                if let marker = model.activeSkipMarker {
-                    HStack {
-                        Spacer()
-                        Button(marker.isIntro ? "Skip Intro" : "Skip Credits") { model.skipActiveMarker() }
-                            .buttonStyle(.glass)
-                    }
+                .overlay(alignment: .bottom) {
+                    VStack(spacing: 12) {
+                        if let marker = model.activeSkipMarker {
+                            HStack {
+                                Spacer()
+                                Button(marker.isIntro ? "Skip Intro" : "Skip Credits") { model.skipActiveMarker() }
+                                    .buttonStyle(.glass)
+                            }
+                        }
+                        if let next = playback.upNextPoster {
+                            HStack {
+                                Spacer()
+                                Button("Play Next Episode") { playback.playUpNextPosterNow() }
+                                    .buttonStyle(.glass)
+                                Button("Dismiss", systemImage: "xmark") { playback.dismissUpNextPoster(userInitiated: true) }
+                                    .labelStyle(.iconOnly)
+                            }
+                            .accessibilityLabel(next.isStarting ? "Starting next episode" : "Next episode available")
+                        }
+                        if playback.upNextPresentation != nil {
+                            HStack {
+                                Text("Next Episode").font(.headline)
+                                Button("Play Now") { playback.playUpNextNow() }
+                                Button("Close") { playback.showPlayer = false }
+                            }.padding().background(.regularMaterial, in: .capsule)
+                        }
+                        controls
+                            .opacity(model.showControls ? 1 : 0)
+                            .allowsHitTesting(model.showControls)
+                            .accessibilityHidden(!model.showControls)
+                    }.padding(24)
                 }
-                if let next = playback.upNextPoster {
-                    HStack {
-                        Spacer()
-                        Button("Play Next Episode") { playback.playUpNextPosterNow() }
-                            .buttonStyle(.glass)
-                        Button("Dismiss", systemImage: "xmark") { playback.dismissUpNextPoster(userInitiated: true) }
-                            .labelStyle(.iconOnly)
-                    }
-                    .accessibilityLabel(next.isStarting ? "Starting next episode" : "Next episode available")
-                }
-                if playback.upNextPresentation != nil {
-                    HStack {
-                        Text("Next Episode").font(.headline)
-                        Button("Play Now") { playback.playUpNextNow() }
-                        Button("Close") { playback.showPlayer = false }
-                    }.padding().background(.regularMaterial, in: .capsule)
-                }
-                controls
-                    .opacity(model.showControls ? 1 : 0)
-                    .allowsHitTesting(model.showControls)
-                    .accessibilityHidden(!model.showControls)
-            }.padding(24)
             if let error = model.playbackError, !playback.isAutomaticDirectPlayFallbackPending {
                 VStack {
                     Text(error.localizedDescription)

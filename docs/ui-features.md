@@ -69,11 +69,12 @@ stack stays mounted, invisible and noninteractive underneath, so a pushed detail
 page cannot stay in front of the player when Play is selected. Do not replace a
 split-view detail root to present playback: native pushed destinations can remain
 in front while audio starts. Closing playback restores the same page and sidebar.
-In native window fullscreen, the player hides the window toolbar and extends
-through the safe area. The bottom control bar contains a fullscreen toggle that
+The player hides the navigation toolbar and uses one video canvas in windowed
+and fullscreen playback. Controls attach as a bottom overlay of that canvas,
+so windowed toolbar/safe-area insets cannot offset them from their background. The bottom control bar contains a fullscreen toggle that
 switches between Enter and Exit Full Screen and targets the owning window; it is
 not duplicated in the toolbar or top overlay. Close remains available above the
-video in fullscreen, below the native titlebar reveal area. In both windowed and
+video in both modes, below the native titlebar reveal area in fullscreen. In both windowed and
 fullscreen playback, controls fade after four seconds of inactivity; pointer movement or a
 click reveals them again. A stationary pointer over the controls does not hold
 them open, and repeated hover callbacks at the same position do not reset the

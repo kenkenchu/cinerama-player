@@ -43,8 +43,9 @@ struct MainTabView: View {
             if playback.showPlayer {
                 NavigationStack {
                     PlayerView(isFullScreen: isFullScreen, toggleFullScreen: { window?.toggleFullScreen(nil) })
+                        .ignoresSafeArea(.container, edges: .all)
                 }
-                .ignoresSafeArea(isFullScreen ? .all : [], edges: .all)
+                .toolbarVisibility(.hidden, for: .windowToolbar)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .zIndex(1)
             }
