@@ -129,6 +129,7 @@
 		69CA09DED06F528A397DF514 /* SeerrSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A0CCEFC12135933C9378A17 /* SeerrSettingsView.swift */; };
 		69FD0FCF5F426E2AECE57502 /* PlexSubtitleSearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E0A3C049970272A3CC5460 /* PlexSubtitleSearchResult.swift */; };
 		6A2B7FAF33E49DBBB4B159E1 /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E45205D0DD071C6E058DA90B /* DownloadsView.swift */; };
+		6AD27C1CAFB2881D49544649 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D80E23BFAE2F48658BC7161D /* Assets.xcassets */; };
 		6B05795C120BB19552235829 /* DetailSharedViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 348F1B5EF3D8AD8AE52485B2 /* DetailSharedViews.swift */; };
 		6BC58BD82B29478E0DA0FAFC /* PlexService+Subtitles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F021B7FD231064CABD32B41 /* PlexService+Subtitles.swift */; };
 		6C4C01490569DDD2124CA8C4 /* PlexSubtitleSearchResult.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E0A3C049970272A3CC5460 /* PlexSubtitleSearchResult.swift */; };
@@ -500,6 +501,7 @@
 		D21B1CD893CD92808A901B71 /* HLSProxyHTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HLSProxyHTTP.swift; sourceTree = "<group>"; };
 		D2A90BC03A7C9895263EAD07 /* SettingsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsViewModel.swift; sourceTree = "<group>"; };
 		D2E03BAD6F6D7F3A24BBB7BF /* StreamResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamResolver.swift; sourceTree = "<group>"; };
+		D80E23BFAE2F48658BC7161D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		D97C0F3FABBE04C2708A7342 /* PlexItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexItem.swift; sourceTree = "<group>"; };
 		DA1F9A43D09E5C5AD680E39C /* PlaybackNowPlayingController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackNowPlayingController.swift; sourceTree = "<group>"; };
 		DD66C2F90983F6A5C48C83E9 /* DuskTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DuskTVApp.swift; sourceTree = "<group>"; };
@@ -941,6 +943,7 @@
 			children = (
 				5930FB1AC063FA9D842C356E /* DuskTests */,
 				C94A28491B3FCC141F699255 /* Resources */,
+				D48BCF33ADCF4660AE4E90A4 /* Resources */,
 				16E3B87B70144CDD831EAB73 /* Sources */,
 				3A3594521A30623894D0CDA9 /* Sources */,
 				4A07890AB8FCD02F4F809977 /* Frameworks */,
@@ -1017,6 +1020,15 @@
 			path = Playback;
 			sourceTree = "<group>";
 		};
+		D48BCF33ADCF4660AE4E90A4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				D80E23BFAE2F48658BC7161D /* Assets.xcassets */,
+			);
+			name = Resources;
+			path = DuskTV/Resources;
+			sourceTree = "<group>";
+		};
 		E0972C60D4EC68F21F615CAC /* Search */ = {
 			isa = PBXGroup;
 			children = (
@@ -1035,6 +1047,7 @@
 			buildConfigurationList = 304DA7A21F5581A082D21228 /* Build configuration list for PBXNativeTarget "Dusk-tvOS" */;
 			buildPhases = (
 				1A0F757B2C046BB3CC7E147E /* Sources */,
+				59E964A6B021CE1C3B7AAA5D /* Resources */,
 			);
 			buildRules = (
 			);
@@ -1130,6 +1143,14 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		59E964A6B021CE1C3B7AAA5D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6AD27C1CAFB2881D49544649 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB5197664A88D72DCF570A38 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1648,7 +1669,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
-				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_APPICON_NAME = TVIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(DUSK_TVOS_TEAM)";
@@ -1671,7 +1692,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ARCHS = arm64;
-				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
+				ASSETCATALOG_COMPILER_APPICON_NAME = TVIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "$(DUSK_TVOS_TEAM)";

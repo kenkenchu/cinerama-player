@@ -33,7 +33,7 @@ Subtitles start Off; AVKit exposes supported embedded tracks. External sidecars,
 Plex subtitle-choice persistence, full audio-track mapping, VLC, Live TV,
 autoplay, downloads, enhancement and HDR conversion are outside this prototype.
 Browsing uses native text lists to establish feasibility before artwork/layout
-work. There is no Top Shelf extension or App Store distribution setup.
+work. TV-only layered app icon assets provide a black DUSK Home Screen tile. There is no Top Shelf extension or App Store distribution setup.
 
 ## Pair, Build and Install
 
@@ -104,3 +104,11 @@ playback, remote interaction and progress sync remain for user verification.
 Source-membership inspection confirmed no TV UI in the Mac compilation and no
 Mac UI/player hosts in TV. Extracted shared cache and quality-preset definitions
 were checked against their original implementations without behavioral edits.
+
+If installation succeeds but the tile is missing, verify the app appears in
+`devicectl device info apps` and is not hidden. The TV asset catalog must be
+compiled with `ASSETCATALOG_COMPILER_APPICON_NAME=TVIcon`; the built Info.plist
+should contain `CFBundleIcons.CFBundlePrimaryIcon`. If registration is correct
+but the Home Screen is stale, restart Apple TV via Settings → System → Restart.
+The initial icon follow-up rebuilt/reinstalled successfully and verified app
+registration as not hidden; Home Screen appearance remains user-verified.
