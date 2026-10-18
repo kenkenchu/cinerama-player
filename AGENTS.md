@@ -111,10 +111,11 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   implementations; the full Mac playback contract is not yet platform-neutral.
   Keep this limitation explicit rather than treating TV as full feature parity.
   Signed TV builds installed on Apple TV HD/tvOS 26.6. The user confirmed the
-  Home Screen icon, Plex linking and basic playback; TV subtitles remain under
-  investigation. Native On/Off/CC options appeared but did not render subtitles.
-  TV text-track selection/remux changes need user verification. Agents did not
-  launch either app or run tests.
+  Home Screen icon, Plex linking, basic playback and subtitle rendering after
+  explicit text-track selection/remux changes. The user reports TV subtitles do
+  not yet follow system caption style; this remains unresolved. Confirmation is
+  limited to the tried title, not an exhaustive format/style audit. Agents did
+  not launch either app or run tests.
 
 - Native entry and sidebar: `Dusk/Sources/App/DuskApp.swift` and
   `Dusk/Sources/App/MainTabView.swift`. Player controls live in

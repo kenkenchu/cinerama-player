@@ -113,9 +113,11 @@ Apple TV HD (AppleTV5,3), running tvOS 26.6 with Developer Mode enabled.
 Agents did not launch either app or run tests. The user subsequently confirmed
 the Home Screen icon appeared without restarting, Plex linking succeeded and
 basic playback worked. Subtitles did not render despite native On/Off/CC menu
-options; source format was not established. Explicit Plex text-track selection
-and remux mapping were added for user verification. Broader remote interaction,
-progress sync and subtitle coverage remain unverified.
+options; source format was not established. After explicit Plex text-track
+selection and remux mapping were added, the user confirmed subtitles render.
+The user reports they do not yet follow system caption styling; that is an open
+TV issue. This confirms the exercised subtitle path only. Broader remote
+interaction, progress sync, subtitle formats and style coverage remain unverified.
 Source-membership inspection confirmed no TV UI in the Mac compilation and no
 Mac UI/player hosts in TV. Extracted shared cache and quality-preset definitions
 were checked against their original implementations without behavioral edits.
