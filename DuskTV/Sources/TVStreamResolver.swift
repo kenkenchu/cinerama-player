@@ -5,6 +5,7 @@ struct TVPlaybackChoice: Identifiable {
     let media: PlexMedia
     let part: PlexMediaPart
     let audio: PlexStream?
+    let subtitle: PlexStream?
     let requiresRemux: Bool
     var id: Int { mediaIndex }
     var label: String {
@@ -23,7 +24,12 @@ enum TVPlaybackFailure: LocalizedError {
 /// Conservative Apple TV HD eligibility, isolated from the Mac resolver.
 /// AVPlayer's actual decoder remains authoritative after metadata checks.
 enum TVStreamResolver {
-    static func choice(media: PlexMedia, index: Int) throws -> TVPlaybackChoice {
+    static func supportsSubtitle(_ stream: PlexStream) -> Bool {
+        stream.streamType == .subtitle && ["srt", "subrip", "webvtt", "vtt", "ass", "ssa", "mov_text", "tx3g", "text"]
+            .contains(stream.codec?.lowercased() ?? "")
+    }
+
+    static func choice(media: PlexMedia, index: Int, subtitleID: Int? = nil) throws -> TVPlaybackChoice {
         guard media.parts.count == 1, let part = media.parts.first, part.isAvailable else {
             throw TVPlaybackFailure.unsupported("Missing or multi-part files are not supported in this prototype.")
         }
@@ -62,9 +68,13 @@ enum TVStreamResolver {
         }
         let defaultAudio = audioTracks.first(where: { $0.isDefault == true }) ?? audioTracks.first
         let container = (part.container ?? media.container ?? "").lowercased()
+        let subtitle = subtitleID.flatMap { id in part.streams.first { $0.id == id && $0.streamType == .subtitle } }
+        if subtitleID != nil && subtitle.map({ !supportsSubtitle($0) }) != false {
+            throw TVPlaybackFailure.unsupported("This subtitle format is unavailable in the TV prototype. Choose a text subtitle or Off. Subtitle burning and server video conversion are disabled.")
+        }
         let requiresRemux = !["mp4", "m4v", "mov"].contains(container)
-            || audio?.id != defaultAudio?.id
+            || audio?.id != defaultAudio?.id || subtitle != nil
         return TVPlaybackChoice(mediaIndex: index, media: media, part: part,
-            audio: audio, requiresRemux: requiresRemux)
+            audio: audio, subtitle: subtitle, requiresRemux: requiresRemux)
     }
 }

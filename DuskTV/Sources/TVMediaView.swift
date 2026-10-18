@@ -34,6 +34,7 @@ struct TVMediaView: View {
     @State private var model = TVMediaModel()
     @State private var presentation: TVPlayerPresentation?
     @State private var lastPlayback: TVPlaybackCoordinator?
+    @State private var subtitleSelections: [Int: Int] = [:]
 
     var body: some View {
         List {
@@ -71,12 +72,14 @@ struct TVMediaView: View {
                     if let lastPlayback {
                         Section("Last playback") {
                             Text(lastPlayback.route)
+                            Text(lastPlayback.subtitleMessage)
+                            if let summary = lastPlayback.nativeSubtitleSummary { Text(summary) }
                             if let progress = lastPlayback.progressMessage { Text(progress) }
                             if let error = lastPlayback.errorMessage { Text(error) }
                         }
                     }
                     Section {
-                        Text("Native AVPlayer · Original quality only. Subtitles start Off; supported embedded tracks are available in the player menu. Sidecar subtitles, VLC, Live TV and automatic next episode are not in this prototype.")
+                        Text("Native AVPlayer · Original quality only. Choose a text subtitle before playing; Plex packages it separately while copying video and audio. Bitmap subtitles, VLC, Live TV and automatic next episode are not in this prototype.")
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -98,7 +101,28 @@ struct TVMediaView: View {
 
     @ViewBuilder
     private func versionRow(details: PlexMediaDetails, media: PlexMedia, index: Int) -> some View {
-        if let choice = try? TVStreamResolver.choice(media: media, index: index) {
+        if let choice = try? TVStreamResolver.choice(media: media, index: index,
+            subtitleID: selectedSubtitle(media: media, index: index)) {
+            let tracks = choice.part.streams.filter { $0.streamType == .subtitle }
+            if tracks.isEmpty {
+                Text("Version \(index + 1): Plex reports no subtitle tracks.")
+                    .font(.caption).foregroundStyle(.secondary)
+            } else {
+                Picker("Subtitles · Version \(index + 1)", selection: Binding(
+                    get: { selectedSubtitle(media: media, index: index) ?? 0 },
+                    set: { subtitleSelections[index] = $0 }
+                )) {
+                    Text("Off").tag(0)
+                    ForEach(tracks.filter(TVStreamResolver.supportsSubtitle)) { track in
+                        Text("\(track.displayTitle ?? track.language ?? "Subtitle \(track.id)") · \(track.codec?.uppercased() ?? "Unknown format")")
+                            .tag(track.id)
+                    }
+                }
+                ForEach(tracks.filter { !TVStreamResolver.supportsSubtitle($0) }) { track in
+                    Text("\(track.displayTitle ?? track.codec ?? "Subtitle"): unsupported format; choose a text track.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
             if (details.viewOffset ?? 0) > 0 {
                 Button("Resume · \(choice.label)") { play(details: details, choice: choice, resume: true) }
             }
@@ -109,6 +133,13 @@ struct TVMediaView: View {
                 Text(unsupportedReason(media: media, index: index)).font(.caption).foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func selectedSubtitle(media: PlexMedia, index: Int) -> Int? {
+        if let selected = subtitleSelections[index] { return selected == 0 ? nil : selected }
+        return media.parts.first?.streams.first {
+            $0.isSelected == true && TVStreamResolver.supportsSubtitle($0)
+        }?.id
     }
 
     private func unsupportedReason(media: PlexMedia, index: Int) -> String {

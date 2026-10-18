@@ -12,6 +12,8 @@ final class TVPlaybackCoordinator {
     var errorMessage: String?
     var route = "Direct Play"
     var progressMessage: String?
+    var subtitleMessage = "Subtitles Off"
+    var nativeSubtitleSummary: String?
     private let service: PlexService
     private let details: PlexMediaDetails
     private let choice: TVPlaybackChoice
@@ -70,10 +72,17 @@ final class TVPlaybackCoordinator {
                 remuxAttempted = true
                 let id = UUID().uuidString
                 transcodeID = id
+                // Plex uses the part selection for segmented text delivery;
+                // the decision query alone does not reliably select a subtitle.
+                try await service.selectStreams(partID: choice.part.id,
+                    audioStreamID: choice.audio?.id, subtitleStreamID: choice.subtitle?.id ?? 0,
+                    serverID: details.serverID)
+                try Task.checkCancellation()
+                guard generation == attempt, !stopped else { return }
                 let result = try await service.spatialAudioRemuxURL(
                     ratingKey: details.ratingKey, mediaIndex: choice.mediaIndex,
                     sessionIdentifier: sessionID, transcodeSessionID: id,
-                    audioStreamID: choice.audio?.id, subtitleStreamID: nil,
+                    audioStreamID: choice.audio?.id, subtitleStreamID: choice.subtitle?.id,
                     serverID: details.serverID)
                 guard generation == attempt, !stopped else {
                     await service.stopTranscodeSession(transcodeSessionID: id, serverID: details.serverID)
@@ -81,6 +90,13 @@ final class TVPlaybackCoordinator {
                 }
                 guard case .transcodeAvailable = result.outcome, result.streams.isLosslessRemux else {
                     throw TVPlaybackFailure.unsupported("Plex could not offer a copy-only HLS stream for this file. Server video/audio conversion is disabled. Try another HD title or version.")
+                }
+                if choice.subtitle != nil {
+                    guard result.streams.subtitleLocation == "segments-subs",
+                          result.streams.subtitleDecision != "burn",
+                          result.streams.subtitleDecision != "ignore" else {
+                        throw TVPlaybackFailure.unsupported("Plex did not provide the selected subtitle as a separate text track. Video/audio conversion and subtitle burning are disabled. Try another text subtitle or Off.")
+                    }
                 }
                 url = result.url
                 route = "Direct Stream · Video copy · Audio copy"
@@ -98,8 +114,8 @@ final class TVPlaybackCoordinator {
             title.identifier = .commonIdentifierTitle
             title.value = details.title as NSString
             item.externalMetadata = [title]
-            // Sidecars and Plex subtitle persistence are deferred. Native
-            // embedded track selection remains available in AVKit's controls.
+            // Explicit selection is applied after AVPlayer discovers the HLS
+            // legible group; discovery must never gate video startup.
             player.appliesMediaSelectionCriteriaAutomatically = false
             readyItem = nil
             statusObservation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
@@ -145,11 +161,22 @@ final class TVPlaybackCoordinator {
             guard readyItem !== item else { return }
             readyItem = item
             timeoutTask?.cancel()
-            // Off initially; the native menu can select supported embedded tracks.
             Task {
-                if let group = try? await item.asset.loadMediaSelectionGroup(for: .legible) {
-                    guard generation == attempt, !stopped, player.currentItem === item else { return }
-                    item.select(nil, in: group)
+                let group = try? await item.asset.loadMediaSelectionGroup(for: .legible)
+                guard generation == attempt, !stopped, player.currentItem === item else { return }
+                nativeSubtitleSummary = "AVPlayer subtitle tracks: " + (group?.options.map(\.displayName).joined(separator: ", ").nilIfEmpty ?? "None")
+                if let subtitle = choice.subtitle {
+                    guard let group, group.options.count == 1, let option = group.options.first else {
+                        subtitleMessage = "Selected subtitle could not be mapped to a unique received text track"
+                        return
+                    }
+                    // The remux contains only the explicitly selected Plex
+                    // subtitle, so the single segmented text track maps to it.
+                    item.select(option, in: group)
+                    subtitleMessage = "Subtitles: \(subtitle.displayTitle ?? subtitle.language ?? subtitle.codec ?? "Selected")"
+                } else {
+                    if let group { item.select(nil, in: group) }
+                    subtitleMessage = "Subtitles Off"
                 }
             }
             startupTask = Task {

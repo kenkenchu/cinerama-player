@@ -29,9 +29,19 @@ on direct failure, timeline reporting and remux cleanup. HLS never starts withou
 Plex confirming both video and audio copying. Plex decision failure does not
 permit conversion. App backgrounding pauses playback.
 
-Subtitles start Off; AVKit exposes supported embedded tracks. External sidecars,
-Plex subtitle-choice persistence, full audio-track mapping, VLC, Live TV,
-autoplay, downloads, enhancement and HDR conversion are outside this prototype.
+The title page offers Off and Plex text subtitle tracks (including external
+sidecars), with codec labels and explicit unsupported-format messages. It adopts
+a selected compatible Plex track when available. Selecting text routes through
+copy-only HLS: record the Plex part's stream selection, request the same subtitle
+ID, require separate segmented subtitles and copied A/V, then select the unique
+received AVPlayer legible track. Subtitle discovery does not gate video startup.
+SRT/WebVTT and ASS/SSA text packaging is allowed, but advanced ASS styling is not
+preserved by WebVTT. Bitmap/unknown subtitles are not burned into video.
+Last playback reports the requested subtitle and received native track names.
+Subtitle changes take effect on the next Play/Resume; native AVKit also exposes
+received tracks during playback. Full Mac-style subtitle preference persistence,
+full audio-track mapping, VLC, Live TV, autoplay, downloads, enhancement and HDR
+conversion remain outside this prototype.
 Browsing uses native text lists to establish feasibility before artwork/layout
 work. TV-only layered app icon assets provide a black DUSK Home Screen tile. There is no Top Shelf extension or App Store distribution setup.
 
@@ -85,7 +95,8 @@ in Git. TV provisioning is separate from the existing Mac signing workflow.
 6. Repeat with an HD MKV using compatible audio. Last playback should report
    Direct Stream with both tracks copied; Plex Dashboard can independently
    confirm there was no A/V encoding.
-7. Browse a show → season → episode and repeat. Try native embedded subtitles,
+7. Browse a show → season → episode and repeat. Choose a named text subtitle
+   on its title page before Play/Resume and check rendering and Off. Also try
    background/return, and a few minutes of sustained playback.
 8. Record title, version, codecs, route, symptom and whether progress persisted
    for failures. Do not share tokens or raw media/artwork URLs.
@@ -99,8 +110,12 @@ Mac runtime verification remains a separate explicitly authorized check.
 On 2026-10-17, the Apple Development-signed Mac build and signed tvOS device
 build passed using Xcode 27.1. The TV app installed successfully on the user's
 Apple TV HD (AppleTV5,3), running tvOS 26.6 with Developer Mode enabled.
-Agents did not launch either app or run tests. End-to-end Plex sign-in,
-playback, remote interaction and progress sync remain for user verification.
+Agents did not launch either app or run tests. The user subsequently confirmed
+the Home Screen icon appeared without restarting, Plex linking succeeded and
+basic playback worked. Subtitles did not render despite native On/Off/CC menu
+options; source format was not established. Explicit Plex text-track selection
+and remux mapping were added for user verification. Broader remote interaction,
+progress sync and subtitle coverage remain unverified.
 Source-membership inspection confirmed no TV UI in the Mac compilation and no
 Mac UI/player hosts in TV. Extracted shared cache and quality-preset definitions
 were checked against their original implementations without behavioral edits.
@@ -111,4 +126,4 @@ compiled with `ASSETCATALOG_COMPILER_APPICON_NAME=TVIcon`; the built Info.plist
 should contain `CFBundleIcons.CFBundlePrimaryIcon`. If registration is correct
 but the Home Screen is stale, restart Apple TV via Settings → System → Restart.
 The initial icon follow-up rebuilt/reinstalled successfully and verified app
-registration as not hidden; Home Screen appearance remains user-verified.
+registration as not hidden; the user subsequently confirmed the icon appeared without a restart.

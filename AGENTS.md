@@ -110,8 +110,11 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   `TVStreamResolver` and `TVPlaybackCoordinator` are deliberately limited TV
   implementations; the full Mac playback contract is not yet platform-neutral.
   Keep this limitation explicit rather than treating TV as full feature parity.
-  Initial signed TV build installed on Apple TV HD/tvOS 26.6; user runtime
-  verification is pending. Agents did not launch either app or run tests.
+  Signed TV builds installed on Apple TV HD/tvOS 26.6. The user confirmed the
+  Home Screen icon, Plex linking and basic playback; TV subtitles remain under
+  investigation. Native On/Off/CC options appeared but did not render subtitles.
+  TV text-track selection/remux changes need user verification. Agents did not
+  launch either app or run tests.
 
 - Native entry and sidebar: `Dusk/Sources/App/DuskApp.swift` and
   `Dusk/Sources/App/MainTabView.swift`. Player controls live in
