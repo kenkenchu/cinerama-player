@@ -16,8 +16,8 @@ extension PlexService {
     var plexRequestHeaders: [String: String] {
         var headers = basePlexHeaders
 
-        headers["X-Plex-Platform"] = "macOS"
-        headers["X-Plex-Device-Name"] = "Mac"
+        headers["X-Plex-Platform"] = Self.transcodeClientPlatform
+        headers["X-Plex-Device-Name"] = Self.transcodeClientDevice
 
         return headers
     }

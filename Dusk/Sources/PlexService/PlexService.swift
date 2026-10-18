@@ -290,7 +290,9 @@ final class PlexService {
         }
         pool.clear()
         // Siri's titles belong to this identity's libraries too.
+        #if os(macOS)
         SiriTitleCatalog.shared.clear()
+        #endif
         if forgetServers {
             UserDefaults.standard.removeObject(forKey: Self.defaultsServerIDKey)
             serverPriority.reset()

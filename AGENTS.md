@@ -1,6 +1,6 @@
 # Dusk Player for Mac — Agent Instructions
 
-This fork, `kenkenchu/dusk-player-mac`, is a **native macOS-only** Plex client.
+This fork, `kenkenchu/dusk-player-mac`, is a **native Mac-first** Plex client with an experimental tvOS feasibility target.
 Read this file before planning, editing, committing, or pushing. Read
 `AGENTS.local.md` immediately afterward if it exists. Then read
 `docs/product-and-scope.md`, `docs/codebase-map.md`, and the relevant topic guide
@@ -14,8 +14,9 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   native player controls; `Playback/` owns AVPlayer and desktop VLCKit engines.
 - Maintain native Mac behavior, keyboard/pointer interaction, resizable windows,
   fullscreen, and Local Network permission handling.
-- Mobile targets, simulator helpers, TV extensions, and mobile VLC frameworks
-  have been removed. Do not reintroduce them when merging upstream updates.
+- Historical mobile targets, simulator helpers, TV extensions, and mobile VLC
+  frameworks were removed. The new TV prototype does not authorize restoring
+  those components when merging upstream updates.
 - `docs/upstream/` contains historical platform references, not active workflow
   requirements. Do not apply archived mobile verification or publishing steps.
 
@@ -46,11 +47,11 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
 and Liquid Glass, neutral palette, no app-wide color tint. Sunset Coral is
 reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
 
-## Planned tvOS Target — Mac UI Protection
+## Experimental tvOS Target — Mac UI Protection
 
-- tvOS is a planned, explicitly requested expansion, not a currently supported
-  target. Follow `docs/tvos-design.md` when implementing it; historical upstream
-  TV code is reference material only.
+- `Dusk-tvOS` is an explicitly requested feasibility prototype, not a supported
+  full TV app. Follow `docs/tvos-design.md` and `docs/tvos-prototype.md`; historical
+  upstream TV code is reference material only.
 - Give tvOS its own app shell, navigation, feature screens, styling, player
   controls and rendering hosts. Apple TV uses remote/focus interaction, not a
   touchscreen. Preserve existing Mac layouts and keyboard/pointer behavior.
@@ -103,6 +104,14 @@ renaming source files. Never hand-edit the generated Xcode project. Use the
 pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 
 ## Next-Session Handoff
+
+- Experimental TV target: `DuskTV/Sources`, scheme `Dusk-tvOS`. See
+  `docs/tvos-prototype.md` for signing, pairing, install and user verification.
+  `TVStreamResolver` and `TVPlaybackCoordinator` are deliberately limited TV
+  implementations; the full Mac playback contract is not yet platform-neutral.
+  Keep this limitation explicit rather than treating TV as full feature parity.
+  Initial signed TV build installed on Apple TV HD/tvOS 26.6; user runtime
+  verification is pending. Agents did not launch either app or run tests.
 
 - Native entry and sidebar: `Dusk/Sources/App/DuskApp.swift` and
   `Dusk/Sources/App/MainTabView.swift`. Player controls live in

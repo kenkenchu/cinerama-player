@@ -360,7 +360,7 @@ extension PlexService {
             queryItems.append(URLQueryItem(name: "checkFiles", value: "1"))
         }
         return try await rawServerRequest(
-            path: PlexMetadataCache.metadataEndpoint(ratingKey),
+            path: "/library/metadata/\(ratingKey)",
             queryItems: queryItems,
             serverID: serverID
         )
@@ -368,7 +368,7 @@ extension PlexService {
 
     func getChildrenPayload(ratingKey: String, serverID: String? = nil) async throws -> Data {
         try await rawServerRequest(
-            path: PlexMetadataCache.childrenEndpoint(ratingKey),
+            path: "/library/metadata/\(ratingKey)/children",
             serverID: serverID
         )
     }

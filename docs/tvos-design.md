@@ -1,7 +1,9 @@
 # Planned tvOS Target
 
-Status: design only. The supported app remains `Dusk-macOS`; no TV target has
-been implemented. This plan records the requested expansion and its boundaries.
+Status: initial `Dusk-tvOS` feasibility prototype implemented; device feasibility
+remains to be verified. The supported full app remains `Dusk-macOS`. See
+[prototype scope and device workflow](tvos-prototype.md). This plan records the
+expansion boundaries and remaining direction.
 
 ## Device and Initial Scope
 
@@ -44,8 +46,10 @@ settings stay separate. Audit dependencies before declaring a type shared:
 the current artwork service and playback contract contain AppKit dependencies.
 Extract focused platform adapters rather than a general backend abstraction.
 
-Retain `StreamResolver` for routing and `PlaybackCoordinator` for session
-orchestration. Add device capabilities without weakening Mac capabilities or
+Retain `StreamResolver` for Mac routing and `PlaybackCoordinator` for Mac session
+orchestration. The limited prototype uses isolated `TVStreamResolver` and
+`TVPlaybackCoordinator` over shared Plex APIs; it does not yet share the AppKit-
+dependent `PlaybackEngine` contract. A later extraction must preserve Mac behavior. Add device capabilities without weakening Mac capabilities or
 the copy-only Plex decision checks. Preserve the Mac AVPlayer/AppKit and desktop
 VLC hosts. TV gets separate rendering hosts, controls and audio-session lifecycle.
 Start with AVPlayer and native tvOS playback controls; TVVLCKit requires its own

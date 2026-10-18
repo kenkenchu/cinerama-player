@@ -1,6 +1,9 @@
 # Mac Codebase Map
 
-`project.yml` defines the native `Dusk-macOS` app and hosted Mac tests.
+`project.yml` defines the native `Dusk-macOS` app, hosted Mac tests, and an
+experimental `Dusk-tvOS` feasibility app. TV sources live in `DuskTV/Sources`
+outside the Mac UI tree and explicitly reuse models/services; see
+[tvOS prototype](tvos-prototype.md).
 `Dusk/Sources` has no mobile shell, TV HUD/extension, or mobile VLC renderer.
 
 ## Source Layout

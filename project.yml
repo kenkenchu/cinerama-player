@@ -3,6 +3,7 @@ options:
   bundleIdPrefix: com.dusk-player
   deploymentTarget:
     macOS: "26.0"
+    tvOS: "26.0"
   xcodeVersion: "26.0"
   generateEmptyDirectories: true
   groupSortPosition: top
@@ -53,6 +54,29 @@ targets:
         name: Verify embedded desktop VLCKit
         basedOnDependencyAnalysis: false
 
+  Dusk-tvOS:
+    type: application
+    platform: tvOS
+    sources:
+      # TV UI lives outside the recursive Mac source tree.
+      - path: DuskTV/Sources
+      - path: Dusk/Sources/Models
+      - path: Dusk/Sources/PlexService
+      - path: Dusk/Sources/Shared/AppImageCache.swift
+      - path: Dusk/Sources/Shared/String+NilIfEmpty.swift
+    settings:
+      base:
+        ARCHS: arm64
+        PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.tv.prototype
+        PRODUCT_NAME: DuskTV
+        INFOPLIST_FILE: DuskTV/Support/Info.plist
+        GENERATE_INFOPLIST_FILE: false
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "$(DUSK_TVOS_TEAM)"
+        SWIFT_STRICT_CONCURRENCY: complete
+        ENABLE_DEBUG_DYLIB: NO
+        TARGETED_DEVICE_FAMILY: "3"
+
   DuskTests:
     type: bundle.unit-test
     platform: macOS
@@ -80,5 +104,14 @@ schemes:
       config: Debug
       targets:
         - DuskTests
+    archive:
+      config: Release
+
+  Dusk-tvOS:
+    build:
+      targets:
+        Dusk-tvOS: all
+    run:
+      config: Debug
     archive:
       config: Release

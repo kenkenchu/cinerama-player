@@ -4,12 +4,13 @@
 
 Dusk Player for Mac is a native SwiftUI/AppKit Plex client maintained in
 `kenkenchu/dusk-player-mac`, forked from `marvinvr/dusk-player`. It is a
-macOS-only project for people who want focused access to their own Plex
+Mac-first project for people who want focused access to their own Plex
 libraries without promoted content or extra service layers.
 
 The supported app target is `Dusk-macOS`, currently **macOS 26+ on Apple silicon
-(arm64)**. `project.yml` is authoritative. The fork has no mobile app or TV app
-targets, no mobile framework requirement, and no Mac App Store release.
+(arm64)**. `project.yml` is authoritative. An experimental `Dusk-tvOS` target adds an HD feasibility prototype, described
+in [tvOS prototype](tvos-prototype.md); it is not a full supported TV client. The
+fork has no iOS app target, mobile framework requirement, or Mac App Store release.
 
 ## Core Principles
 
@@ -42,7 +43,7 @@ display, and audio hardware; compiling does not validate format fidelity.
 The Mac UI has no PiP controls, AirPlay route picker, outgoing SharePlay invites,
 system media-key integration, purchases, or alternate icon picker. App Intents
 are inherited and compile, but Mac Siri/Shortcuts behavior is unverified.
-Broader backends, DVR scheduling, and mobile support are outside current scope.
+Broader backends, DVR scheduling, and iOS support are outside current scope.
 
 ## Dependencies and Licensing
 

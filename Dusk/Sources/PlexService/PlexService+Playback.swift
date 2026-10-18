@@ -723,10 +723,17 @@ private extension PlexService {
         return clauses.joined(separator: "+")
     }
 
+}
+
+extension PlexService {
     // MARK: - Honest client identity
 
     static var transcodeClientPlatform: String {
+        #if os(tvOS)
+        "tvOS"
+        #else
         "macOS"
+        #endif
     }
 
     @MainActor
@@ -736,7 +743,11 @@ private extension PlexService {
 
     @MainActor
     static var transcodeClientDevice: String {
+        #if os(tvOS)
+        "Apple TV"
+        #else
         "Mac"
+        #endif
     }
 
     static func sanitizedPlaybackURLString(for url: URL) -> String {
