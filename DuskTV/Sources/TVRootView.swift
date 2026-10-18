@@ -17,7 +17,7 @@ struct TVRootView: View {
         }
         .task { await model.start() }
         .onReceive(NotificationCenter.default.publisher(for: .tvCatalogNeedsRefresh)) { _ in
-            Task { await model.refresh() }
+            Task { await model.refreshHome() }
         }
     }
 

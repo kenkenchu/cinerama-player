@@ -66,12 +66,26 @@ targets:
       - path: Dusk/Sources/PlexService
       - path: Dusk/Sources/Shared/AppImageCache.swift
       - path: Dusk/Sources/Shared/String+NilIfEmpty.swift
+      - path: Dusk/Sources/Features/Home/HomeViewModel.swift
+      - path: Dusk/Sources/Features/Home/HomeHubItemsViewModel.swift
+      - path: Dusk/Sources/Features/Home/HomeRecommendationEngine.swift
+      - path: Dusk/Sources/Features/Home/HomePersonalizedShelf.swift
+      - path: Dusk/Sources/Features/Home/HomeHubFilter.swift
+      - path: Dusk/Sources/Features/Home/HomeHubArrangement.swift
+      - path: Dusk/Sources/Features/Home/HomeFirstPaintGate.swift
+      - path: Dusk/Sources/Features/Libraries/LibraryGenreSupport.swift
+      - path: Dusk/Sources/Features/Libraries/LibraryItemsViewModel.swift
+      - path: Dusk/Sources/Features/Libraries/LibraryUnwatchedFilter.swift
+      - path: Dusk/Sources/Shared/RecommendationCore.swift
+      - path: Dusk/Sources/Shared/MediaFormatting.swift
+      - path: Dusk/Sources/Shared/PlexItemPresentation.swift
+      - path: Dusk/Sources/Shared/PlexService+WatchedFanOut.swift
     settings:
       base:
         ARCHS: arm64
         PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.tv.prototype
         PRODUCT_NAME: DuskTV
-        CURRENT_PROJECT_VERSION: "3"
+        CURRENT_PROJECT_VERSION: "4"
         ASSETCATALOG_COMPILER_APPICON_NAME: TVIcon
         INFOPLIST_FILE: DuskTV/Support/Info.plist
         GENERATE_INFOPLIST_FILE: false

@@ -9,27 +9,32 @@ struct DuskTVApp: App {
     }
 }
 
-private struct TVServerCatalog: Sendable {
-    let hubs: [PlexHub]
-    let watching: [PlexItem]
-    let failed: Bool
-}
-
 /// Account/profile lifetime and shared Plex catalog loading. Refreshes preserve
 /// the mounted TV navigation shell; results never cross a profile boundary.
 @MainActor
 @Observable
 final class TVAppModel {
-    let service = PlexService()
+    let service: PlexService
+    let home: HomeViewModel
+    var personalizedShelvesEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(personalizedShelvesEnabled, forKey: "personalizedShelvesEnabled")
+            home.setPersonalizedShelvesEnabled(personalizedShelvesEnabled)
+        }
+    }
     var pin: PlexPin?
     var busy = false
     var message: String?
-    var continueWatching: [PlexItem] = []
-    var hubs: [PlexHub] = []
-    var serverMessages: [String] = []
     var ready = false
-    var catalogRevision = 0
     private var catalogGeneration = UUID()
+
+    init() {
+        let service = PlexService()
+        self.service = service
+        let enabled = UserDefaults.standard.object(forKey: "personalizedShelvesEnabled") as? Bool ?? true
+        personalizedShelvesEnabled = enabled
+        home = HomeViewModel(plexService: service, personalizedShelvesEnabled: enabled)
+    }
 
     var libraries: [PlexLibrary] {
         service.libraryOrder.orderedSections.filter { $0.libraryType != nil }
@@ -69,6 +74,7 @@ final class TVAppModel {
         busy = true
         message = nil
         defer { busy = false }
+        home.cancelLoads()
         do {
             try await service.switchHomeUser(user, pin: pin.nilIfEmpty, remember: true)
             clearCatalog()
@@ -86,6 +92,14 @@ final class TVAppModel {
         } catch { message = "Could not refresh Plex. Working libraries remain available; try again." }
     }
 
+    /// Playback dismissal must supersede an in-flight Home load, not be
+    /// skipped by the server-discovery busy guard or show stale progress.
+    func refreshHome() async {
+        guard service.isSessionReady else { return }
+        message = nil
+        await home.load(maxRecentlyAddedItems: 15)
+    }
+
     private func loadCatalog() async throws {
         let generation = UUID()
         catalogGeneration = generation
@@ -94,52 +108,19 @@ final class TVAppModel {
         try Task.checkCancellation()
         guard catalogGeneration == generation, session == service.serverSessionToken else { return }
         ready = true
-        async let orderedLibraries = service.ensureLibraryOrderLoaded(force: true)
-        var results: [Int: TVServerCatalog] = [:]
-        for await result in service.streamAcrossServers({ service, id in
-            async let hubs = try? service.getHubs(serverID: id)
-            async let watching = try? service.getContinueWatching(serverID: id)
-            let values = await (hubs, watching)
-            return TVServerCatalog(hubs: values.0 ?? [], watching: values.1 ?? [],
-                failed: values.0 == nil && values.1 == nil)
-        }) {
-            guard !Task.isCancelled, catalogGeneration == generation,
-                  session == service.serverSessionToken else { return }
-            results[result.rank] = result.value
-            let lists = results.keys.sorted().compactMap { results[$0] }
-            let mergedWatching = ContinueWatchingMerge.merge(lists.map(\.watching))
-            let mergedHubs = HubMerge.merge(lists.map(\.hubs))
-            continueWatching = mergedWatching.items.filter(\.isTVBrowsable)
-            hubs = mergedHubs.hubs.map { $0.replacingItems($0.items.filter(\.isTVBrowsable)) }.filter {
-                !$0.items.isEmpty && !($0.hubIdentifier ?? "").lowercased().contains("continuewatching")
-            }
-            service.registerAlternates(mergedWatching.alternates)
-            service.registerAlternates(mergedHubs.alternates)
-        }
-        do { _ = try await orderedLibraries }
-        catch { message = "Some libraries could not be loaded. Refresh to retry." }
+        await home.load(maxRecentlyAddedItems: 15)
         guard catalogGeneration == generation, session == service.serverSessionToken else { return }
-        serverMessages = service.pool.priorityOrderedIdentifiers.compactMap { id in
-            service.pool.connection(for: id) == nil && service.serverPriority.isEnabled(id)
-                ? "\(service.pool.displayName(for: id)) is unavailable." : nil
-        }
-        if results.values.contains(where: \.failed) {
-            serverMessages.append("Some connected servers could not load their Home shelves.")
-        }
-        catalogRevision += 1
     }
 
     private func clearCatalog() {
         catalogGeneration = UUID()
-        continueWatching = []
-        hubs = []
-        serverMessages = []
+        home.cancelLoads(clearContent: true)
         ready = false
-        catalogRevision += 1
     }
 
     func signOut() {
         catalogGeneration = UUID()
+        home.cancelLoads(clearContent: true)
         service.signOut()
         clearCatalog()
         pin = nil

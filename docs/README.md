@@ -12,6 +12,7 @@ then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
 | [UI features](ui-features.md) | Sidebar, native player, reusable UI, and settings |
 | [tvOS design](tvos-design.md) | TV target boundaries, Mac UI protection, initial HD scope and verification |
 | [tvOS UI](tvos-ui.md) | Native TV shell, artwork, tracks, captions, playback lifecycle and focus |
+| [tvOS Home](tvos-home.md) | Mac library Home feature mapping, shared data ownership, remote hero and actions |
 | [tvOS device workflow](tvos-prototype.md) | Current scope, pairing, signing, installation and device checks |
 | [Playback](playback.md) | Engines, source selection, remux, timing, and track selection |
 | [Plex data](data-and-plex.md) | Account/session pool, API boundaries, models, merging |

@@ -12,7 +12,10 @@ Settings. `TVAppModel` owns account/profile lifecycle and catalog refresh.
 Refresh leaves the shell mounted; a profile change clears the catalog and
 invalidates old async results. Sign-out is confirmed in the TV Settings form.
 
-Home uses Plex-provided shelves, merged Continue Watching, and Show All routes.
+Home now matches Mac library Home behavior through the shared `HomeViewModel`:
+a cinematic Continue Watching hero, filtered/library-ordered Plex hubs,
+personalized genre shelves, watched actions and Show All routes. See
+[TV Home feature mapping](tvos-home.md) for the exact scope and verification.
 Library order comes from the existing Plex account ordering service. Libraries
 remain distinct per server; search and Home reuse the shared merge functions.
 A failing server is reported without emptying working servers' content.

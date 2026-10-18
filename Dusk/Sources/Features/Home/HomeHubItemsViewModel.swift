@@ -34,7 +34,9 @@ final class HomeHubItemsViewModel {
 
         // A source that fails contributes nothing rather than failing the page:
         // one unreachable server must not hide the other's half of the row.
+        let session = plexService.serverSessionToken
         let merged = await plexService.mergedHubItems(for: hub)
+        guard !Task.isCancelled, session == plexService.serverSessionToken else { isLoading = false; return }
         plexService.registerAlternates(merged.alternates)
         items = merged.items
 

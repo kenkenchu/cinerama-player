@@ -32,18 +32,21 @@ struct TVArtwork: View {
     let serverID: String?
     var width: CGFloat = 220
     var height: CGFloat = 330
+    var cornerRadius: CGFloat = 16
+    var showsPlaceholder = true
     @State private var model = TVArtworkModel()
 
     var body: some View {
         ZStack {
-            Rectangle().fill(.quaternary)
+            if showsPlaceholder { Rectangle().fill(.quaternary) }
+            else { Color.black }
             if let image = model.image {
                 Image(uiImage: image).resizable().scaledToFill()
-            } else {
+            } else if showsPlaceholder {
                 Image(systemName: "film").font(.largeTitle).foregroundStyle(.secondary)
             }
         }
-        .frame(width: width, height: height).clipped().clipShape(.rect(cornerRadius: 16))
+        .frame(width: width, height: height).clipped().clipShape(.rect(cornerRadius: cornerRadius))
         .task(id: "\(service.activeProfileID ?? "-")|\(serverID ?? "-")|\(path ?? "-")|\(width)x\(height)") {
             await model.load(service: service, path: path, serverID: serverID,
                 width: Int(width), height: Int(height))
@@ -54,29 +57,45 @@ struct TVArtwork: View {
 struct TVMediaCard: View {
     let service: PlexService
     let item: PlexItem
+    var landscape = false
+    var select: (() -> Void)?
+    private var width: CGFloat { landscape ? 340 : 220 }
+    private var height: CGFloat { landscape ? 191 : 330 }
+
     var body: some View {
-        NavigationLink {
-            TVMediaView(service: service, itemID: item.id)
-        } label: {
-            VStack(alignment: .leading, spacing: 12) {
-                TVArtwork(service: service,
-                    path: item.type == .episode ? item.grandparentThumb ?? item.thumb : item.thumb,
-                    serverID: item.serverID)
-                    .overlay(alignment: .bottom) {
-                        if let offset = item.viewOffset, let duration = item.duration, duration > 0, offset > 0 {
-                            GeometryReader { geometry in
-                                Rectangle().fill(.white.opacity(0.85))
-                                    .frame(width: geometry.size.width * min(1, CGFloat(offset) / CGFloat(duration)))
-                            }.frame(height: 5).clipShape(.capsule).padding(12)
-                        }
-                    }
-                Text(item.grandparentTitle ?? item.title).font(.headline).lineLimit(1)
-                Text(item.type == .episode ? item.title : item.year.map(String.init) ?? " ")
-                    .font(.caption).foregroundStyle(.secondary).lineLimit(1)
-            }.frame(width: 220, alignment: .leading)
+        Group {
+            if let select {
+                Button(action: select) { label }
+            } else {
+                NavigationLink { TVMediaView(service: service, itemID: item.id) } label: { label }
+            }
         }
         .buttonStyle(.card)
         .accessibilityLabel([item.grandparentTitle, item.title].compactMap { $0 }.joined(separator: ", "))
+    }
+
+    private var label: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TVArtwork(service: service, path: landscape ? item.preferredLandscapePath : item.preferredPosterPath,
+                serverID: item.serverID, width: width, height: height)
+                .overlay(alignment: .bottom) {
+                    if let progress = item.posterProgress {
+                        GeometryReader { geometry in
+                            Rectangle().fill(.white.opacity(0.85))
+                                .frame(width: geometry.size.width * min(1, max(0, progress)))
+                        }.frame(height: 5).clipShape(.capsule).padding(12)
+                    }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if item.isWatched {
+                        Image(systemName: "checkmark.circle.fill").symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.65)).padding(12)
+                    }
+                }
+            Text(item.type == .episode ? item.continueWatchingDisplayTitle : item.title)
+                .font(.headline).lineLimit(1)
+            Text(item.standardPosterSubtitle ?? " ").font(.caption).foregroundStyle(.secondary).lineLimit(1)
+        }.frame(width: width, alignment: .leading)
     }
 }
 

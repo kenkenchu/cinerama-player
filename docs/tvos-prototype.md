@@ -13,8 +13,11 @@ order, merge functions and copy-only Plex playback APIs. TV UI lives exclusively
 in `DuskTV/Sources`, outside the Mac tree. No Mac views, AppKit player hosts,
 desktop VLC or DuskDovi compile into TV; build scripts enforce these boundaries.
 
-Home, Libraries, Search and Settings have separate navigation stacks. Home uses
-artwork shelves, merged Continue Watching, Plex hubs and Show All. Libraries
+Home, Libraries, Search and Settings have separate navigation stacks. Home now
+shares the Mac Home model and presents a cinematic Continue Watching hero,
+library-ordered Plex hubs, personalized genre shelves, watched actions and Show
+All. See [TV Home](tvos-home.md) for the library feature mapping; Live TV remains
+deferred. Libraries
 use paged artwork grids in account order; search fans out across connected
 servers. Profile switches invalidate old results; catalog refresh preserves the
 shell and reports outages per server. Details show artwork, metadata, hierarchy,
@@ -118,7 +121,9 @@ lifecycle passed signed Mac/TV builds and were installed for user device
 verification. The platform-boundary gate passed; Mac UI sources were untouched. The existing
 bundle identifier `com.dusk-player.tv.prototype` is retained deliberately to
 preserve the linked account and app storage; the display name is now Dusk.
-Neither app was launched by agents and no tests were run.
+The user subsequently confirmed library artwork and selecting videos to play.
+Home-specific hero, recommendation, menu and focus changes still need user
+verification. Neither app was launched by agents and no tests were run.
 
 ## Initial Build Verification
 

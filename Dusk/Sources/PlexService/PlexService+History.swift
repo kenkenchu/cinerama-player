@@ -6,7 +6,10 @@ extension PlexService {
             return currentUser
         }
 
+        let session = serverSessionToken
         let user: PlexUser = try await plexTVRequest(path: "/user")
+        try Task.checkCancellation()
+        guard session == serverSessionToken else { throw CancellationError() }
         currentUser = user
         return user
     }

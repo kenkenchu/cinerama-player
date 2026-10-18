@@ -20,6 +20,7 @@ extension PlexService {
     /// caller can surface it. The other copies are best effort — a server that
     /// refuses must not make the action look like it failed.
     func setWatchedAcrossServers(_ watched: Bool, id: PlexItemID) async throws {
+        let session = serverSessionToken
         try await setWatched(watched, ratingKey: id.ratingKey, serverID: id.serverID)
 
         for instance in alternates.instances(of: id) {
@@ -31,6 +32,7 @@ extension PlexService {
                 continue
             }
 
+            guard session == serverSessionToken else { return }
             do {
                 try await setWatched(watched, ratingKey: instance.ratingKey, serverID: serverID)
             } catch {

@@ -90,3 +90,39 @@ extension Collection where Element == PlexItem {
         !isEmpty && allSatisfy(\.isClip)
     }
 }
+
+// Platform-neutral watched-state availability; navigation stays in each UI.
+extension PlexItem {
+    var canMarkWatchedFromContextMenu: Bool {
+        switch type {
+        case .movie, .episode, .clip:
+            return !isWatched
+        case .show, .season:
+            if let leafCount, leafCount > 0, let viewedLeafCount {
+                return viewedLeafCount < leafCount
+            }
+            return !isWatched
+        default:
+            return false
+        }
+    }
+
+    var canMarkUnwatchedFromContextMenu: Bool {
+        switch type {
+        case .movie, .episode, .clip:
+            return isWatched || isPartiallyWatched
+        case .show:
+            if let viewedLeafCount {
+                return viewedLeafCount > 0
+            }
+            return isWatched || isPartiallyWatched
+        case .season:
+            if let viewedLeafCount, viewedLeafCount > 0 {
+                return true
+            }
+            return isWatched || isPartiallyWatched || canMarkWatchedFromContextMenu
+        default:
+            return false
+        }
+    }
+}

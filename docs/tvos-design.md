@@ -63,9 +63,10 @@ the TV target or make its conversion path a requirement for Apple TV HD.
 
 ## Delivery and Verification
 
-The first maintained TV increment adds native artwork browsing, Home/search,
+The maintained TV client adds native artwork browsing, Home/search,
 audio/subtitle preferences, system caption integration and ordered progress
-finalization. Upcoming work is runtime hardening against the user's library;
+finalization. Library Home now shares Mac's data model with a TV-owned hero,
+personalized shelves, watched actions and Show All routes; see [TV Home](tvos-home.md). Upcoming work is runtime hardening against the user's library;
 Live TV and broader engine support follow later. Full Mac feature parity is not
 a prerequisite for maintaining TV, and must not be claimed from this milestone.
 

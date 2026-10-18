@@ -131,7 +131,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   adapter. The user confirmed library artwork and selecting videos to play;
   the UI still needs refinement. The TV icon now derives from the Mac logo via
   `scripts/generate_tvos_icon.swift`. Other new behaviors need user runtime
-  verification. Keep the existing
+  verification. TV library Home now reuses the Mac Home data model, with a
+  TV-owned hero, personalized shelves, long-press watched/removal actions and
+  Show All; see `docs/tvos-home.md`. Live TV remains deferred. Keep the existing
   TV bundle identifier despite its historical `.prototype` suffix to retain
   the user’s linked account and app storage.
 

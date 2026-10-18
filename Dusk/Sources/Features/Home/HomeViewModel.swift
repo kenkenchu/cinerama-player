@@ -155,6 +155,28 @@ final class HomeViewModel {
         }
     }
 
+    /// Cancel account-owned work before a TV profile switch or sign-out.
+    /// Mac callers retain their existing load/revision lifecycle.
+    func cancelLoads(clearContent: Bool = false) {
+        loadGeneration += 1
+        loadTask?.cancel()
+        recentlyAddedExpansionTask?.cancel()
+        personalizedShelvesTask?.cancel()
+        loadTask = nil
+        recentlyAddedExpansionTask = nil
+        personalizedShelvesTask = nil
+        isLoading = false
+        if clearContent {
+            hubs = []
+            continueWatching = []
+            personalizedShelves = []
+            lastPayloads = [:]
+            lastPayloadsProfileID = nil
+            firstPaintGate = nil
+            error = nil
+        }
+    }
+
     /// True once Plex has returned anything Home could render.
     var hasLoadedContent: Bool {
         !hubs.isEmpty || !continueWatching.isEmpty || !personalizedShelves.isEmpty
@@ -232,6 +254,7 @@ final class HomeViewModel {
             }
         }
 
+        let session = plexService.serverSessionToken
         let serverIDs = plexService.mergeServerIDs
         guard !serverIDs.isEmpty else {
             // The pool is only ever empty before the first connect pass or
@@ -304,7 +327,8 @@ final class HomeViewModel {
         var firstFailure: String?
 
         for await event in events {
-            guard !Task.isCancelled, generation == loadGeneration else { return }
+            guard !Task.isCancelled, generation == loadGeneration,
+                  session == plexService.serverSessionToken else { return }
 
             switch event {
             case let .answer(result):
@@ -388,7 +412,8 @@ final class HomeViewModel {
             }
         }
 
-        guard !Task.isCancelled, generation == loadGeneration else { return }
+        guard !Task.isCancelled, generation == loadGeneration,
+                  session == plexService.serverSessionToken else { return }
 
         // An error only when *every* server failed and there is nothing to
         // show. One failing server is reported by the partial-outage note.
@@ -522,10 +547,13 @@ final class HomeViewModel {
     }
 
     func setWatched(_ watched: Bool, for item: PlexItem) async {
+        let session = plexService.serverSessionToken
         do {
             try await plexService.setWatchedAcrossServers(watched, id: item.id)
+            guard session == plexService.serverSessionToken else { return }
             await load()
         } catch {
+            guard session == plexService.serverSessionToken else { return }
             self.error = error.localizedDescription
         }
     }
@@ -533,6 +561,7 @@ final class HomeViewModel {
     func removeFromContinueWatching(_ item: PlexItem) async {
         // Optimistically drop the item so the hero updates immediately, then
         // reconcile with the server's refreshed Continue Watching hub.
+        let session = plexService.serverSessionToken
         let removedID = item.id
         withAnimation(.easeInOut(duration: 0.3)) {
             continueWatching.removeAll { $0.id == removedID }
@@ -545,6 +574,7 @@ final class HomeViewModel {
         var failure: (any Error)?
         for target in plexService.alternates.instances(of: removedID)
         where plexService.pool.connection(for: target.serverID) != nil {
+            guard session == plexService.serverSessionToken else { return }
             do {
                 try await plexService.removeFromContinueWatching(
                     ratingKey: target.ratingKey,
@@ -555,6 +585,7 @@ final class HomeViewModel {
             }
         }
 
+        guard session == plexService.serverSessionToken else { return }
         if let failure {
             self.error = failure.localizedDescription
         }
@@ -724,11 +755,6 @@ final class HomeViewModel {
         return !itemTypes.isEmpty && itemTypes.isSubset(of: [.movie, .show, .season, .episode, .clip])
     }
 
-    func showAllRoute(for shelf: HomePersonalizedShelf) -> AppNavigationRoute? {
-        guard let library = shelf.showAllLibrary else { return nil }
-        return .libraryGenre(library: library, genre: shelf.genre)
-    }
-
     private func startRecentlyAddedExpansion(
         from baseHubs: [PlexHub],
         generation: Int,
@@ -791,6 +817,7 @@ final class HomeViewModel {
         from hubs: [PlexHub],
         maxRecentlyAddedItems: Int
     ) async -> [PlexHub] {
+        let session = plexService.serverSessionToken
         var expandedHubs: [PlexHub] = []
         expandedHubs.reserveCapacity(hubs.count)
 
@@ -804,6 +831,7 @@ final class HomeViewModel {
                 for: hub,
                 size: maxRecentlyAddedItems
             )
+            guard !Task.isCancelled, session == plexService.serverSessionToken else { return [] }
             guard !merged.items.isEmpty else {
                 expandedHubs.append(hub)
                 continue

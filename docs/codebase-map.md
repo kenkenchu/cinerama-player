@@ -59,7 +59,8 @@ to preserve pushed detail routes and prevent them from covering the player.
 
 ## Feature Owners
 
-- Home: `HomeView` owns loading and first paint; `HomeDesktopView` composes the
+- Home: the shared `HomeViewModel` and pure helpers serve both platforms. Mac
+  `HomeView` owns loading and first paint; `HomeDesktopView` composes the
   hero and shelves. `HomeViewModel` merges every server, with
   `HomeFirstPaintGate`, hub filters/arrangement, and recommendation engines.
 - Libraries: `LibrariesViewModel` reads account library order;
@@ -117,6 +118,14 @@ New Mac-specific UI belongs beside its feature. Engine behavior stays behind
 `scripts/verify_platform_boundaries.py` reads the generated project and rejects
 TV inputs in Mac, Mac UI/engine inputs in TV, and desktop playback frameworks in
 TV. Both build scripts run it after XcodeGen. The TV shared-source allowlist is
-models, PlexService and the explicitly listed Foundation utilities. Extend the
+models, PlexService, explicitly listed Home/library view models and domain
+helpers (including the shared model's SwiftUI animation calls). Mac views and
+Mac route adapters remain excluded. Extend the
 boundary deliberately when extracting genuinely reusable logic; never blanket-
 include Mac features to resolve a TV compile error.
+
+TV Home presentation and direct hero playback live in `TVHomeView`,
+`TVHomeHero`, `TVHomePlaybackModel` and `TVHomeGrids`; see [TV Home](tvos-home.md).
+The existing Mac Home view/layout code remains platform-owned. Shared genre
+models, library identity hashing and watched-action availability were extracted
+from Mac files without changing their definitions.

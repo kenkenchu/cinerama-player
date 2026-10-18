@@ -46,6 +46,10 @@ System controls and neutral states follow `STYLE.md`.
 
 ## Home and Libraries
 
+TV now reuses `HomeViewModel` and its data helpers, with separate native TV
+views and routes. See [TV Home](tvos-home.md). The Mac presentation below stays
+unchanged; its personalized Show All route adapter is Mac-only.
+
 `HomeView` owns loading and refresh; `HomeDesktopView` composes the cinematic hero,
 optional Live TV shelf, Plex hubs, then personalized shelves. The desktop hero
 Resume button shades its watched fraction using Plex view offset and duration,

@@ -50,7 +50,8 @@ are inherited and compile, but Mac Siri/Shortcuts behavior is unverified.
 Broader backends, DVR scheduling, and iOS support are outside current scope.
 
 The TV library client provides Plex linking/Home profiles, merged Home shelves
-and Continue Watching, account-ordered libraries, artwork grids, cross-server
+and a cinematic Continue Watching hero, personalized genre shelves,
+watched/removal actions, account-ordered libraries, artwork grids, cross-server
 search, media details, compatible audio/text-subtitle choices, resume and
 server-scoped watch-state reporting. Choices are remembered per profile/server/
 movie or series. Caption appearance derives from tvOS accessibility settings;

@@ -40,7 +40,25 @@ mac = files("Dusk-macOS", "PBXSourcesBuildPhase")
 tv = files("Dusk-tvOS", "PBXSourcesBuildPhase")
 mac_resources = files("Dusk-macOS", "PBXResourcesBuildPhase")
 tv_resources = files("Dusk-tvOS", "PBXResourcesBuildPhase")
-allowed_tv_shared = {"Dusk/Sources/Shared/AppImageCache.swift", "Dusk/Sources/Shared/String+NilIfEmpty.swift"}
+# Data-only Home models/helpers are shared explicitly. Mac views and Mac route
+# adapters are deliberately absent from this allowlist.
+allowed_tv_shared = {
+    "Dusk/Sources/Shared/AppImageCache.swift", "Dusk/Sources/Shared/String+NilIfEmpty.swift",
+    "Dusk/Sources/Features/Home/HomeViewModel.swift",
+    "Dusk/Sources/Features/Home/HomeHubItemsViewModel.swift",
+    "Dusk/Sources/Features/Home/HomeRecommendationEngine.swift",
+    "Dusk/Sources/Features/Home/HomePersonalizedShelf.swift",
+    "Dusk/Sources/Features/Home/HomeHubFilter.swift",
+    "Dusk/Sources/Features/Home/HomeHubArrangement.swift",
+    "Dusk/Sources/Features/Home/HomeFirstPaintGate.swift",
+    "Dusk/Sources/Features/Libraries/LibraryGenreSupport.swift",
+    "Dusk/Sources/Features/Libraries/LibraryItemsViewModel.swift",
+    "Dusk/Sources/Features/Libraries/LibraryUnwatchedFilter.swift",
+    "Dusk/Sources/Shared/RecommendationCore.swift",
+    "Dusk/Sources/Shared/MediaFormatting.swift",
+    "Dusk/Sources/Shared/PlexItemPresentation.swift",
+    "Dusk/Sources/Shared/PlexService+WatchedFanOut.swift",
+}
 violations = [f"Mac includes TV input: {path}" for path in mac | mac_resources if path.startswith("DuskTV/")]
 violations += [f"TV includes Mac UI/engine input: {path}" for path in tv
                if not (path.startswith(("DuskTV/Sources/", "Dusk/Sources/Models/", "Dusk/Sources/PlexService/"))

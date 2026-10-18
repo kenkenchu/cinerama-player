@@ -17,7 +17,8 @@ and use original-quality direct playback or confirmed copy-only HLS remuxes.
 **Server video/audio re-encoding is prohibited.** Unsupported formats explain
 the limitation rather than silently asking Plex to convert them.
 
-The TV client prioritizes Home/Continue Watching, artwork-based library browsing,
+The TV client includes a cinematic Continue Watching hero, Mac-equivalent
+library Home shelves/recommendations/actions, artwork-based library browsing,
 search, movie/show/episode details, compatible audio and text subtitles, resume,
 and Plex watch-state reporting. Audio/subtitle choices are remembered per
 profile/server/movie or series. Native AVKit supplies remote transport controls;

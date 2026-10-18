@@ -2,10 +2,11 @@ import SwiftUI
 
 struct TVCatalogShell: View {
     @Bindable var model: TVAppModel
+    @State private var selectedTab = 0
     var body: some View {
-        TabView {
-            NavigationStack { TVHomeView(model: model) }
-                .tabItem { Label("Home", systemImage: "house") }
+        TabView(selection: $selectedTab) {
+            TVHomeView(model: model, isSelected: selectedTab == 0, onSearch: { selectedTab = 2 })
+                .tabItem { Label("Home", systemImage: "house") }.tag(0)
             NavigationStack {
                 List {
                     ForEach(model.libraries) { library in
@@ -22,56 +23,12 @@ struct TVCatalogShell: View {
                         Text(model.busy ? "Loading libraries…" : "No video libraries are available.")
                     }
                 }.navigationTitle("Libraries")
-            }.tabItem { Label("Libraries", systemImage: "rectangle.stack") }
+            }.tabItem { Label("Libraries", systemImage: "rectangle.stack") }.tag(1)
             NavigationStack { TVSearchView(service: model.service) }
-                .tabItem { Label("Search", systemImage: "magnifyingglass") }
+                .tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(2)
             NavigationStack { TVSettingsView(model: model) }
-                .tabItem { Label("Settings", systemImage: "gearshape") }
+                .tabItem { Label("Settings", systemImage: "gearshape") }.tag(3)
         }
-    }
-}
-
-struct TVHomeView: View {
-    @Bindable var model: TVAppModel
-    var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 42) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Dusk").font(.largeTitle.bold())
-                        Text(model.service.activeHomeUser?.displayName ?? "Your Plex libraries")
-                            .foregroundStyle(.secondary)
-                    }
-                    Spacer()
-                    if model.busy { ProgressView() }
-                    Button { Task { await model.refresh() } } label: {
-                        Label("Refresh", systemImage: "arrow.clockwise")
-                    }.disabled(model.busy)
-                }.padding(.horizontal, 60)
-                if let message = model.message { Text(message).padding(.horizontal, 60) }
-                ForEach(Array(model.serverMessages.enumerated()), id: \.offset) { _, message in
-                    Text(message).foregroundStyle(.secondary).padding(.horizontal, 60)
-                }
-                if !model.continueWatching.isEmpty {
-                    TVMediaShelf(service: model.service, title: "Continue Watching", items: model.continueWatching)
-                }
-                ForEach(model.hubs) { hub in
-                    VStack(alignment: .leading) {
-                        TVMediaShelf(service: model.service, title: hub.title, items: hub.items)
-                        if hub.more == true || (hub.size ?? 0) > hub.items.count {
-                            NavigationLink("Show All · \(hub.title)") {
-                                TVHubView(service: model.service, hub: hub)
-                            }.padding(.horizontal, 60)
-                        }
-                    }
-                }
-                if model.hubs.isEmpty && model.continueWatching.isEmpty && !model.busy {
-                    ContentUnavailableView("Your library is ready", systemImage: "film",
-                        description: Text("Open Libraries to browse your movies and shows."))
-                }
-            }.padding(.vertical, 40)
-        }
-        .navigationTitle("Home")
     }
 }
 
@@ -196,9 +153,18 @@ struct TVSettingsView: View {
             }
             Section("Servers") {
                 ForEach(model.service.pool.priorityOrderedIdentifiers, id: \.self) { id in
-                    LabeledContent(model.service.pool.displayName(for: id),
-                        value: model.service.pool.connection(for: id) == nil ? "Unavailable" : "Connected")
+                    Toggle(isOn: Binding(get: { model.service.serverPriority.isEnabled(id) },
+                        set: { enabled in
+                            model.service.serverPriority.setEnabled(enabled, for: id)
+                            Task { await model.refresh() }
+                        })) {
+                        TVItemLabel(title: model.service.pool.displayName(for: id),
+                            subtitle: model.service.pool.connection(for: id) == nil ? "Unavailable" : "Connected")
+                    }.disabled(model.busy)
                 }
+            }
+            Section("Home") {
+                Toggle("Personalized Shelves", isOn: $model.personalizedShelvesEnabled)
             }
             Section("Playback") {
                 LabeledContent("Quality", value: "Original")

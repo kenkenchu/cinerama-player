@@ -137,3 +137,18 @@ struct PlexLibraryFilterValue: Codable, Sendable, Hashable, Identifiable {
     let title: String
     let type: String?
 }
+
+// MARK: - PlexLibrary Hashable conformance for NavigationLink
+
+/// Keyed on `id` (`"<serverID>|<key>"`), never on `key` alone: section keys are
+/// per-server counters, so two servers' "3" sections would compare equal and a
+/// navigation link could open the wrong library.
+extension PlexLibrary: Hashable {
+    static func == (lhs: PlexLibrary, rhs: PlexLibrary) -> Bool {
+        lhs.id == rhs.id
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+    }
+}
