@@ -2,7 +2,9 @@
 
 ## Native Mac Controls and Neutral UI
 
-The supported product is a native macOS app. Its interface should feel at home
+This document governs the native macOS interface. The maintained tvOS target
+has its own layout/input rules in `docs/tvos-ui.md`. The Mac interface should
+feel at home
 with a sidebar, resizable window, keyboard and pointer input, standard menus,
 and native fullscreen.
 

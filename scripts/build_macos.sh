@@ -14,6 +14,7 @@ fi
 ./ci_scripts/install_macos_vlckit.sh
 ./ci_scripts/install_dusk_dovi.sh
 xcodegen generate
+python3 scripts/verify_platform_boundaries.py
 xcodebuild -project Dusk.xcodeproj -scheme Dusk-macOS -configuration Debug \
     -destination 'platform=macOS,arch=arm64' \
     -derivedDataPath .build/macos/DerivedData \

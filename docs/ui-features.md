@@ -1,8 +1,8 @@
 # Native Mac UI
 
 Read this with `STYLE.md`, `codebase-map.md`, and `data-and-plex.md`.
-The native Mac app is the supported full UI. The experimental TV prototype has
-separate screens under `DuskTV/Sources`; see [TV design](tvos-design.md).
+The Mac interface is maintained independently of the TV interface under
+`DuskTV/Sources`; see [TV design](tvos-design.md) and [TV UI](tvos-ui.md).
 TV focus/layout changes must not alter the Mac views described here.
 
 ## App and Navigation Shell

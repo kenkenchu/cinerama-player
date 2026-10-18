@@ -6,19 +6,19 @@ struct TVRootView: View {
     @State private var profilePIN = ""
 
     var body: some View {
-        NavigationStack {
-            Group {
+        Group {
                 if model.service.needsHomeUserSelection {
                     profilePicker
                 } else if model.ready {
-                    libraryList
+                    catalogShell
                 } else {
                     connectionView
                 }
-            }
-            .navigationTitle("Dusk Prototype")
         }
         .task { await model.start() }
+        .onReceive(NotificationCenter.default.publisher(for: .tvCatalogNeedsRefresh)) { _ in
+            Task { await model.refresh() }
+        }
     }
 
     private var connectionView: some View {
@@ -56,6 +56,9 @@ struct TVRootView: View {
             }
             if model.busy { ProgressView("Opening profile…") }
             if let message = model.message { Text(message) }
+            if model.service.activeHomeUser != nil {
+                Button("Cancel") { model.service.cancelHomeUserSelection() }.disabled(model.busy)
+            }
             Button("Sign Out") { model.signOut(); Task { await model.start() } }
                 .disabled(model.busy)
         }
@@ -74,44 +77,8 @@ struct TVRootView: View {
         }
     }
 
-    private var libraryList: some View {
-        List {
-            Section {
-                Text("HD feasibility prototype · Original quality · No server re-encoding")
-                    .foregroundStyle(.secondary)
-                if model.busy { ProgressView("Refreshing…") }
-                if let message = model.message { Text(message) }
-                ForEach(Array(model.serverMessages.enumerated()), id: \.offset) { _, message in
-                    Text(message).foregroundStyle(.secondary)
-                }
-            }
-            if !model.continueWatching.isEmpty {
-                Section("Continue Watching") {
-                    ForEach(model.continueWatching) { item in
-                        NavigationLink {
-                            TVMediaView(service: model.service, itemID: item.id)
-                        } label: {
-                            TVItemLabel(title: item.title, subtitle: item.grandparentTitle)
-                        }
-                    }
-                }
-            }
-            Section("Libraries") {
-                ForEach(model.libraries) { library in
-                    NavigationLink {
-                        TVLibraryView(service: model.service, library: library)
-                    } label: {
-                        TVItemLabel(title: library.title,
-                            subtitle: model.service.pool.connection(for: library.serverID)?.name)
-                    }
-                }
-                if model.libraries.isEmpty { Text("No video libraries are available. Check Plex access and Local Network permission.") }
-            }
-            Section {
-                Button("Refresh Servers") { Task { await model.refresh() } }.disabled(model.busy)
-                Button("Sign Out") { model.signOut(); Task { await model.start() } }.disabled(model.busy)
-            }
-        }
+    private var catalogShell: some View {
+        TVCatalogShell(model: model)
     }
 }
 
@@ -137,12 +104,14 @@ final class TVLibraryModel {
     func load(service: PlexService, library: PlexLibrary) async {
         guard !busy, hasMore else { return }
         busy = true
+        let session = service.serverSessionToken
         message = nil
         defer { busy = false }
         do {
             let page = try await service.getLibraryItems(sectionId: library.key,
                 start: items.count, size: 50, sort: "titleSort", serverID: library.serverID)
             try Task.checkCancellation()
+            guard session == service.serverSessionToken else { return }
             items += page
             hasMore = page.count == 50
         } catch is CancellationError {
@@ -156,24 +125,26 @@ struct TVLibraryView: View {
     @State private var model = TVLibraryModel()
 
     var body: some View {
-        List {
-            ForEach(model.items) { item in
-                NavigationLink {
-                    TVMediaView(service: service, itemID: item.id)
-                } label: {
-                    TVItemLabel(title: item.title, subtitle: item.year.map(String.init))
-                }
-            }
+        ScrollView {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 35)], spacing: 45) {
+                ForEach(model.items) { item in TVMediaCard(service: service, item: item) }
+            }.padding(60)
             if model.busy { ProgressView("Loading…") }
-            if let message = model.message { Text(message) }
+            if let message = model.message { Text(message).padding() }
             if model.hasMore && !model.busy {
                 Button(model.message == nil ? "Load More" : "Retry") {
                     Task { await model.load(service: service, library: library) }
                 }
             }
-            if !model.hasMore && model.items.isEmpty { Text("This library is empty.") }
+            if !model.hasMore && model.items.isEmpty {
+                ContentUnavailableView("This library is empty", systemImage: "film")
+            }
         }
         .navigationTitle(library.title)
         .task { if model.items.isEmpty { await model.load(service: service, library: library) } }
     }
+}
+
+extension Notification.Name {
+    static let tvCatalogNeedsRefresh = Notification.Name("DuskTVCatalogNeedsRefresh")
 }

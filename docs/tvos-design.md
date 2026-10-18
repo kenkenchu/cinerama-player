@@ -1,9 +1,10 @@
-# Planned tvOS Target
+# Maintained tvOS Target
 
-Status: initial `Dusk-tvOS` feasibility prototype implemented; device feasibility
-remains to be verified. The supported full app remains `Dusk-macOS`. See
-[prototype scope and device workflow](tvos-prototype.md). This plan records the
-expansion boundaries and remaining direction.
+Status: user-confirmed basic playback and text subtitles established feasibility.
+The user has authorized maintaining macOS and tvOS in this repository, starting
+with TV library playback; Live TV comes later. See [TV UI](tvos-ui.md) and
+[device workflow](tvos-prototype.md). Mac and TV have separate native interfaces
+and explicitly different feature coverage.
 
 ## Device and Initial Scope
 
@@ -15,9 +16,9 @@ AC3; its resolution and Apple TV performance remain unverified.
 
 Keep the no-server-A/V-re-encoding policy. Direct play and confirmed copy-only
 remuxes remain allowed; unsupported media must fail clearly or offer a compatible
-library version. Local decoding/scaling does not violate this policy, but 4K
-software decoding/downscaling on the A8 is experimental, not an initial feature
-or a promised capability. Do not introduce server conversion as a fallback.
+library version. Reject 4K/UHD on Apple TV HD with an informational message and offer an
+available HD version. Do not implement 4K software downscaling or introduce
+server conversion as a fallback. This TV restriction does not reduce Mac support.
 
 ## Protect the Mac Interface
 
@@ -43,11 +44,11 @@ Reuse platform-neutral Plex models/APIs, server identity and connections,
 library-loading logic, watch-state reporting, and suitable view models.
 Preferences may be shared where their meaning matches; platform-specific
 settings stay separate. Audit dependencies before declaring a type shared:
-the current artwork service and playback contract contain AppKit dependencies.
+the Mac playback contract contains AppKit dependencies.
 Extract focused platform adapters rather than a general backend abstraction.
 
 Retain `StreamResolver` for Mac routing and `PlaybackCoordinator` for Mac session
-orchestration. The limited prototype uses isolated `TVStreamResolver` and
+orchestration. The TV client uses isolated `TVStreamResolver` and
 `TVPlaybackCoordinator` over shared Plex APIs; it does not yet share the AppKit-
 dependent `PlaybackEngine` contract. A later extraction must preserve Mac behavior. Add device capabilities without weakening Mac capabilities or
 the copy-only Plex decision checks. Preserve the Mac AVPlayer/AppKit and desktop
@@ -61,6 +62,14 @@ milestone. DuskDovi currently builds only for macOS; do not link that binary int
 the TV target or make its conversion path a requirement for Apple TV HD.
 
 ## Delivery and Verification
+
+The first maintained TV increment adds native artwork browsing, Home/search,
+audio/subtitle preferences, system caption integration and ordered progress
+finalization. Upcoming work is runtime hardening against the user's library;
+Live TV and broader engine support follow later. Full Mac feature parity is not
+a prerequisite for maintaining TV, and must not be claimed from this milestone.
+
+The original feasibility sequence remains useful context:
 
 1. Establish target/source boundaries while preserving the Mac build.
 2. Add TV sign-in/profile selection and a minimal browsing shell.

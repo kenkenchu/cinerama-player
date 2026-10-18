@@ -8,6 +8,7 @@ if ! command -v xcodegen >/dev/null 2>&1; then
     exit 1
 fi
 xcodegen generate
+python3 scripts/verify_platform_boundaries.py
 TV_DESTINATION='generic/platform=tvOS'
 if [ -n "${DUSK_TVOS_DEVICE_ID:-}" ]; then
     TV_DESTINATION="platform=tvOS,id=${DUSK_TVOS_DEVICE_ID}"
@@ -22,5 +23,5 @@ if [ ! -f "${TV_APP_PATH}/embedded.mobileprovision" ]; then
     exit 1
 fi
 codesign --verify --deep --strict "${TV_APP_PATH}"
-echo "Built and signed TV prototype: ${TV_APP_PATH}"
+echo "Built and signed TV app: ${TV_APP_PATH}"
 echo 'Install with xcrun devicectl device install app --device DEVICE_ID followed by the app path.'

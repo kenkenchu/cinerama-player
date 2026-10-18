@@ -1,9 +1,9 @@
-# Mac Codebase Map
+# macOS and tvOS Codebase Map
 
 `project.yml` defines the native `Dusk-macOS` app, hosted Mac tests, and an
-experimental `Dusk-tvOS` feasibility app. TV sources live in `DuskTV/Sources`
+maintained `Dusk-tvOS` app for Apple TV HD. TV sources live in `DuskTV/Sources`
 outside the Mac UI tree and explicitly reuse models/services; see
-[tvOS prototype](tvos-prototype.md).
+[TV device workflow](tvos-prototype.md).
 `Dusk/Sources` has no mobile shell, TV HUD/extension, or mobile VLC renderer.
 
 ## Source Layout
@@ -32,7 +32,10 @@ Dusk/Sources/
     Settings/       SettingsMacView, preferences, server/library editors, Seerr setup
     Seerr/          Request-only detail screens
   Siri/             Inherited App Intents/title matching; Mac runtime behavior unverified
-Native/DuskDovi/     Rust Dolby Vision conversion crate and C header
+DuskTV/Sources/     TV app/auth gate, tab shell, artwork, Home/search, library/details,
+                    TVStreamResolver, TVPlaybackCoordinator, scoped track preferences,
+                    native AVKit host and system-caption adapter
+Native/DuskDovi/     Mac Rust Dolby Vision conversion crate and C header
 DuskTests/          Retained shared model/service tests hosted by the Mac app
 ```
 
@@ -108,3 +111,12 @@ New Mac-specific UI belongs beside its feature. Engine behavior stays behind
   require confirmed video and audio copying before a start URL is constructed.
 - XcodeGen must run after source changes. Verify the native Mac build and update
   the relevant guide in the same change.
+
+## Platform Boundary Gate
+
+`scripts/verify_platform_boundaries.py` reads the generated project and rejects
+TV inputs in Mac, Mac UI/engine inputs in TV, and desktop playback frameworks in
+TV. Both build scripts run it after XcodeGen. The TV shared-source allowlist is
+models, PlexService and the explicitly listed Foundation utilities. Extend the
+boundary deliberately when extracting genuinely reusable logic; never blanket-
+include Mac features to resolve a TV compile error.

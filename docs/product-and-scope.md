@@ -2,15 +2,17 @@
 
 ## Product Shape
 
-Dusk Player for Mac is a native SwiftUI/AppKit Plex client maintained in
+Dusk Player is a native macOS/tvOS Plex client maintained in
 `kenkenchu/dusk-player-mac`, forked from `marvinvr/dusk-player`. It is a
-Mac-first project for people who want focused access to their own Plex
+two-platform project for people who want focused access to their own Plex
 libraries without promoted content or extra service layers.
 
-The supported app target is `Dusk-macOS`, currently **macOS 26+ on Apple silicon
-(arm64)**. `project.yml` is authoritative. An experimental `Dusk-tvOS` target adds an HD feasibility prototype, described
-in [tvOS prototype](tvos-prototype.md); it is not a full supported TV client. The
-fork has no iOS app target, mobile framework requirement, or Mac App Store release.
+Maintained targets are **Dusk-macOS: macOS 26+ on Apple silicon** and
+**Dusk-tvOS: tvOS 26+ on Apple TV HD (A8)**, with the user's TV running 26.6.
+`project.yml` is authoritative. The TV client is growing from user-confirmed
+library playback and text-subtitle feasibility; it does not yet match Mac
+features. See [TV design](tvos-design.md) and [TV UI](tvos-ui.md).
+No iOS app target or App Store release is maintained.
 
 ## Core Principles
 
@@ -22,8 +24,10 @@ fork has no iOS app target, mobile framework requirement, or Mac App Store relea
   server video/audio re-encoding is prohibited for all Dusk playback. Refuse
   incompatible streams rather than silently converting them on the server.
 - Keep view models observable and Plex-specific services straightforward.
-- Use native Mac navigation, menus, keyboard/pointer controls, and AppKit bridges
-  where SwiftUI needs a native rendering host. Follow `STYLE.md`.
+- Use distinct native Mac and TV interfaces. Mac follows `STYLE.md`; TV uses
+  remote/focus navigation and AVKit controls, following `tvos-ui.md`.
+- Apple TV HD rejects 4K/UHD with an informational message. Do not add local
+  downscaling or server conversion. Mac capabilities remain independent.
 - Favor a maintainable personal project over plugin systems and premature
   backend abstractions.
 
@@ -45,6 +49,16 @@ system media-key integration, purchases, or alternate icon picker. App Intents
 are inherited and compile, but Mac Siri/Shortcuts behavior is unverified.
 Broader backends, DVR scheduling, and iOS support are outside current scope.
 
+The TV library client provides Plex linking/Home profiles, merged Home shelves
+and Continue Watching, account-ordered libraries, artwork grids, cross-server
+search, media details, compatible audio/text-subtitle choices, resume and
+server-scoped watch-state reporting. Choices are remembered per profile/server/
+movie or series. Caption appearance derives from tvOS accessibility settings;
+its explicit-override adapter still needs user visual verification. Native
+AVPlayer and copy-only HLS handle compatible HD SDR sources. Unsupported tracks
+and versions explain the limitation. Live TV, TV VLC, automatic next episode,
+downloads and HDR conversion are deferred; prioritize library playback first.
+
 ## Dependencies and Licensing
 
 - Desktop VLCKit is checksum-pinned, fetched into git-ignored `Frameworks/`, and
@@ -58,7 +72,7 @@ Broader backends, DVR scheduling, and iOS support are outside current scope.
 ## Privacy and Network Boundaries
 
 No advertising identifiers, Plex-derived telemetry, or third-party analytics
-SDKs. The inherited release-build anonymous `app_opened` reporting uses the
+SDKs. The Mac app’s inherited release-build anonymous `app_opened` reporting uses the
 upstream Rybbit endpoint described in `analytics.md`, with a random install ID,
 no retry queue, and a Settings opt-out. Debug builds report nothing. This fork
 does not own the upstream endpoint or its published privacy policy.

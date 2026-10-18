@@ -1,8 +1,9 @@
 import AVFoundation
 import AVKit
+import MediaAccessibility
 import SwiftUI
 
-/// Feasibility-only AVPlayer session. No Mac player UI or AppKit hosts are
+/// Apple TV HD AVPlayer session. No Mac player UI or AppKit hosts are
 /// compiled into this target. Uses shared Plex copy-only decision/reporting APIs.
 @MainActor
 @Observable
@@ -19,8 +20,17 @@ final class TVPlaybackCoordinator {
     private let choice: TVPlaybackChoice
     private let startPosition: Double
     private let sessionID = UUID().uuidString
+    private let plexSession: ServerSessionToken
     private var transcodeID: String?
     private var generation = UUID()
+    private var transportObservation: NSKeyValueObservation?
+    private var timelineTask: Task<Void, Never>?
+    private var reporting = false
+    private var reportGeneration = UUID()
+    private var allowsAutoplay = true
+    private var finalizationTask: Task<Void, Never>?
+    private var completionTask: Task<Void, Never>?
+    private var ended = false
     private var statusObservation: NSKeyValueObservation?
     private var clockTask: Task<Void, Never>?
     private var startupTask: Task<Void, Never>?
@@ -37,12 +47,20 @@ final class TVPlaybackCoordinator {
         self.service = service
         self.details = details
         self.choice = choice
+        plexSession = service.serverSessionToken
         startPosition = resume ? Double(details.viewOffset ?? 0) / 1000 : 0
     }
 
     func start() {
         guard !started else { return }
         started = true
+        transportObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] _, _ in
+            Task { @MainActor [weak self] in
+                guard let self, self.canReport, !self.stopped else { return }
+                if self.player.timeControlStatus == .playing { self.ended = false }
+                await self.report()
+            }
+        }
         let attempt = generation
         startupTask = Task { await load(remux: choice.requiresRemux, position: startPosition, attempt: attempt) }
         clockTask = Task { [weak self] in
@@ -58,7 +76,7 @@ final class TVPlaybackCoordinator {
     }
 
     private func load(remux: Bool, position: Double, attempt: UUID) async {
-        guard generation == attempt, !stopped else { return }
+        guard generation == attempt, !stopped, service.serverSessionToken == plexSession else { return }
         loading = true
         errorMessage = nil
         do {
@@ -110,6 +128,7 @@ final class TVPlaybackCoordinator {
             try Task.checkCancellation()
             guard generation == attempt, !stopped else { return }
             let item = AVPlayerItem(url: url)
+            item.textStyleRules = TVSystemCaptionStyle.rules()
             let title = AVMutableMetadataItem()
             title.identifier = .commonIdentifierTitle
             title.value = details.title as NSString
@@ -130,7 +149,14 @@ final class TVPlaybackCoordinator {
             ) { [weak self] _ in
                 Task { @MainActor [weak self] in
                     guard let self, self.generation == attempt, !self.stopped else { return }
-                    await self.report(state: .stopped)
+                    self.ended = true
+                    let current = self.player.currentTime().seconds
+                    let position = current.isFinite ? current : self.lastPosition
+                    self.completionTask = Task {
+                        await self.report(state: .stopped, position: position)
+                        guard self.service.serverSessionToken == self.plexSession else { return }
+                        try? await self.service.scrobble(ratingKey: self.details.ratingKey, serverID: self.details.serverID)
+                    }
                 }
             }
             player.replaceCurrentItem(with: item)
@@ -187,8 +213,8 @@ final class TVPlaybackCoordinator {
                 lastPosition = position
                 canReport = true
                 loading = false
-                player.play()
-                await report(state: .playing)
+                if allowsAutoplay { player.play() }
+                await report()
             }
         case .failed:
             timeoutTask?.cancel()
@@ -204,24 +230,64 @@ final class TVPlaybackCoordinator {
                 startupTask = Task { await load(remux: true, position: resumePosition, attempt: fallbackAttempt) }
             } else {
                 loading = false
-                errorMessage = "AVPlayer could not decode this copy-only stream. Try another HD version. VLC playback is not included in this prototype."
+                errorMessage = "AVPlayer could not decode this copy-only stream. Try another HD version. This format may require a future TV VLC engine."
             }
         default: break
         }
     }
 
     private func report(state: PlaybackState? = nil, position: Double? = nil) async {
+        // Coalesce transient transport changes during a slow server request.
+        // Explicit start/end/final reports still serialize behind the current one.
+        guard service.serverSessionToken == plexSession else { return }
+        if state == nil && reporting { return }
+        reporting = true
+        let reportID = UUID()
+        reportGeneration = reportID
         let seconds = position ?? player.currentTime().seconds
         if seconds.isFinite { lastPosition = max(0, seconds) }
         let time = Int(lastPosition * 1000)
         let duration = details.duration ?? 0
-        let playbackState = state ?? (player.timeControlStatus == .playing ? .playing : .paused)
-        do {
-            try await service.submitTimeline(ratingKey: details.ratingKey, key: details.key,
-                state: playbackState, timeMs: time, durationMs: duration,
-                sessionIdentifier: sessionID, serverID: details.serverID)
-            progressMessage = "Progress synced to Plex"
-        } catch { progressMessage = "Plex progress sync unavailable" }
+        let playbackState: PlaybackState
+        if let state { playbackState = state }
+        else if ended { playbackState = .stopped }
+        else {
+            switch player.timeControlStatus {
+            case .playing: playbackState = .playing
+            case .waitingToPlayAtSpecifiedRate: playbackState = .loading
+            default: playbackState = .paused
+            }
+        }
+        let previous = timelineTask
+        let task = Task { @MainActor in
+            await previous?.value
+            guard service.serverSessionToken == plexSession else { return }
+            do {
+                try await service.submitTimeline(ratingKey: details.ratingKey, key: details.key,
+                    state: playbackState, timeMs: time, durationMs: duration,
+                    sessionIdentifier: sessionID, serverID: details.serverID)
+                progressMessage = "Progress synced to Plex"
+            } catch { progressMessage = "Plex progress sync unavailable" }
+        }
+        timelineTask = task
+        await task.value
+        if reportGeneration == reportID { reporting = false }
+    }
+
+    func setForeground(_ active: Bool) {
+        if !active {
+            allowsAutoplay = false
+            player.pause()
+        } else { refreshCaptionStyle() }
+    }
+
+    func refreshCaptionStyle() {
+        player.currentItem?.textStyleRules = TVSystemCaptionStyle.rules()
+    }
+
+    func finish() async {
+        stop()
+        await finalizationTask?.value
     }
 
     func stop() {
@@ -232,6 +298,7 @@ final class TVPlaybackCoordinator {
         clockTask?.cancel()
         timeoutTask?.cancel()
         statusObservation = nil
+        transportObservation = nil
         if let endObserver { NotificationCenter.default.removeObserver(endObserver) }
         endObserver = nil
         player.pause()
@@ -242,7 +309,8 @@ final class TVPlaybackCoordinator {
         transcodeID = nil
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         let stoppedPosition = lastPosition
-        Task {
+        finalizationTask = Task {
+            await completionTask?.value
             if canReport { await report(state: .stopped, position: stoppedPosition) }
             if let id { await service.stopTranscodeSession(transcodeSessionID: id, serverID: details.serverID) }
         }
@@ -270,7 +338,11 @@ struct TVPlayerScreen: View {
         .task { playback.start() }
         .onDisappear { playback.stop() }
         .onChange(of: scenePhase) { _, phase in
-            if phase != .active { playback.player.pause() }
+            playback.setForeground(phase == .active)
+        }
+        .onReceive(NotificationCenter.default.publisher(for:
+            Notification.Name(rawValue: kMACaptionAppearanceSettingsChangedNotification as String))) { _ in
+            playback.refreshCaptionStyle()
         }
     }
 }

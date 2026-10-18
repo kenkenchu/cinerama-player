@@ -1,49 +1,53 @@
-# Apple TV Feasibility Prototype
+# Apple TV Build, Install and Verification
 
-`Dusk-tvOS` is an experimental device target for Apple TV HD, tvOS 26+.
-The Mac target remains the supported full app. Read [the design](tvos-design.md)
+`Dusk-tvOS` is maintained alongside `Dusk-macOS` for Apple TV HD, tvOS 26+.
+Library playback is the first TV milestone; Mac and TV have different coverage. Read [the design](tvos-design.md)
 for platform boundaries and [the workflow](development-workflow.md) for the
 required separate signed Mac build.
 
 ## Implemented Scope
 
-The prototype shares PlexService, server-scoped models, Keychain auth, profile
-bootstrap/switching, discovery/recovery, metadata and copy-only playback APIs.
-TV UI lives exclusively in `DuskTV/Sources`, outside the Mac source tree.
-`project.yml` explicitly selects TV shared sources; no Mac app/feature views,
-AppKit player hosts, desktop VLC or DuskDovi compile into the TV app.
+The maintained TV library client shares PlexService, server-scoped models,
+Keychain auth, Plex Home profiles, discovery/recovery, artwork, account library
+order, merge functions and copy-only Plex playback APIs. TV UI lives exclusively
+in `DuskTV/Sources`, outside the Mac tree. No Mac views, AppKit player hosts,
+desktop VLC or DuskDovi compile into TV; build scripts enforce these boundaries.
 
-TV has link-code sign-in, protected Plex Home profile selection, Continue
-Watching, paged video libraries, show/season/episode navigation, media-version
-selection, start/resume, native AVKit remote controls, and Plex timeline reports
-at startup, approximately every ten seconds and on dismissal. Returning to the
-item refreshes metadata. The Last playback section shows the delivery route
-and progress-sync status without exposing URLs or credentials.
+Home, Libraries, Search and Settings have separate navigation stacks. Home uses
+artwork shelves, merged Continue Watching, Plex hubs and Show All. Libraries
+use paged artwork grids in account order; search fans out across connected
+servers. Profile switches invalidate old results; catalog refresh preserves the
+shell and reports outages per server. Details show artwork, metadata, hierarchy,
+media versions and compatible audio/text-subtitle selectors.
 
-`TVStreamResolver` conservatively permits HD SDR H.264/HEVC and locally
-compatible audio. Version buttons identify the chosen audio; when the default
-track is incompatible, a compatible alternative is named on the button.
-`TVPlaybackCoordinator` manages AVPlayer, audio-session activation, direct play,
-copy-only fragmented-MP4 HLS for other containers/track choices, one HLS fallback
-on direct failure, timeline reporting and remux cleanup. HLS never starts without
-Plex confirming both video and audio copying. Plex decision failure does not
-permit conversion. App backgrounding pauses playback.
+`TVStreamResolver` permits compatible HD SDR H.264/HEVC and audio, rejects
+4K/UHD with an informational message, and refuses unsupported HDR/codecs. No
+software downscaling or server re-encoding is planned. `TVPlaybackCoordinator`
+starts direct where possible, uses copy-only fragmented-MP4 HLS for containers/
+track choices that need it, and allows one HLS fallback on direct failure. Both
+video and audio must be confirmed copied before HLS starts.
 
-The title page offers Off and Plex text subtitle tracks (including external
-sidecars), with codec labels and explicit unsupported-format messages. It adopts
-a selected compatible Plex track when available. Selecting text routes through
-copy-only HLS: record the Plex part's stream selection, request the same subtitle
-ID, require separate segmented subtitles and copied A/V, then select the unique
-received AVPlayer legible track. Subtitle discovery does not gate video startup.
-SRT/WebVTT and ASS/SSA text packaging is allowed, but advanced ASS styling is not
-preserved by WebVTT. Bitmap/unknown subtitles are not burned into video.
-Last playback reports the requested subtitle and received native track names.
-Subtitle changes take effect on the next Play/Resume; native AVKit also exposes
-received tracks during playback. Full Mac-style subtitle preference persistence,
-full audio-track mapping, VLC, Live TV, autoplay, downloads, enhancement and HDR
-conversion remain outside this prototype.
-Browsing uses native text lists to establish feasibility before artwork/layout
-work. TV-only layered app icon assets provide a black DUSK Home Screen tile. There is no Top Shelf extension or App Store distribution setup.
+Text subtitles (including sidecars) are selected on the title page, recorded on
+Plex's part and requested by ID for segmented WebVTT delivery. Select the unique
+received AVPlayer legible track without gating video startup on subtitle
+metadata. SRT/WebVTT and ASS/SSA text packaging is allowed; advanced ASS styling
+and bitmap subtitles are not supported. Device-local audio/subtitle preferences
+are scoped by profile/server/movie or series and include explicit subtitle Off.
+Changes take effect on the next Play/Resume. Native AVKit also exposes received
+tracks during playback; complete persistence of in-player native-menu changes
+is not yet implemented.
+
+The display name is Dusk; its existing bundle ID is preserved so upgrades keep
+the linked account. Native AVKit supplies remote transport controls. Explicit system caption
+appearance overrides are adapted into WebVTT style rules and refreshed on
+settings/foreground changes; no Dusk appearance preferences exist. The adapter
+requires user visual verification. Timeline requests are serialized, include
+transport changes, periodic progress and final stopped state. Natural completion
+marks the item watched. Catalog refresh waits for final progress/remux cleanup.
+
+TV Live TV, VLC, automatic next episode, downloads, enhancement and HDR
+conversion are deferred. No Top Shelf extension or App Store workflow is added.
+See [TV UI](tvos-ui.md) for current implementation boundaries and runtime checks.
 
 ## Pair, Build and Install
 
@@ -82,7 +86,7 @@ in Git. TV provisioning is separate from the existing Mac signing workflow.
 
 ## User End-to-End Check
 
-1. Open Dusk Prototype on Apple TV and allow Local Network access if requested.
+1. Open Dusk on Apple TV and allow Local Network access if requested.
 2. Enter the displayed code at `plex.tv/link` on your phone/computer, then choose
    your Plex Home profile (including its PIN if protected).
 3. Confirm accessible servers' video libraries appear. An unavailable server
@@ -90,9 +94,9 @@ in Git. TV provisioning is separate from the existing Mac signing workflow.
 4. Open a known 720p/1080p SDR H.264 movie, preferably MP4 with AAC/AC3, and play.
    Check video, audio, remote play/pause, seeking and Back. Back may first hide
    the native player controls; another Back returns to the item.
-5. After at least 20 seconds, return to details. Check Last playback for progress
+5. After at least 20 seconds, return to details. Open Playback Information to check progress
    sync, verify progress in Plex, then Resume and check the position.
-6. Repeat with an HD MKV using compatible audio. Last playback should report
+6. Repeat with an HD MKV using compatible audio. Playback Information should report
    Direct Stream with both tracks copied; Plex Dashboard can independently
    confirm there was no A/V encoding.
 7. Browse a show → season → episode and repeat. Choose a named text subtitle
@@ -104,6 +108,17 @@ in Git. TV provisioning is separate from the existing Mac signing workflow.
 Successful compilation does not establish device playback, focus restoration,
 subtitle compatibility, sustained A8 performance or unchanged Mac visuals.
 Mac runtime verification remains a separate explicitly authorized check.
+
+## Current Verification Status
+
+The user authorized maintaining both targets after confirming feasibility,
+prioritizing TV library playback and deferring Live TV. The artwork tab shell,
+search, semantic track preferences, system caption adapter and revised timeline
+lifecycle passed signed Mac/TV builds and were installed for user device
+verification. The platform-boundary gate passed; Mac UI sources were untouched. The existing
+bundle identifier `com.dusk-player.tv.prototype` is retained deliberately to
+preserve the linked account and app storage; the display name is now Dusk.
+Neither app was launched by agents and no tests were run.
 
 ## Initial Build Verification
 

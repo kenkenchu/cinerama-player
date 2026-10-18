@@ -5,15 +5,18 @@ struct DuskTVApp: App {
     @State private var model = TVAppModel()
 
     var body: some Scene {
-        WindowGroup {
-            TVRootView(model: model)
-                .preferredColorScheme(.dark)
-        }
+        WindowGroup { TVRootView(model: model).preferredColorScheme(.dark) }
     }
 }
 
-/// Prototype UI state. Plex credentials, discovery and server identity remain
-/// owned by the same PlexService used on Mac.
+private struct TVServerCatalog: Sendable {
+    let hubs: [PlexHub]
+    let watching: [PlexItem]
+    let failed: Bool
+}
+
+/// Account/profile lifetime and shared Plex catalog loading. Refreshes preserve
+/// the mounted TV navigation shell; results never cross a profile boundary.
 @MainActor
 @Observable
 final class TVAppModel {
@@ -21,10 +24,16 @@ final class TVAppModel {
     var pin: PlexPin?
     var busy = false
     var message: String?
-    var libraries: [PlexLibrary] = []
     var continueWatching: [PlexItem] = []
+    var hubs: [PlexHub] = []
     var serverMessages: [String] = []
     var ready = false
+    var catalogRevision = 0
+    private var catalogGeneration = UUID()
+
+    var libraries: [PlexLibrary] {
+        service.libraryOrder.orderedSections.filter { $0.libraryType != nil }
+    }
 
     func start() async {
         guard !busy else { return }
@@ -35,7 +44,6 @@ final class TVAppModel {
             if !service.isAuthenticated {
                 let generated = try await service.generatePin()
                 pin = generated
-                // A PIN expires; bound polling so a remote Retry can renew it.
                 for _ in 0..<150 {
                     try await Task.sleep(for: .seconds(2))
                     if let token = try await service.checkPin(generated.id) {
@@ -51,11 +59,9 @@ final class TVAppModel {
                 }
             }
             try await service.bootstrapHomeSession()
-            if service.isSessionReady { try await loadLibraries() }
+            if service.isSessionReady { try await loadCatalog() }
         } catch is CancellationError {
-        } catch {
-            message = "Could not finish connecting to Plex. Check your network and choose Retry."
-        }
+        } catch { message = "Could not finish connecting to Plex. Check your network and choose Retry." }
     }
 
     func selectProfile(_ user: PlexHomeUser, pin: String) async {
@@ -65,51 +71,77 @@ final class TVAppModel {
         defer { busy = false }
         do {
             try await service.switchHomeUser(user, pin: pin.nilIfEmpty, remember: true)
-            try await loadLibraries()
-        } catch {
-            message = "Could not open that profile. Check its PIN and try again."
-        }
+            clearCatalog()
+            try await loadCatalog()
+        } catch { message = "Could not open that profile. Check its PIN and try again." }
     }
 
     func refresh() async {
-        guard !busy else { return }
+        guard !busy, service.isSessionReady else { return }
         busy = true
-        defer { busy = false }
         message = nil
-        do { try await loadLibraries() }
-        catch { message = "Could not connect to your Plex servers. Check the network and retry." }
+        defer { busy = false }
+        do { try await loadCatalog() }
+        catch is CancellationError {
+        } catch { message = "Could not refresh Plex. Working libraries remain available; try again." }
     }
 
-    private func loadLibraries() async throws {
-        ready = false
-        libraries = []
-        continueWatching = []
-        serverMessages = []
+    private func loadCatalog() async throws {
+        let generation = UUID()
+        catalogGeneration = generation
+        let session = service.serverSessionToken
         _ = try await service.connectAllServers()
         try Task.checkCancellation()
-        // Failures are kept per server; one outage does not hide other libraries.
-        for serverID in service.pool.priorityOrderedIdentifiers {
-            guard let connection = service.pool.connection(for: serverID) else {
-                serverMessages.append("A Plex server is unavailable. Refresh to retry.")
-                continue
-            }
-            do {
-                let sections = try await service.getLibraries(serverID: serverID)
-                libraries += sections.filter { $0.libraryType != nil }
-                continueWatching += (try? await service.getContinueWatching(serverID: serverID)) ?? []
-            } catch {
-                serverMessages.append("\(connection.name): libraries unavailable. Refresh to retry.")
-            }
-        }
+        guard catalogGeneration == generation, session == service.serverSessionToken else { return }
         ready = true
+        async let orderedLibraries = service.ensureLibraryOrderLoaded(force: true)
+        var results: [Int: TVServerCatalog] = [:]
+        for await result in service.streamAcrossServers({ service, id in
+            async let hubs = try? service.getHubs(serverID: id)
+            async let watching = try? service.getContinueWatching(serverID: id)
+            let values = await (hubs, watching)
+            return TVServerCatalog(hubs: values.0 ?? [], watching: values.1 ?? [],
+                failed: values.0 == nil && values.1 == nil)
+        }) {
+            guard !Task.isCancelled, catalogGeneration == generation,
+                  session == service.serverSessionToken else { return }
+            results[result.rank] = result.value
+            let lists = results.keys.sorted().compactMap { results[$0] }
+            let mergedWatching = ContinueWatchingMerge.merge(lists.map(\.watching))
+            let mergedHubs = HubMerge.merge(lists.map(\.hubs))
+            continueWatching = mergedWatching.items.filter(\.isTVBrowsable)
+            hubs = mergedHubs.hubs.map { $0.replacingItems($0.items.filter(\.isTVBrowsable)) }.filter {
+                !$0.items.isEmpty && !($0.hubIdentifier ?? "").lowercased().contains("continuewatching")
+            }
+            service.registerAlternates(mergedWatching.alternates)
+            service.registerAlternates(mergedHubs.alternates)
+        }
+        do { _ = try await orderedLibraries }
+        catch { message = "Some libraries could not be loaded. Refresh to retry." }
+        guard catalogGeneration == generation, session == service.serverSessionToken else { return }
+        serverMessages = service.pool.priorityOrderedIdentifiers.compactMap { id in
+            service.pool.connection(for: id) == nil && service.serverPriority.isEnabled(id)
+                ? "\(service.pool.displayName(for: id)) is unavailable." : nil
+        }
+        if results.values.contains(where: \.failed) {
+            serverMessages.append("Some connected servers could not load their Home shelves.")
+        }
+        catalogRevision += 1
+    }
+
+    private func clearCatalog() {
+        catalogGeneration = UUID()
+        continueWatching = []
+        hubs = []
+        serverMessages = []
+        ready = false
+        catalogRevision += 1
     }
 
     func signOut() {
+        catalogGeneration = UUID()
         service.signOut()
-        libraries = []
-        continueWatching = []
-        serverMessages = []
-        ready = false
+        clearCatalog()
         pin = nil
         message = nil
     }

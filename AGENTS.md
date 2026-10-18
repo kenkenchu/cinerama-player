@@ -1,6 +1,7 @@
-# Dusk Player for Mac — Agent Instructions
+# Dusk Player — macOS and tvOS Agent Instructions
 
-This fork, `kenkenchu/dusk-player-mac`, is a **native Mac-first** Plex client with an experimental tvOS feasibility target.
+This fork, `kenkenchu/dusk-player-mac`, maintains native **macOS and tvOS** Plex
+clients for the user’s Apple silicon Mac and Apple TV HD.
 Read this file before planning, editing, committing, or pushing. Read
 `AGENTS.local.md` immediately afterward if it exists. Then read
 `docs/product-and-scope.md`, `docs/codebase-map.md`, and the relevant topic guide
@@ -8,14 +9,16 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
 
 ## Platform and Ownership
 
-- The supported app scheme is `Dusk-macOS`: Apple silicon, macOS 26+.
+- Maintained app schemes: `Dusk-macOS` (Apple silicon, macOS 26+) and
+  `Dusk-tvOS` (Apple TV HD/A8, tvOS 26+, user device on 26.6).
+  Feature availability differs; do not imply full TV/Mac parity.
 - `project.yml` is the source of truth; XcodeGen produces `Dusk.xcodeproj`.
 - `App/` owns app lifetime and sidebar navigation; `Features/Player/` owns the
   native player controls; `Playback/` owns AVPlayer and desktop VLCKit engines.
 - Maintain native Mac behavior, keyboard/pointer interaction, resizable windows,
   fullscreen, and Local Network permission handling.
 - Historical mobile targets, simulator helpers, TV extensions, and mobile VLC
-  frameworks were removed. The new TV prototype does not authorize restoring
+  frameworks were removed. Maintaining tvOS does not authorize restoring
   those components when merging upstream updates.
 - `docs/upstream/` contains historical platform references, not active workflow
   requirements. Do not apply archived mobile verification or publishing steps.
@@ -35,23 +38,28 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   Server video/audio re-encoding is prohibited for all Dusk playback, including
   Live TV, manual quality and audio rescue. HLS may start only after Plex confirms
   both tracks are copied; missing decisions fail closed. Remuxing is allowed.
-- Both engines conform to `PlaybackEngine`. Resolver decisions belong in
-  `StreamResolver`; orchestration belongs in `PlaybackCoordinator`.
-- Minimal dependencies: desktop VLCKit and DuskDovi. New Rust dependencies need
+- Mac engines conform to `PlaybackEngine`. Mac resolver decisions belong in
+  `StreamResolver`; orchestration belongs in `PlaybackCoordinator`. TV uses
+  `TVStreamResolver` and `TVPlaybackCoordinator` over shared Plex APIs until
+  platform-neutral engine extraction is justified by actual reuse.
+- Minimal dependencies: desktop VLCKit and DuskDovi on Mac; native AVKit on TV.
+  New Rust dependencies need
   notices in `Dusk/Resources/ThirdPartyNotices.txt` and the native license list.
 - Never log tokens or raw token-bearing media/artwork URLs.
 
 ## Style
 
-`STYLE.md` is the visual source of truth: native Mac controls, system materials
+`STYLE.md` is the Mac visual source of truth: native Mac controls, system materials
 and Liquid Glass, neutral palette, no app-wide color tint. Sunset Coral is
 reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
+TV interaction/layout rules live separately in `docs/tvos-ui.md`.
 
-## Experimental tvOS Target — Mac UI Protection
+## tvOS Target — Mac UI Protection
 
-- `Dusk-tvOS` is an explicitly requested feasibility prototype, not a supported
-  full TV app. Follow `docs/tvos-design.md` and `docs/tvos-prototype.md`; historical
-  upstream TV code is reference material only.
+- Both platforms are maintained in this repository. Start with TV library
+  playback, browsing, tracks and watch-state reliability; Live TV comes later.
+  Follow `docs/tvos-design.md`, `docs/tvos-ui.md` and `docs/tvos-prototype.md`.
+  Historical upstream TV code is reference material only.
 - Give tvOS its own app shell, navigation, feature screens, styling, player
   controls and rendering hosts. Apple TV uses remote/focus interaction, not a
   touchscreen. Preserve existing Mac layouts and keyboard/pointer behavior.
@@ -64,7 +72,8 @@ reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
   changes. A compile is not visual regression proof: Mac runtime checks require
   explicit user authorization before claiming visual/input parity.
 - Preserve the prohibition on server A/V re-encoding on tvOS. Apple TV HD is the
-  initial device; prioritize compatible HD SDR media and verify real codecs,
+  supported TV hardware. Reject 4K/UHD with an informational message and offer
+  compatible HD versions; do not add software downscaling. Verify real codecs,
   audio, subtitles and Live TV on hardware rather than assuming compatibility.
 
 ## Setup and Verification
@@ -83,7 +92,8 @@ signing on this workstation. See the signing and certificate troubleshooting
 steps in `docs/development-workflow.md`. Never commit private keys or certificates.
 
 After code changes, complete this signed, compile-only Mac build before
-finishing. It verifies nested signatures and the embedded VLC binary. Do not
+finishing. TV, shared-source and project changes also require the signed
+`scripts/build_tvos.sh` build (see `docs/tvos-prototype.md`). The Mac build verifies nested signatures and the embedded VLC binary. Do not
 run tests or launch the app unless the user explicitly asks.
 
 For a compiler check after bootstrap only:
@@ -105,17 +115,22 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 
 ## Next-Session Handoff
 
-- Experimental TV target: `DuskTV/Sources`, scheme `Dusk-tvOS`. See
+- TV target: `DuskTV/Sources`, scheme `Dusk-tvOS`. See
   `docs/tvos-prototype.md` for signing, pairing, install and user verification.
-  `TVStreamResolver` and `TVPlaybackCoordinator` are deliberately limited TV
-  implementations; the full Mac playback contract is not yet platform-neutral.
-  Keep this limitation explicit rather than treating TV as full feature parity.
+  `TVStreamResolver` and `TVPlaybackCoordinator` are TV-owned implementations;
+  the Mac playback contract is not yet platform-neutral. Keep current
+  limitations explicit rather than treating TV as full feature parity.
   Signed TV builds installed on Apple TV HD/tvOS 26.6. The user confirmed the
   Home Screen icon, Plex linking, basic playback and subtitle rendering after
   explicit text-track selection/remux changes. The user reports TV subtitles do
   not yet follow system caption style; this remains unresolved. Confirmation is
   limited to the tried title, not an exhaustive format/style audit. Agents did
   not launch either app or run tests.
+  TV now has an artwork-based tab shell, merged Home/search, scoped remembered
+  audio/subtitle choices, serialized timeline finalization and a system-caption
+  adapter. These new behaviors need user runtime verification. Keep the existing
+  TV bundle identifier despite its historical `.prototype` suffix to retain
+  the user’s linked account and app storage.
 
 - Native entry and sidebar: `Dusk/Sources/App/DuskApp.swift` and
   `Dusk/Sources/App/MainTabView.swift`. Player controls live in
