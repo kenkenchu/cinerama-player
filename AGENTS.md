@@ -128,7 +128,10 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   not launch either app or run tests.
   TV now has an artwork-based tab shell, merged Home/search, scoped remembered
   audio/subtitle choices, serialized timeline finalization and a system-caption
-  adapter. These new behaviors need user runtime verification. Keep the existing
+  adapter. The user confirmed library artwork and selecting videos to play;
+  the UI still needs refinement. The TV icon now derives from the Mac logo via
+  `scripts/generate_tvos_icon.swift`. Other new behaviors need user runtime
+  verification. Keep the existing
   TV bundle identifier despite its historical `.prototype` suffix to retain
   the user’s linked account and app storage.
 

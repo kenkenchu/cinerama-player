@@ -43,6 +43,19 @@ native AVKit controls, then return to details; app-owned dismissal is wired
 through the native player delegate. Device focus restoration is still a runtime
 verification requirement, not a compiler guarantee.
 
+## App Icon
+
+The TV icon reuses the exact coral-to-blue play mark from the Mac Icon Composer
+source, centered on a light neutral gradient matching the Mac composition.
+Foreground and background remain separate native TV parallax layers. Do not
+bake a rounded mask or a second square Mac icon inside the TV tile.
+
+Run `swift scripts/generate_tvos_icon.swift` after changing the Mac logo source.
+It packages the existing artwork into 400 × 240 (1×/2×) Home Screen and
+1280 × 768 App Store stacks under `DuskTV/Resources/Assets.xcassets/TVIcon.brandassets`.
+The generated PNGs are committed; the unmasked review preview stays in `.build/`.
+The script does not alter Mac icon assets or require them in the TV app bundle.
+
 ## Details and Playback
 
 Details show artwork, title, year, summary and season/episode routes. Each
