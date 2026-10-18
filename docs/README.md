@@ -10,6 +10,7 @@ then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
 | [Codebase map](codebase-map.md) | Source ownership and extension points |
 | [Development workflow](development-workflow.md) | Mac bootstrap, signing, verification, and fork updates |
 | [UI features](ui-features.md) | Sidebar, native player, reusable UI, and settings |
+| [Planned tvOS design](tvos-design.md) | Future TV target boundaries, Mac UI protection, initial HD scope and verification |
 | [Playback](playback.md) | Engines, source selection, remux, timing, and track selection |
 | [Plex data](data-and-plex.md) | Account/session pool, API boundaries, models, merging |
 | [Downloads and offline](downloads-and-offline.md) | Queue, local storage, offline state, and sync |

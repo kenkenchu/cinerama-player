@@ -46,6 +46,26 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
 and Liquid Glass, neutral palette, no app-wide color tint. Sunset Coral is
 reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
 
+## Planned tvOS Target — Mac UI Protection
+
+- tvOS is a planned, explicitly requested expansion, not a currently supported
+  target. Follow `docs/tvos-design.md` when implementing it; historical upstream
+  TV code is reference material only.
+- Give tvOS its own app shell, navigation, feature screens, styling, player
+  controls and rendering hosts. Apple TV uses remote/focus interaction, not a
+  touchscreen. Preserve existing Mac layouts and keyboard/pointer behavior.
+- Enforce UI ownership through explicit XcodeGen source membership: neither
+  target compiles the other platform's UI. Do not include all `Dusk/Sources`
+  indiscriminately in a new TV target or scatter TV branches through Mac views.
+- Share platform-neutral Plex/data/session logic. Extract platform adapters
+  where needed without changing Mac behavior; keep existing AppKit player hosts.
+- Implement in small checkpoints and complete the signed Mac compile after code
+  changes. A compile is not visual regression proof: Mac runtime checks require
+  explicit user authorization before claiming visual/input parity.
+- Preserve the prohibition on server A/V re-encoding on tvOS. Apple TV HD is the
+  initial device; prioritize compatible HD SDR media and verify real codecs,
+  audio, subtitles and Live TV on hardware rather than assuming compatibility.
+
 ## Setup and Verification
 
 Install Xcode, XcodeGen, rustup, and the Metal toolchain. The desktop framework
