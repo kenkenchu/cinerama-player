@@ -106,7 +106,7 @@ in front while audio starts. Closing playback restores the same page and sidebar
 The player hides the navigation toolbar and uses one video canvas in windowed
 and fullscreen playback. Controls attach as a bottom overlay of that canvas,
 so windowed toolbar/safe-area insets cannot offset them from their background. The bottom control bar contains a fullscreen toggle that
-switches between Enter and Exit Full Screen and targets the owning window; it is
+switches between Enter and Exit Full Screen using a separate playback window; it is
 not duplicated in the toolbar or top overlay. A Close icon button
 (`rectangle.portrait.and.arrow.right`) sits
 beside the fullscreen toggle in the control bar; there is no top-left close
@@ -116,10 +116,14 @@ movement or a click reveals them again. Hovering anywhere over the control bar
 keeps it visible, including with a stationary pointer. Leaving the bar starts a
 fresh two-second timeout. Repeated hover callbacks at the same video position do
 not reset the timeout. Scrubbing keeps controls visible, and pausing reveals them.
-Leaving fullscreen keeps the same player mounted; closing the player restores
-the shell with its previous sidebar visibility and navigation path.
-The shell observes its own window, including fullscreen entered with the green
-window button or the keyboard shortcut.
+Fullscreen reparents the same player hosting view into a dedicated native window,
+leaving the catalog visible in the main app window at its existing size and
+fullscreen state. Exiting
+fullscreen moves that hosting view back above the catalog without restarting the
+player session. Closing playback (including the separate window) restores the
+shell with its previous sidebar visibility and navigation path. The main window's
+green button remains independent; the player button, double-click and Ctrl-Cmd-F
+use the playback window.
 
 Its `MacPlayerSession` uses the common player view model for tracks, scrubbing,
 marker skipping, buffering and snapshots. It wires source selection, server
@@ -128,11 +132,11 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Input | Action |
 | --- | --- |
 | Click video / Space | Play/pause |
-| Double-click video | Toggle native window fullscreen |
+| Double-click video | Toggle separate playback fullscreen |
 | Cmd-I | Toggle playback debug overlay |
 | Left / Right | Seek backward/forward 10 seconds |
 | Escape | Close player |
-| Ctrl-Cmd-F | Native window fullscreen |
+| Ctrl-Cmd-F | Toggle separate playback fullscreen |
 
 The timeline shows elapsed time on the left and remaining time (with a minus
 sign) on the right, as M:SS or H:MM:SS. Both preview the scrub position; unknown
