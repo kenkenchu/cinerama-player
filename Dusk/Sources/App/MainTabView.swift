@@ -197,17 +197,20 @@ private struct MacPlaybackHost: NSViewRepresentable {
                 return
             }
             guard let container, let mainWindow = container.window else { return }
+            // contentLayoutRect is window-local; a new window needs screen coordinates.
+            // Preserve the playback display even when it is not the primary display.
+            let playbackRect = mainWindow.convertToScreen(container.convert(container.bounds, to: nil))
             let window = NSWindow(
-                contentRect: mainWindow.contentLayoutRect,
+                contentRect: playbackRect,
                 styleMask: [.titled, .closable, .resizable, .miniaturizable],
-                backing: .buffered, defer: false
+                backing: .buffered, defer: false, screen: mainWindow.screen
             )
             window.isReleasedWhenClosed = false
             window.title = "Dusk Playback"
             window.backgroundColor = .black
             window.collectionBehavior = [.fullScreenPrimary]
             window.delegate = self
-            let content = NSView(frame: NSRect(origin: .zero, size: mainWindow.contentLayoutRect.size))
+            let content = NSView(frame: NSRect(origin: .zero, size: playbackRect.size))
             window.contentView = content
             fullscreenWindow = window
             detached.wrappedValue = true

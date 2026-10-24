@@ -119,7 +119,8 @@ fresh two-second timeout. Repeated hover callbacks at the same video position do
 not reset the timeout. Scrubbing keeps controls visible, and pausing reveals them.
 Fullscreen reparents the same player hosting view into a dedicated native window,
 leaving the catalog visible in the main app window at its existing size and
-fullscreen state. Exiting
+fullscreen state. The playback window starts on the same display as windowed
+playback, using its screen-space bounds rather than window-local coordinates. Exiting
 fullscreen moves that hosting view back above the catalog without restarting the
 player session. Closing playback (including the separate window) restores the
 shell with its previous sidebar visibility and navigation path. The main window's
