@@ -110,7 +110,8 @@ switches between Enter and Exit Full Screen using a separate playback window; it
 not duplicated in the toolbar or top overlay. A Close icon button
 (`rectangle.portrait.and.arrow.right`) sits
 beside the fullscreen toggle in the control bar; there is no top-left close
-overlay. Escape also closes playback, including during loading. In both windowed and
+overlay. Escape exits fullscreen while keeping playback running; in windowed
+playback it closes the player, including during loading. In both windowed and
 fullscreen playback, controls fade after two seconds of inactivity; pointer
 movement or a click reveals them again. Hovering anywhere over the control bar
 keeps it visible, including with a stationary pointer. Leaving the bar starts a
@@ -135,7 +136,7 @@ stream changes, fallback, timeline and Up Next through `PlaybackCoordinator`.
 | Double-click video | Toggle separate playback fullscreen |
 | Cmd-I | Toggle playback debug overlay |
 | Left / Right | Seek backward/forward 10 seconds |
-| Escape | Close player |
+| Escape | Exit fullscreen; close player when windowed |
 | Ctrl-Cmd-F | Toggle separate playback fullscreen |
 
 The timeline shows elapsed time on the left and remaining time (with a minus

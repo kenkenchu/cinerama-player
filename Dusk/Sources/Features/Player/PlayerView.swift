@@ -25,7 +25,13 @@ struct PlayerView: View {
                 }.padding(40).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
             }
         }
-        .onExitCommand { playback.showPlayer = false }
+        .onExitCommand {
+            if isFullScreen {
+                toggleFullScreen()
+            } else {
+                playback.showPlayer = false
+            }
+        }
         .toolbarVisibility(.hidden, for: .windowToolbar)
         .preferredColorScheme(.dark)
         .environment(\.colorScheme, .dark)
@@ -273,8 +279,7 @@ private struct MacPlayerSession: View {
                 .keyboardShortcut("f", modifiers: [.control, .command])
                 .help(isFullScreen ? "Exit Full Screen (⌃⌘F)" : "Enter Full Screen (⌃⌘F)")
                 Button("Close Player", systemImage: "rectangle.portrait.and.arrow.right") { playback.showPlayer = false }
-                    .keyboardShortcut(.escape, modifiers: [])
-                    .help("Close Player (Esc)")
+                    .help(isFullScreen ? "Close Player" : "Close Player (Esc)")
             }
             .labelStyle(.iconOnly)
             .controlSize(.regular)
