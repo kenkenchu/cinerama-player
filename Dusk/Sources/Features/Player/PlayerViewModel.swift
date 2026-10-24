@@ -185,7 +185,7 @@ final class PlayerViewModel {
         autoSkipCountdownTask?.cancel()
     }
 
-    func cleanup() {
+    func cleanup(pausePlayback: Bool = true) {
         syncTimer?.invalidate()
         controlsAutoHideTask?.cancel()
         seekFeedbackTask?.cancel()
@@ -205,7 +205,9 @@ final class PlayerViewModel {
         // for timeline reporting before tearing down the engine. While a PiP
         // window is showing, the cover is dismissed but playback must keep
         // running in the floating window, so leave the engine alone.
-        if !engine.isPictureInPictureActive {
+        // Reparenting the Mac player between windows ends a view appearance,
+        // but must preserve the engine's existing playing or paused state.
+        if pausePlayback && !engine.isPictureInPictureActive {
             engine.pause()
         }
     }

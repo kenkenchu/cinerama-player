@@ -42,10 +42,12 @@ struct PlayerView: View {
 
 private struct MacPlayerSession: View {
     let source: PlaybackSource
+    private let presentationID: UUID
     let playback: PlaybackCoordinator
     let isFullScreen: Bool
     let toggleFullScreen: () -> Void
     @State private var model: PlayerViewModel
+    @State private var hasConfiguredSession = false
     @State private var activity: NSObjectProtocol?
     @State private var lastPointerLocation: CGPoint?
     @State private var showsDebugInfo = false
@@ -55,6 +57,7 @@ private struct MacPlayerSession: View {
         self.toggleFullScreen = toggleFullScreen
         self.isFullScreen = isFullScreen
         self.source = source
+        self.presentationID = playback.playerPresentationID
         self.playback = playback
         _model = State(initialValue: PlayerViewModel(engine: engine, markers: playback.activeItemDetails?.markers ?? [], liveTVContext: source.liveTVContext))
     }
@@ -139,7 +142,8 @@ private struct MacPlayerSession: View {
         .task { configure() }
         .onDisappear {
             model.playbackSnapshotHandler = nil
-            model.cleanup()
+            // A window transfer is not a playback dismissal.
+            model.cleanup(pausePlayback: !playback.showPlayer || playback.playerPresentationID != presentationID)
             if let activity { ProcessInfo.processInfo.endActivity(activity) }
             activity = nil
         }
@@ -362,7 +366,14 @@ private struct MacPlayerSession: View {
     }
 
     private func configure() {
+        guard activity == nil else { return }
+        if model.syncTimer == nil { model.startSync() }
+        model.playbackSnapshotHandler = { state, _, _ in playback.noteActivePlaybackState(state) }
         activity = ProcessInfo.processInfo.beginActivity(options: [.userInitiated, .idleDisplaySleepDisabled], reason: "Playing video")
+        // Reappearance after a window transfer only restores appearance resources;
+        // track choices and the loaded source still belong to this session.
+        guard !hasConfiguredSession else { return }
+        hasConfiguredSession = true
         model.externalSubtitleURLProvider = { playback.plexService.externalSubtitleURL(for: $0, serverID: playback.activePlaybackServerID) }
         model.externalSubtitleRestartHandler = { playback.switchToVLCKitForExternalSubtitle(streamID: $0) }
         model.trackRoutingHandler = { audio, subtitle in
@@ -396,7 +407,6 @@ private struct MacPlayerSession: View {
                 Task { await playback.presentUpNextPosterIfPossible(creditsMarkerID: marker.id, isEstimated: marker.isEstimated, presentationID: presentationID, ratingKey: ratingKey) }
             } else { playback.dismissUpNextPoster() }
         }
-        model.playbackSnapshotHandler = { state, _, _ in playback.noteActivePlaybackState(state) }
         model.bufferingPresentationHandler = { playback.setBufferingPresentationVisible($0, for: playback.playerPresentationID) }
         model.transcodeAudioFallbackHandler = { track in Task { await playback.transcodeForUndecodableAudio(track) } }
         model.plexTrackSelectionHandler = { audio, subtitle in playback.selectPlexStreamsForPlayback(audioStreamID: audio, subtitleStreamID: subtitle) }

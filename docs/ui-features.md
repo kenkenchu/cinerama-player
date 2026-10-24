@@ -122,7 +122,10 @@ leaving the catalog visible in the main app window at its existing size and
 fullscreen state. The playback window starts on the same display as windowed
 playback, using its screen-space bounds rather than window-local coordinates. Exiting
 fullscreen moves that hosting view back above the catalog without restarting the
-player session. Closing playback (including the separate window) restores the
+player session. View disappearance during this transfer releases UI timers and
+display-sleep activity without pausing the engine; reappearance restores those
+resources without repeating track selection. Playing and paused states are
+preserved in both directions. Closing playback (including the separate window) restores the
 shell with its previous sidebar visibility and navigation path. The main window's
 green button remains independent; the player button, double-click and Ctrl-Cmd-F
 use the playback window.
