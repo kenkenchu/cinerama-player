@@ -124,7 +124,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
   the signing identity suffix `BZ2K63HJTE` is not the team ID.
   TV now adopts the Mac screening-deck styling through `TVDeckStyle.swift`,
   framed Home/detail viewports and library bays, preserving native TV tabs and
-  focus. Both signed builds passed; device visual/focus verification is pending.
+  focus. Both signed builds passed and the user confirmed the installed TV UI
+  looks good on 2026-10-25. This confirms appearance; focus/playback behavior
+  was not separately confirmed in that feedback.
   `TVStreamResolver` and `TVPlaybackCoordinator` are TV-owned implementations;
   the Mac playback contract is not yet platform-neutral. Keep current
   limitations explicit rather than treating TV as full feature parity.

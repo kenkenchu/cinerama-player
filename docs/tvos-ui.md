@@ -67,8 +67,10 @@ Transparency makes hero panels and shelf bays opaque. Existing Reduce Motion
 handling continues to disable hero transitions and rotation.
 
 The 2026-10-25 styling checkpoint passed signed Mac and TV builds and the platform
-boundary gate. Device focus, text fit and contrast still require user inspection;
-agents did not launch either app or run tests.
+boundary gate, and was installed on the user's Apple TV. The user confirmed that
+the UI visually looks good. This is appearance approval, not a separate
+confirmation of focus or playback behavior. Agents did not launch either app or
+run tests.
 
 ## App Icon
 
