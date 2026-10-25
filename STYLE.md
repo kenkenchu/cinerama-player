@@ -83,9 +83,9 @@ check does not prove layout or contrast. Default agent verification does not
 launch the app. Historical styling is archived in `docs/upstream/STYLE.md` and
 is not the source of truth for this fork.
 
-## Futuristic Mac branch
+## Futuristic Mac Presentation
 
-The `codex/futuristic-mac-ui` experiment keeps the neutral palette and native
+The Mac interface keeps the neutral palette and native
 navigation, with a more architectural presentation: a typographic Dusk sidebar
 masthead, Discover/Workspace groups, ruled shelf headings, illuminated artwork
 edges, and a framed cinematic hero information panel. Hero copy always uses a

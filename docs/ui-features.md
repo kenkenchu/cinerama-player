@@ -215,7 +215,7 @@ Archived mobile/TV layouts in `upstream/ui-features.md` are historical only.
 
 ## Futuristic Mac presentation
 
-On `codex/futuristic-mac-ui`, `MainTabView` groups the same destinations into
+`MainTabView` groups the destinations into
 Discover and Workspace beneath a Dusk masthead. Native sidebar selection,
 per-destination paths and the separate playback host are unchanged.
 `HomeCinematicHero` places its title/actions in a dark framed panel with a
