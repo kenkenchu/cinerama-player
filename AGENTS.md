@@ -1,6 +1,6 @@
 # Cinerama — macOS and tvOS Agent Instructions
 
-Cinerama, maintained in `kenkenchu/dusk-player-mac`, is an independent native
+Cinerama, maintained in `kenkenchu/cinerama-player`, is an independent native
 **macOS and tvOS** Plex client for the user's Apple silicon Mac and Apple TV HD.
 It originated from `marvinvr/dusk-player`, credited in README.md, but no longer
 tracks or routinely synchronizes with that project.
@@ -214,7 +214,7 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   whenever explicitly requested. This is the user's standing preference.
 - Check `git status --short` before editing and finishing. Preserve unrelated
   changes; do not revert, stage, or publish another contributor's work.
-- `origin` is `kenkenchu/dusk-player-mac`, the sole development remote. Work on
+- `origin` is `kenkenchu/cinerama-player`, the sole development remote. Work on
   `main` unless the user requests a separate branch. Commit and push completed
   work to `origin`; never force-push shared `main`.
 - Cinerama follows its own direction. Do not add an upstream remote, fetch or

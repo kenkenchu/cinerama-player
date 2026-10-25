@@ -1,6 +1,6 @@
 # Mac Development Workflow
 
-This repository maintains `kenkenchu/dusk-player-mac` as a native Mac-first
+This repository maintains `kenkenchu/cinerama-player` as a native Mac-first
 app alongside the maintained tvOS client for Apple TV HD. Preserve unrelated work and follow `AGENTS.md` before editing or publishing.
 
 ## Source of Truth
@@ -148,7 +148,7 @@ explicitly requested. Docs-only edits need link/reference and diff checks.
 
 ## Independent Cinerama Development
 
-`origin` is `git@github.com:kenkenchu/dusk-player-mac.git`, the sole development
+`origin` is `git@github.com:kenkenchu/cinerama-player.git`, the sole development
 remote. Work on `main` unless the user requests a separate branch, and commit
 and push completed changes after the required verification.
 

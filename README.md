@@ -2,7 +2,7 @@
 
 Cinerama is an independently developed **macOS and tvOS Plex client** with a
 cinematic spacecraft-inspired Mac interface, maintained in
-[kenkenchu/dusk-player-mac](https://github.com/kenkenchu/dusk-player-mac).
+[kenkenchu/cinerama-player](https://github.com/kenkenchu/cinerama-player).
 It follows its own product, design and engineering direction; ongoing upstream
 synchronization is not part of the development workflow.
 
@@ -75,7 +75,7 @@ See [documentation](docs/README.md), [workflow](docs/development-workflow.md),
 scripts enforce UI/dependency separation with
 `scripts/verify_platform_boundaries.py`. Preserve Mac signing, input and layout
 when changing shared logic. Report Cinerama issues in
-[this repository](https://github.com/kenkenchu/dusk-player-mac/issues).
+[this repository](https://github.com/kenkenchu/cinerama-player/issues).
 
 ## Origins and Acknowledgments
 
