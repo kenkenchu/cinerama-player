@@ -26,7 +26,7 @@ steady white lamp for the selected destination; the accent fill is not used.
 `ViewThatFits` drops the console wordmark first when space is tight; it keeps
 all eight destinations visible at the supported minimum window width.
 The app uses a fixed dark native control environment. The console uses Apple
-Liquid Glass, with an opaque graphite fallback for Reduce Transparency. Decorative etching is
+Liquid Glass, with an opaque metallic-blue fallback for Reduce Transparency. Decorative etching is
 noninteractive and accessibility-hidden. `CockpitInstrumentStyle` uses native
 ButtonStyle pressed state and pointer hover for immediate feedback, without
 animation timers. Instrument widths and destination order are unchanged; hiding
@@ -222,7 +222,7 @@ features. HDR/audio output and visual layout require runtime validation.
 ## Settings and Downloads
 
 `SettingsMacView` uses a grouped native form describing the fixed Cinematic
-Graphite theme, plus playback behavior,
+Metal Blue theme, plus playback behavior,
 languages, remux toggles, Home settings, downloads, privacy, Seerr,
 and account/profile actions. `SettingsContainer` presents Plex Home selection.
 The fork has no StoreKit purchasing, supporter prompts or alternate icon picker.
@@ -243,7 +243,7 @@ manager preferences do not imply an existing UI control.
 
 Run the signed Mac compile after code changes. Do not launch the app or run tests
 unless requested. For authorized visual checks, switch the system appearance
-while checking that the app stays graphite, then inspect resized
+while checking that the app stays metallic-blue, then inspect resized
 windows, keyboard/pointer navigation, error states and player dismissal.
 Archived mobile/TV layouts in `upstream/ui-features.md` are historical only.
 
@@ -297,10 +297,10 @@ is attached, during a drag, off Home or during playback. The local event monitor
 is removed with its view. Runtime verification should include hover over both
 artwork and the information panel, scroll-off, text entry, and player seeking.
 
-## Fixed Graphite Appearance and Liquid Glass
+## Fixed Metal Blue Appearance and Liquid Glass
 
 `CineramaApp` pins both AppKit appearance and SwiftUI color scheme to dark;
-`MacPlatform.swift` defines the lighter graphite page/surface palette. Existing
+`MacPlatform.swift` defines the lighter metallic-blue page/surface palette. Existing
 saved appearance-mode preferences no longer affect the app, and Settings now
 names the fixed theme instead of offering System/Light/Dark. Separate playback
 windows inherit the app's native appearance. System caption appearance remains
@@ -309,6 +309,6 @@ controlled by macOS accessibility preferences.
 `MainTabView` uses native `glassEffect` on the chamfered console, with an opaque
 surface for Reduce Transparency. Home and detail primary actions use neutral
 prominent glass buttons; secondary detail actions use regular glass buttons.
-Home library bays use graphite surfaces beneath the glass control layer.
+Home library bays use metallic-blue surfaces beneath the glass control layer.
 The player transport keeps its existing compositing fill. Compilation does not
 verify runtime contrast or appearance-switch behavior.

@@ -16,11 +16,11 @@ and native fullscreen.
 3. No app-wide custom tint. Never tint active UI states with `Color.cineramaAccent`.
 4. Sunset Coral is reserved for the logo/icon. The Mac app has no purchase page
    or alternate icon picker.
-5. Let artwork lead. Keep controls clear and metadata readable in the fixed graphite theme.
+5. Let artwork lead. Keep controls clear and metadata readable in the fixed metallic-blue theme.
 
 ## Colors
 
-Cinerama uses its own **Cinematic Graphite** theme, independent of macOS light,
+Cinerama uses its own **Cinematic Metal Blue** theme, independent of macOS light,
 dark or automatic appearance. `CineramaApp` sets Dark Aqua for native AppKit
 windows/menus and `.preferredColorScheme(.dark)` for SwiftUI presentations.
 `Shared/MacPlatform.swift` supplies fixed sRGB colors; do not add adaptive
@@ -29,16 +29,16 @@ light variants or restore the System/Light/Dark preference. Legacy saved
 
 | Token | Value | Purpose |
 | --- | --- | --- |
-| `cineramaBackground` | `#1C2029` | Soft graphite page/deck background |
-| `cineramaSurface` | `#292F3B` | Raised graphite cards, rows and bays |
+| `cineramaBackground` | `#1D2D40` | Soft metallic-blue page/deck background |
+| `cineramaSurface` | `#2D455F` | Raised metallic-blue cards, rows and bays |
 | `cineramaTextPrimary` | `#F2F2F7` | Titles and emphasized labels |
-| `cineramaTextSecondary` | `#ADB5C6` | Metadata and captions |
+| `cineramaTextSecondary` | `#B2C5D9` | Metadata and captions |
 | `cineramaAccent` | `#FF6B4A` | Logo/icon only |
 
 True black remains appropriate for video, letterboxing and cinematic backdrop
-scrims. The catalog uses softer graphite rather than an all-black appearance.
+scrims. The catalog uses softer metallic-blue rather than an all-black appearance.
 
-`cineramaPrimaryActionLabel` supplies a graphite label over the light neutral
+`cineramaPrimaryActionLabel` supplies a metallic-blue label over the light neutral
 primary-action glass fill.
 `cineramaPrimaryButtonTint` is translucent primary, not the brand color. The global
 `AccentColor` asset is neutral: black in light appearance and charcoal
@@ -128,11 +128,11 @@ Composer and TV layers supply platform-specific presentation. See
 Home evokes a spacecraft cinema through static architecture: sparse neutral star
 points, a fine perspective grid, a Screening deck header and a rounded panoramic
 viewport with illuminated corner brackets. Library shelves sit in separate
-28pt graphite bays. All decoration is noninteractive and hidden from
+28pt metallic-blue bays. All decoration is noninteractive and hidden from
 accessibility; no decorative animation loop or invented equipment status is used.
 The header count and viewport index reflect the actual featured items.
 
-The viewport stays dark; the surrounding deck uses the fixed graphite palette.
+The viewport stays dark; the surrounding deck uses the fixed metallic-blue palette.
 The native toolbar remains visible above the full-width destination; the
 instrument console reserves a bottom safe-area inset. The hero panel reserves
 its internal padding when calculating width,
@@ -146,7 +146,7 @@ of this visual language; see `docs/tvos-ui.md` for its remote/focus rules.
 Keep the approved strip layout, button dimensions and destination order. Give
 the console regular Liquid Glass with chamfered
 housing shoulders and fine rails. Reduce Transparency replaces its glass with
-an opaque graphite surface. Instruments use flat illuminated glyphs,
+an opaque metallic-blue surface. Instruments use flat illuminated glyphs,
 subtle 16pt selection plates and a steady white selection lamp. Names appear
 only in explicit hover labels above the console and accessibility labels.
 Keep hover labels outside the housing clip, noninteractive and accessibility-hidden.
@@ -161,7 +161,7 @@ remain intact; these are cosmetic changes to the established navigation.
 
 Use Apple's actual `glassEffect` and native glass button styles for the floating
 instrument console and Home/detail actions. Keep glass on the control layer;
-library bays use graphite fills so artwork and metadata stay readable without
+library bays use metallic-blue fills so artwork and metadata stay readable without
 stacking glass effects. Native glass buttons retain system accessibility behavior;
 the custom console explicitly uses an opaque surface under Reduce Transparency.
 The player transport keeps its verified compositing fill over native video;

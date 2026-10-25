@@ -12,8 +12,8 @@ struct SettingsMacView: View {
         SettingsContainer(viewModel: viewModel) {
         Form {
             Section("Appearance") {
-                LabeledContent("Theme", value: "Cinematic Graphite")
-                Text("A consistent graphite appearance with Liquid Glass, independent of macOS light and dark mode.")
+                LabeledContent("Theme", value: "Cinematic Metal Blue")
+                Text("A consistent metallic-blue appearance with Liquid Glass, independent of macOS light and dark mode.")
                     .foregroundStyle(.secondary)
             }
             Section("Playback") {
