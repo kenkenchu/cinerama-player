@@ -28,6 +28,9 @@ Mac windows, pointer/keyboard behavior and rendering hosts remain separate.
   contextual actions, availability notes and lifecycle hooks.
 - `TVHomeHero.swift`: TV backdrop/title/action/pager presentation and focus-aware
   rotation. Only the next backdrop is prefetched into the bounded artwork cache.
+- `TVDeckStyle.swift`: TV-owned screening-deck background, library bays, ruled
+  headings and illuminated viewport edges, matching the Mac visual language
+  while preserving native TV tabs and card focus. See [TV UI](tvos-ui.md).
 - `TVHomePlaybackModel.swift`: resolve fresh server-bound metadata and a locally
   supported media version for direct hero Play/Resume. Reuse remembered audio/
   subtitle choices. Resolve a defensive show/season input to an episode.

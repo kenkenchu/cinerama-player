@@ -140,6 +140,7 @@ struct TVLibraryView: View {
                 ContentUnavailableView("This library is empty", systemImage: "film")
             }
         }
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle(library.title)
         .task { if model.items.isEmpty { await model.load(service: service, library: library) } }
     }

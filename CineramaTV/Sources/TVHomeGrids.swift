@@ -33,6 +33,7 @@ struct TVHomeHubView: View {
             }
             if model.error != nil { Text("This row could not be refreshed. Try again.").padding() }
         }
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle(model.navigationTitle)
         .task { await model.reloadItems() }
     }
@@ -77,6 +78,7 @@ struct TVHomeGenreView: View {
             }
             if model.error != nil { Text("This genre could not be refreshed. Try again.").padding() }
         }
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle(model.navigationTitle)
         .task {
             if model.items.isEmpty { await model.loadItems() }

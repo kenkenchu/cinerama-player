@@ -43,16 +43,32 @@ struct TVMediaView: View {
         List {
             if let details = model.details {
                 Section {
-                    HStack(alignment: .top, spacing: 40) {
-                        TVArtwork(service: service, path: details.grandparentThumb ?? details.thumb,
-                            serverID: details.serverID, width: 240, height: 360)
-                        VStack(alignment: .leading, spacing: 20) {
-                            if let series = details.grandparentTitle { Text(series).font(.title2) }
-                            Text(details.title).font(.title.bold())
-                            if let year = details.year { Text(String(year)).foregroundStyle(.secondary) }
-                            if let summary = details.summary { Text(summary).font(.body).foregroundStyle(.secondary) }
+                    GeometryReader { geometry in
+                        ZStack(alignment: .bottomLeading) {
+                            TVArtwork(service: service, path: details.art ?? details.thumb,
+                                serverID: details.serverID, width: geometry.size.width,
+                                height: geometry.size.height, cornerRadius: 28, showsPlaceholder: false)
+                                .overlay {
+                                    LinearGradient(colors: [.black.opacity(0.9), .black.opacity(0.5), .clear],
+                                        startPoint: .leading, endPoint: .trailing)
+                                }
+                            VStack(alignment: .leading, spacing: 20) {
+                                Text("CINERAMA / LIBRARY")
+                                    .font(.system(.caption, design: .monospaced)).tracking(3)
+                                    .foregroundStyle(.white.opacity(0.65))
+                                if let series = details.grandparentTitle { Text(series).font(.title2) }
+                                Text(details.title).font(.title.bold()).lineLimit(2)
+                                if let year = details.year { Text(String(year)).foregroundStyle(.white.opacity(0.7)) }
+                                if let summary = details.summary {
+                                    Text(summary).font(.body).foregroundStyle(.white.opacity(0.85)).lineLimit(4)
+                                }
+                            }
+                            .frame(maxWidth: 900, alignment: .leading).padding(48)
                         }
-                    }.padding(.vertical, 20)
+                        .foregroundStyle(.white)
+                        .clipShape(.rect(cornerRadius: 28))
+                        .overlay { TVViewportEdge() }
+                    }.frame(height: 540).padding(.vertical, 20)
                 }
                 if details.type == .show {
                     Section("Seasons") {
@@ -105,6 +121,7 @@ struct TVMediaView: View {
                 Button("Retry") { Task { await model.load(service: service, id: itemID) } }
             }
         }
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle(model.details?.title ?? "Loading…")
         .task { await model.load(service: service, id: itemID) }
         .fullScreenCover(item: $presentation, onDismiss: {

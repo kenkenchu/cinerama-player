@@ -1,8 +1,9 @@
 # Native Apple TV UI
 
 The TV interface is owned by `CineramaTV/Sources`. `STYLE.md` governs the Mac UI;
-this guide governs TV layouts and remote interaction. Never adapt Mac controls
-or card geometry to satisfy the TV focus engine.
+this guide governs TV layouts and remote interaction. The TV presentation follows
+the Mac screening-deck visual language through TV-owned components; Mac controls
+and card geometry remain independent of the TV focus engine.
 
 ## Shell and Catalog
 
@@ -45,6 +46,29 @@ is presented above the detail route and tab shell. Back should first follow
 native AVKit controls, then return to details; app-owned dismissal is wired
 through the native player delegate. Device focus restoration is still a runtime
 verification requirement, not a compiler guarantee.
+
+## Screening Deck Presentation
+
+`TVDeckStyle.swift` owns the TV adaptation of the Mac screening deck: a dark
+neutral star/grid background, ruled headings, graphite library bays, and panoramic
+viewport edges with illuminated corner brackets. Home puts its Screening Deck
+header and actual featured count above the framed hero. The hero has a dark
+information panel, system typography, native Play/Resume, Details and pager
+buttons. Artwork cards have fine neutral edges and retain native card focus.
+Details use a wide backdrop/title/summary viewport instead of an extra poster.
+Search, library grids and Show All use the same background and shelf treatment;
+Settings and library selection retain their native form/list surfaces.
+
+Keep native top tabs and persistent navigation stacks on TV. The Mac's bottom
+pointer-driven instrument console is not the TV navigation control. Decoration
+is static, noninteractive and hidden from accessibility; no continuous drawing
+loop, decorative telemetry or additional artwork request is introduced. Reduce
+Transparency makes hero panels and shelf bays opaque. Existing Reduce Motion
+handling continues to disable hero transitions and rotation.
+
+The 2026-10-25 styling checkpoint passed signed Mac and TV builds and the platform
+boundary gate. Device focus, text fit and contrast still require user inspection;
+agents did not launch either app or run tests.
 
 ## App Icon
 

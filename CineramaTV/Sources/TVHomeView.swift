@@ -24,6 +24,7 @@ struct TVHomeView: View {
                 } else {
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: 38) {
+                            header
                             if !model.home.heroItems().isEmpty {
                                 TVHomeHero(service: model.service, home: model.home,
                                     items: model.home.heroItems(), isActive: isSelected && path.isEmpty && playback.presentation == nil,
@@ -31,8 +32,8 @@ struct TVHomeView: View {
                                     play: { item in Task { await playback.play(item, service: model.service) } },
                                     details: { path.append(.item($0.id)) },
                                     navigate: { path.append(.item($0)) })
+                                    .padding(.horizontal, 60)
                             }
-                            header
                             if let message = model.message { Text(message).padding(.horizontal, 60) }
                             availabilityNote
                             if model.home.error != nil && model.home.hasLoadedContent {
@@ -63,6 +64,7 @@ struct TVHomeView: View {
                     }
                 }
             }
+            .background { TVDeckBackground().ignoresSafeArea() }
             .navigationTitle("")
             .navigationDestination(for: TVHomeRoute.self) { route in
                 switch route {
@@ -138,24 +140,27 @@ struct TVHomeView: View {
     private var header: some View {
         HStack(spacing: 28) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Cinerama").font(.title2.bold())
+                Text("CINERAMA / SCREENING DECK")
+                    .font(.system(.title3, design: .monospaced, weight: .semibold)).tracking(3)
                 Text(model.service.activeHomeUser?.displayName ?? "Your Plex libraries")
                     .font(.caption).foregroundStyle(.secondary)
             }
-            Spacer()
+            TVDeckRule()
+            Text("\(model.home.heroItems().count) FEATURED")
+                .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
             if model.busy { ProgressView() }
             Button(action: onSearch) { Label("Search", systemImage: "magnifyingglass") }
             Button { Task { await model.refresh() } } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }.disabled(model.busy)
-        }.padding(.horizontal, 60).padding(.top, model.home.heroItems().isEmpty ? 35 : 0)
+        }.padding(.horizontal, 60).padding(.top, 35)
     }
 
     private func shelf(title: String, items: [PlexItem], landscape: Bool, showAll: TVHomeRoute?) -> some View {
         VStack(alignment: .leading, spacing: 20) {
             HStack {
                 Text(title).font(.title2.bold())
-                Spacer()
+                TVDeckRule().padding(.horizontal, 20)
                 if let showAll { NavigationLink("Show All", value: showAll) }
             }.padding(.horizontal, 60)
             ScrollView(.horizontal) {
@@ -171,6 +176,7 @@ struct TVHomeView: View {
                 }.padding(.horizontal, 60).padding(.vertical, 24)
             }.scrollClipDisabled()
         }
+        .modifier(TVDeckBay())
     }
 }
 

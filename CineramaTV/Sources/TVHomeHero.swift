@@ -18,6 +18,7 @@ struct TVHomeHero: View {
     @State private var logo = TVArtworkModel()
     @FocusState private var focusedAction: Action?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.scenePhase) private var scenePhase
 
     private enum Action: Hashable { case play, details, previous, next }
@@ -45,6 +46,9 @@ struct TVHomeHero: View {
                         .transition(.opacity)
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 20) {
+                        Text("CONTINUE WATCHING")
+                            .font(.system(.caption, design: .monospaced, weight: .semibold))
+                            .tracking(3).foregroundStyle(.white.opacity(0.65))
                         Group {
                             if let image = logo.image {
                                 Image(uiImage: image).resizable().scaledToFit()
@@ -92,14 +96,26 @@ struct TVHomeHero: View {
                         if items.count > 1 { pager }
                     }
                     .frame(width: 750, alignment: .leading)
-                    .padding(.leading, 70).padding(.bottom, 55)
+                    .padding(36)
+                    .background {
+                        RoundedRectangle(cornerRadius: 28)
+                            .fill(.black.opacity(reduceTransparency ? 1 : 0.76))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 28)
+                                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
+                            }
+                    }
+                    .environment(\.colorScheme, .dark)
+                    .padding(48)
                 }
+                .clipShape(.rect(cornerRadius: 28))
+                .overlay { TVViewportEdge() }
                 .onAppear { backdropWidth = Int(geometry.size.width) }
                 .foregroundStyle(.white)
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: item.id)
             }
         }
-        .frame(height: 700)
+        .frame(height: 820)
         .onAppear { isVisible = true }
         .onDisappear { isVisible = false }
         .onChange(of: selectionReset) { _, _ in selectedID = items.first?.id }
@@ -121,7 +137,7 @@ struct TVHomeHero: View {
             // One next backdrop only: keep the A8 cache and decoding work bounded.
             let prefetch = TVArtworkModel()
             await prefetch.load(service: service, path: backgroundPath(next), serverID: next.serverID,
-                width: backdropWidth, height: 700)
+                width: backdropWidth, height: 820)
         }
     }
 

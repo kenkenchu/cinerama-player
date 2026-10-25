@@ -22,7 +22,9 @@ struct TVCatalogShell: View {
                     if model.libraries.isEmpty {
                         Text(model.busy ? "Loading libraries…" : "No video libraries are available.")
                     }
-                }.navigationTitle("Libraries")
+                }
+                .background { TVDeckBackground().ignoresSafeArea() }
+                .navigationTitle("Libraries")
             }.tabItem { Label("Libraries", systemImage: "rectangle.stack") }.tag(1)
             NavigationStack { TVSearchView(service: model.service) }
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(2)
@@ -91,6 +93,7 @@ struct TVSearchView: View {
             }.padding(.vertical, 35)
         }
         .searchable(text: $query, prompt: "Movies, shows and episodes")
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle("Search")
         .task(id: query) { await model.search(query, service: service) }
     }
@@ -133,6 +136,7 @@ struct TVHubView: View {
             }
             if model.items.isEmpty && !model.loading { Text("No items could be loaded. Go back and refresh to retry.") }
         }
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle(hub.title)
         .task { if model.items.isEmpty { await model.load(service: service, hub: hub) } }
     }
@@ -176,6 +180,7 @@ struct TVSettingsView: View {
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
             }
         }
+        .background { TVDeckBackground().ignoresSafeArea() }
         .navigationTitle("Settings")
         .confirmationDialog("Sign out of Plex on this Apple TV?", isPresented: $confirmingSignOut) {
             Button("Sign Out", role: .destructive) { model.signOut(); Task { await model.start() } }

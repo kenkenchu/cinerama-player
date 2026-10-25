@@ -195,6 +195,7 @@
 		9B5E7AC56AC15CB8652A7429 /* ServerProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97783B4E9C94537920260F2F /* ServerProbe.swift */; };
 		9C6497AFAEFB40C96AA3A661 /* PlaybackCoordinator+Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5DAE01CDA549CF74B0A5B842 /* PlaybackCoordinator+Session.swift */; };
 		9C9ED514E5E2B6E36D720240 /* PlexService+History.swift in Sources */ = {isa = PBXBuildFile; fileRef = 83645A888BF268429025DA64 /* PlexService+History.swift */; };
+		9DDAF0897F74EF6E3ED139AD /* TVDeckStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AAB93C834AE2EC554E99604 /* TVDeckStyle.swift */; };
 		9FC8A6C2E7A6B2A9DB36C6DD /* DolbyVision7InitRewriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9E5AFD1DAA9977B73665C09 /* DolbyVision7InitRewriter.swift */; };
 		A09F023D97DA135197D33AF5 /* PlaybackCoordinator+SpatialAudio.swift in Sources */ = {isa = PBXBuildFile; fileRef = C28720FD6923E36C6CEA67EB /* PlaybackCoordinator+SpatialAudio.swift */; };
 		A1E2E380C10BD0F434515731 /* DoviBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A663329F88C39D6DB069EEF /* DoviBridge.swift */; };
@@ -484,6 +485,7 @@
 		97783B4E9C94537920260F2F /* ServerProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerProbe.swift; sourceTree = "<group>"; };
 		98352D8479F679F6B7D4DAC2 /* PlayerViewModel+Presentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PlayerViewModel+Presentation.swift"; sourceTree = "<group>"; };
 		984B29ABC01170F761872D2F /* DetailSharedViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailSharedViews.swift; sourceTree = "<group>"; };
+		9AAB93C834AE2EC554E99604 /* TVDeckStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVDeckStyle.swift; sourceTree = "<group>"; };
 		9B1216D76F04CBA0E22380F5 /* PlexItemPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlexItemPresentation.swift; sourceTree = "<group>"; };
 		9C4E6A0ED29C447936298908 /* Cinerama.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Cinerama.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9D0D8EE83089013B23FB997B /* SubtitleTrack.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleTrack.swift; sourceTree = "<group>"; };
@@ -604,6 +606,7 @@
 				F39A718060C683E601992E12 /* CineramaTVApp.swift */,
 				ECD166CF5C77C9F20F765BB3 /* TVArtwork.swift */,
 				FCFAA5FE748C54B27C332FFF /* TVCatalogShell.swift */,
+				9AAB93C834AE2EC554E99604 /* TVDeckStyle.swift */,
 				51CD353B41C4C61A7B278E38 /* TVHomeGrids.swift */,
 				D5915CB1E58B02FBCA055AA7 /* TVHomeHero.swift */,
 				F3B6C4FA30F348F8454DCF02 /* TVHomePlaybackModel.swift */,
@@ -1306,6 +1309,7 @@
 				6505B7F120E84E02ECCC2D00 /* SubtitleTrack.swift in Sources */,
 				607F489EE07D6D69D0013EA4 /* TVArtwork.swift in Sources */,
 				ADE6E97C19E40CFC8B0D47A3 /* TVCatalogShell.swift in Sources */,
+				9DDAF0897F74EF6E3ED139AD /* TVDeckStyle.swift in Sources */,
 				51D544EC95D6C4306C4C8B03 /* TVHomeGrids.swift in Sources */,
 				B0DF967032688F0FE15A2D1E /* TVHomeHero.swift in Sources */,
 				96D461E60A9A7B863F59E390 /* TVHomePlaybackModel.swift in Sources */,

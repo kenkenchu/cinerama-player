@@ -129,7 +129,8 @@ instrument console reserves a bottom safe-area inset. The hero panel reserves
 its internal padding when calculating width,
 uses compact typography in smaller windows and preserves native Play/Resume and
 pager interaction. Reduce Transparency makes library bays and the hero panel
-opaque. The underlying Plex Home content and TV interface are unchanged.
+opaque. The underlying Plex Home content is unchanged. TV uses its own adaptation
+of this visual language; see `docs/tvos-ui.md` for its remote/focus rules.
 
 ## Cockpit Instrument Finish
 

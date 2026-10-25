@@ -78,6 +78,11 @@ struct TVMediaCard: View {
         VStack(alignment: .leading, spacing: 12) {
             TVArtwork(service: service, path: landscape ? item.preferredLandscapePath : item.preferredPosterPath,
                 serverID: item.serverID, width: width, height: height)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(.white.opacity(0.22), lineWidth: 1)
+                        .allowsHitTesting(false).accessibilityHidden(true)
+                }
                 .overlay(alignment: .bottom) {
                     if let progress = item.posterProgress {
                         GeometryReader { geometry in
@@ -105,7 +110,10 @@ struct TVMediaShelf: View {
     let items: [PlexItem]
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
-            Text(title).font(.title2.bold()).padding(.horizontal, 60)
+            HStack(spacing: 28) {
+                Text(title).font(.title2.bold())
+                TVDeckRule()
+            }.padding(.horizontal, 60)
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 38) {
                     ForEach(items) { TVMediaCard(service: service, item: $0) }
@@ -113,6 +121,7 @@ struct TVMediaShelf: View {
             }
             .scrollClipDisabled()
         }
+        .modifier(TVDeckBay())
     }
 }
 
