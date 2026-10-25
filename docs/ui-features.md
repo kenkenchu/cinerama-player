@@ -16,7 +16,10 @@ The shell is a full-width destination view with a pinned bottom instrument
 console, replacing the sidebar. Home, Movies, TV Shows, Videos, Live TV, Search,
 Downloads and Settings remain available on every catalog screen. Native buttons
 use icons and an underlined neutral selected state. Names and shortcuts appear
-in native hover tooltips and remain available as accessibility labels. The
+in explicit hover labels above the console and remain available as accessibility
+labels. A preference anchor positions the label over the hovered instrument
+outside the housing clip. Only the selected icon shows the short indicator;
+inactive icons have no underscore. The
 console has an opaque graphite housing with chamfered shoulders and fine rails.
 Flat icon instruments use subtle selection plates, brighter markings and a
 steady white lamp for the selected destination; the accent fill is not used.

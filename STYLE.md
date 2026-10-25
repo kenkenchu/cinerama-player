@@ -65,7 +65,7 @@ and time readouts can use monospaced digits.
 ## Screens and Interaction
 
 Navigation uses a pinned bottom instrument console of native buttons, with
-icons for all eight destinations, native hover tooltips for names/shortcuts,
+icons for all eight destinations, hover labels for names/shortcuts,
 and accessibility labels. Flat translucent plates,
 bright markings and a short steady white lamp identify the selected instrument
 in either appearance. Keep native
@@ -137,7 +137,9 @@ Keep the approved strip layout, button dimensions and destination order. Give
 only the console a dark environment: opaque graphite gradients, chamfered
 housing shoulders and fine rails. Instruments use flat illuminated glyphs,
 subtle 16pt selection plates and a steady white selection lamp. Names appear
-only in native hover tooltips and accessibility labels. Native ButtonStyle
+only in explicit hover labels above the console and accessibility labels.
+Keep hover labels outside the housing clip, noninteractive and accessibility-hidden.
+Show the underline only for the selected instrument. Native ButtonStyle
 pressed state supplies opacity feedback; pointer hover slightly brightens the
 face. Avoid recessed wells, bevels, screws and mechanical key travel. Do not add blinking
 lamps, decorative timers or invented system telemetry. All hardware decoration

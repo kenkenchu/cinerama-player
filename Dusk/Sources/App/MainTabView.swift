@@ -25,6 +25,7 @@ struct MainTabView: View {
     @Environment(PlaybackCoordinator.self) private var playback
     @State private var playbackIsDetached = false
     @State private var selection: MacDestination = .home
+    @State private var hoveredInstrument: MacDestination?
     @State private var paths: [MacDestination: NavigationPath] = [:]
     @State private var libraries: LibrariesViewModel?
     @State private var liveTV: LiveTVViewModel?
@@ -55,6 +56,7 @@ struct MainTabView: View {
             await liveTV?.discover()
         }
         .onChange(of: playback.showPlayer) { _, shown in
+            if shown { hoveredInstrument = nil }
             if !shown {
                 playbackIsDetached = false
                 playback.onPlayerDismissed()
@@ -133,6 +135,28 @@ struct MainTabView: View {
                 .accessibilityHidden(true)
         }
         .shadow(color: .black.opacity(0.30), radius: 12, y: 6)
+        // Outside the clipped housing so labels can extend above the console.
+        .overlayPreferenceValue(CockpitTooltipAnchor.self) { anchor in
+            GeometryReader { geometry in
+                if let anchor, let item = hoveredInstrument {
+                    HStack(spacing: 10) {
+                        Text(item.rawValue).fontWeight(.semibold)
+                        Text("⌘\(item.shortcutNumber)")
+                            .monospaced()
+                            .foregroundStyle(.secondary)
+                    }
+                    .font(.caption)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(.regularMaterial, in: Capsule())
+                    .overlay(Capsule().strokeBorder(.white.opacity(0.18), lineWidth: 0.5))
+                    .fixedSize()
+                    .position(x: geometry[anchor].midX, y: geometry[anchor].minY - 24)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                }
+            }
+        }
         .environment(\.colorScheme, .dark)
         .padding(.horizontal, 20)
         .padding(.top, 8)
@@ -150,6 +174,13 @@ struct MainTabView: View {
                     isSelected: selection == item
                 ) {
                     selection = item
+                }
+                .onHover { isHovered in
+                    if isHovered { hoveredInstrument = item }
+                    else if hoveredInstrument == item { hoveredInstrument = nil }
+                }
+                .anchorPreference(key: CockpitTooltipAnchor.self, value: .bounds) { anchor in
+                    hoveredInstrument == item ? anchor : nil
                 }
             }
         }
@@ -172,6 +203,13 @@ struct MainTabView: View {
         case .liveTV: LiveTVView(viewModel: liveTV, path: path(.liveTV))
         case .settings: SettingsView(path: path(.settings))
         }
+    }
+}
+
+private struct CockpitTooltipAnchor: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? { nil }
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
     }
 }
 
@@ -218,7 +256,6 @@ private struct MacNavigationInstrument: View {
         Button(title, action: action)
             .buttonStyle(CockpitInstrumentStyle(symbol: symbol, isSelected: isSelected))
             .pointerStyle(.link)
-            .help("\(title) (⌘\(shortcutNumber))")
             .accessibilityLabel(title)
             .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -240,7 +277,7 @@ private struct CockpitInstrumentStyle: ButtonStyle {
                 .frame(height: 22)
                 .shadow(color: .white.opacity(isSelected ? 0.35 : 0), radius: 6)
             Capsule()
-                .fill(.white.opacity(isSelected ? 0.95 : 0.12))
+                .fill(.white.opacity(isSelected ? 0.95 : 0))
                 .frame(width: 18, height: 2)
                 .shadow(color: .white.opacity(isSelected ? 0.6 : 0), radius: 4)
                 .accessibilityHidden(true)
