@@ -93,3 +93,11 @@ dark environment over its black panel for contrast in either app appearance.
 Reduce Transparency makes that panel opaque. Artwork hover adds brightness and
 shadow without changing card geometry; Reduce Motion disables its animation.
 The player retains its native compositing fill with a fine neutral edge.
+
+## Cinerama Icon Identity
+
+The West Coast icon uses a sculpted glass C/lens with sunset coral/amber and
+Pacific teal/blue over midnight blue. These colors belong to the icon and
+in-app brand artwork only; controls retain the neutral palette. Native Icon
+Composer and TV layers supply platform-specific presentation. See
+[icon design](docs/icon-design.md) for assets, regeneration and the final prompt.

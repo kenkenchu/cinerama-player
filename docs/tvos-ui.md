@@ -48,8 +48,10 @@ verification requirement, not a compiler guarantee.
 
 ## App Icon
 
-The TV icon reuses the exact coral-to-blue play mark from the Mac Icon Composer
-source, centered on a light neutral gradient matching the Mac composition.
+The TV icon reuses the Cinerama West Coast glass C from the Mac Icon Composer
+source, centered on a midnight-blue gradient matching the Mac composition.
+Sunset coral/amber and Pacific teal/blue are confined to the brand mark; see
+[icon design](icon-design.md) for the master and generation prompt.
 Foreground and background remain separate native TV parallax layers. Do not
 bake a rounded mask or a second square Mac icon inside the TV tile.
 

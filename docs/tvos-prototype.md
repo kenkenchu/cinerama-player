@@ -149,5 +149,5 @@ should contain `CFBundleIcons.CFBundlePrimaryIcon`. If registration is correct
 but the Home Screen is stale, restart Apple TV via Settings → System → Restart.
 The initial icon follow-up rebuilt/reinstalled successfully and verified app
 registration as not hidden; the user subsequently confirmed the icon appeared
-without a restart. The current icon replaces that temporary DUSK wordmark with
-the Mac's coral-to-blue logo on a light layered background; see [TV UI](tvos-ui.md).
+without a restart. The current icon uses Cinerama's sunset-and-Pacific glass C on a midnight-blue
+layered background; see [TV UI](tvos-ui.md) and [icon design](icon-design.md).

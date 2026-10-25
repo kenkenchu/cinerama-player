@@ -93,9 +93,12 @@ struct MainTabView: View {
             .listStyle(.sidebar)
             .safeAreaInset(edge: .top, spacing: 0) {
                 HStack(spacing: 12) {
-                    Image(systemName: "circle.hexagongrid.fill")
-                        .font(.system(size: 25, weight: .ultraLight))
-                        .padding(10)
+                    Image("LaunchLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
+                        .padding(7)
+                        .accessibilityHidden(true)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                     VStack(alignment: .leading, spacing: 3) {
                         Text("CINERAMA")
