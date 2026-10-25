@@ -52,7 +52,8 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
 ## Style
 
 `STYLE.md` is the Mac visual source of truth: native Mac controls, system materials
-and Liquid Glass, neutral palette, no app-wide color tint. Sunset Coral is
+and Liquid Glass, a fixed Cinematic Graphite palette independent of system
+appearance, no app-wide color tint. Sunset Coral is
 reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
 TV interaction/layout rules live separately in `docs/tvos-ui.md`.
 

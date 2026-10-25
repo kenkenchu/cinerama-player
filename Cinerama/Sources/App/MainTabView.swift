@@ -23,6 +23,7 @@ private enum MacDestination: String, CaseIterable, Identifiable {
 struct MainTabView: View {
     @Environment(PlexService.self) private var plex
     @Environment(PlaybackCoordinator.self) private var playback
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var playbackIsDetached = false
     @State private var selection: MacDestination = .home
     @State private var destinationBeforeSearch: MacDestination = .home
@@ -130,13 +131,11 @@ struct MainTabView: View {
         }
         .padding(12)
         .background {
-            CockpitHousing()
-                .fill(LinearGradient(
-                    colors: [Color(white: 0.19), Color(white: 0.075), Color(white: 0.10)],
-                    startPoint: .top, endPoint: .bottom
-                ))
+            if reduceTransparency {
+                CockpitHousing().fill(Color.cineramaSurface)
+            }
         }
-        .clipShape(CockpitHousing())
+        .glassEffect(reduceTransparency ? .identity : .regular, in: CockpitHousing())
         .overlay {
             CockpitHousing()
                 .stroke(LinearGradient(colors: [.white.opacity(0.45), .white.opacity(0.08), .white.opacity(0.22)],
@@ -276,7 +275,7 @@ private struct CockpitTooltipAnchor: PreferenceKey {
     }
 }
 
-/// An opaque graphite housing gives the console a physical silhouette while
+/// A chamfered glass housing gives the console a physical silhouette while
 /// keeping its established dimensions and navigation behavior.
 private struct CockpitHousing: Shape {
     func path(in rect: CGRect) -> Path {

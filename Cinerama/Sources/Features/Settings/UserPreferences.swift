@@ -34,7 +34,6 @@ final class UserPreferences {
         static let spatialAudioRemuxEnabled = "spatialAudioRemuxEnabled"
         static let hdrVideoRemuxEnabled = "hdrVideoRemuxEnabled"
         static let dolbyVision7ConversionEnabled = "dolbyVision7ConversionEnabled"
-        static let appearanceMode = "appearanceMode"
         static let libraryTabOrder = "libraryTabOrder"
         static let hiddenLibraryTabs = "hiddenLibraryTabs"
         static let showsLiveTVOnHome = "showsLiveTVOnHome"
@@ -180,11 +179,6 @@ final class UserPreferences {
     /// base layer. Only applies while `hdrVideoRemuxEnabled` is on.
     var dolbyVision7ConversionEnabled: Bool {
         didSet { UserDefaults.standard.set(dolbyVision7ConversionEnabled, forKey: Keys.dolbyVision7ConversionEnabled) }
-    }
-
-    /// App-wide appearance override.
-    var appearanceMode: AppearanceMode {
-        didSet { UserDefaults.standard.set(appearanceMode.rawValue, forKey: Keys.appearanceMode) }
     }
 
     /// The preferred order of library destinations in the main tab bar.
@@ -356,13 +350,6 @@ final class UserPreferences {
             fallback: .fiveGB
         )
 
-        let appearanceMode: AppearanceMode
-        if let raw = defaults.string(forKey: Keys.appearanceMode),
-           let mode = AppearanceMode(rawValue: raw) {
-            appearanceMode = mode
-        } else {
-            appearanceMode = .system
-        }
         let libraryTabOrder = Self.storedLibraryTabOrder(defaults: defaults)
         let hiddenLibraryTabs = Self.storedHiddenLibraryTabs(defaults: defaults)
 
@@ -387,7 +374,6 @@ final class UserPreferences {
         self.spatialAudioRemuxEnabled = defaults.object(forKey: Keys.spatialAudioRemuxEnabled) as? Bool ?? true
         self.hdrVideoRemuxEnabled = defaults.object(forKey: Keys.hdrVideoRemuxEnabled) as? Bool ?? true
         self.dolbyVision7ConversionEnabled = defaults.object(forKey: Keys.dolbyVision7ConversionEnabled) as? Bool ?? true
-        self.appearanceMode = appearanceMode
         self.libraryTabOrder = libraryTabOrder
         self.hiddenLibraryTabs = hiddenLibraryTabs
         self.showsLiveTVOnHome = defaults.bool(forKey: Keys.showsLiveTVOnHome)
@@ -513,30 +499,6 @@ final class UserPreferences {
         }
 
         return nil
-    }
-}
-
-enum AppearanceMode: String, CaseIterable, Identifiable {
-    case system
-    case light
-    case dark
-
-    var id: String { rawValue }
-
-    var displayName: String {
-        switch self {
-        case .system: "System"
-        case .light: "Light"
-        case .dark: "Dark"
-        }
-    }
-
-    var preferredColorScheme: ColorScheme? {
-        switch self {
-        case .system: nil
-        case .light: .light
-        case .dark: .dark
-        }
     }
 }
 

@@ -135,7 +135,7 @@ struct HomeLibraryBay: ViewModifier {
                 if reduceTransparency {
                     shape.fill(Color.cineramaSurface)
                 } else {
-                    shape.fill(.regularMaterial)
+                    shape.fill(Color.cineramaSurface.opacity(0.82))
                 }
             }
             .overlay {

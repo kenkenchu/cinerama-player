@@ -1,3 +1,4 @@
+import AppKit
 import AppIntents
 import AVFoundation
 import SwiftUI
@@ -15,6 +16,8 @@ struct CineramaApp: App {
     @State private var analytics: AnalyticsClient
 
     init() {
+        // Cover native windows, menus and separately hosted playback as well as SwiftUI.
+        NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
         AppImageCache.configureSharedCache()
         let service = PlexService()
         let seerr = SeerrService(plexService: service)
@@ -56,7 +59,7 @@ struct CineramaApp: App {
             .environment(offlinePlaybackSyncManager)
             .environment(userPreferences)
             .environment(analytics)
-            .preferredColorScheme(userPreferences.appearanceMode.preferredColorScheme)
+            .preferredColorScheme(.dark)
             .task {
                 analytics.recordAppOpenedIfNeeded()
             }

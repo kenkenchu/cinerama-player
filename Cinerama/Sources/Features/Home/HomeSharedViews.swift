@@ -158,7 +158,8 @@ extension View {
     @ViewBuilder
     func homeHeroNativeButtonStyle() -> some View {
         self
-            .buttonStyle(.bordered)
+            .buttonStyle(.glassProminent)
+            .tint(Color.cineramaPrimaryButtonTint)
             .buttonBorderShape(.capsule)
     }
 }

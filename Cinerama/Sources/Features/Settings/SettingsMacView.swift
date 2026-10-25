@@ -12,9 +12,9 @@ struct SettingsMacView: View {
         SettingsContainer(viewModel: viewModel) {
         Form {
             Section("Appearance") {
-                Picker("Appearance", selection: $preferences.appearanceMode) {
-                    ForEach(AppearanceMode.allCases) { Text($0.displayName).tag($0) }
-                }
+                LabeledContent("Theme", value: "Cinematic Graphite")
+                Text("A consistent graphite appearance with Liquid Glass, independent of macOS light and dark mode.")
+                    .foregroundStyle(.secondary)
             }
             Section("Playback") {
                 Toggle("Continue to the next episode", isOn: $preferences.continuousPlayEnabled)
@@ -63,6 +63,7 @@ struct SettingsMacView: View {
             }
         }
         .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
         }
         .navigationTitle("Settings")
         .confirmationDialog("Sign out of Plex?", isPresented: $confirmsSignOut) {

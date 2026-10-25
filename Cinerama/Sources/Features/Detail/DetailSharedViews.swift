@@ -501,12 +501,14 @@ struct DetailHeroStatusActionLabel: View {
 extension View {
     @ViewBuilder
     func detailHeroNativePrimaryButtonStyle() -> some View {
-        self
+        self.buttonStyle(.glassProminent)
+            .tint(Color.cineramaPrimaryButtonTint)
+            .buttonBorderShape(.capsule)
     }
 
     @ViewBuilder
     func detailHeroNativeSecondaryButtonStyle() -> some View {
-        self
+        self.buttonStyle(.glass).buttonBorderShape(.capsule)
     }
 
     @ViewBuilder
