@@ -14,8 +14,12 @@ servers beneath the shell and retries on profile, foreground, and network change
 
 The shell is a `NavigationSplitView` with fixed Home, Movies, TV Shows, Videos,
 Live TV, Search, Downloads, and Settings destinations and per-destination
-navigation paths. Cmd-F selects Search. Shared `AppNavigationRoute` values carry
-server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
+navigation paths. The native List uses the neutral AccentColor asset for
+focused selection; its dark-appearance variant is charcoal, keeping the system's
+light selected text readable. Focus moving into the detail view or another
+window may still change the native highlight emphasis. Do not replace the List
+or clear keyboard focus to suppress that change. Cmd-F selects Search. Shared
+`AppNavigationRoute` values carry server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
 feature's stack. Switching destinations dismisses the active player.
 
 Availability is per server. Connecting or failing servers do not block Downloads
@@ -216,7 +220,7 @@ Archived mobile/TV layouts in `upstream/ui-features.md` are historical only.
 ## Futuristic Mac presentation
 
 `MainTabView` groups the destinations into
-Discover and Workspace beneath a Dusk masthead. Native sidebar selection,
+Discover and Workspace beneath a Cinerama masthead. Native sidebar selection,
 per-destination paths and the separate playback host are unchanged.
 `HomeCinematicHero` places its title/actions in a dark framed panel with a
 featured/continue-watching label; its dark environment preserves readable copy

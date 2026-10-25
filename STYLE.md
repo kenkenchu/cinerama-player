@@ -33,7 +33,11 @@ SwiftUI colors. Keep these light/dark values consistent:
 
 `duskPrimaryActionLabel` supplies the contrasting primary-action label.
 `duskPrimaryButtonTint` is translucent primary, not the brand color. The global
-`AccentColor` asset is neutral. New color rules require updating this document.
+`AccentColor` asset is neutral: black in light appearance and charcoal
+(`#4A4A4E`) in dark appearance. The accent can fill focused native sidebar
+selection, so its dark variant must contrast with the system's light selected
+text; do not use near-white there. Unfocused selection remains system-managed.
+New color rules require updating this document.
 
 ## Typography and Geometry
 
