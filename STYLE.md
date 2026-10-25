@@ -5,7 +5,7 @@
 This document governs the native macOS interface. The maintained tvOS target
 has its own layout/input rules in `docs/tvos-ui.md`. The Mac interface should
 feel at home
-with a sidebar, resizable window, keyboard and pointer input, standard menus,
+with a resizable window, keyboard and pointer input, standard menus,
 and native fullscreen.
 
 1. Use system `List`, `Form`, `Toggle`, `Picker`, `Slider`, menus, toolbars and
@@ -34,9 +34,11 @@ SwiftUI colors. Keep these light/dark values consistent:
 `duskPrimaryActionLabel` supplies the contrasting primary-action label.
 `duskPrimaryButtonTint` is translucent primary, not the brand color. The global
 `AccentColor` asset is neutral: black in light appearance and charcoal
-(`#4A4A4E`) in dark appearance. The accent can fill focused native sidebar
-selection, so its dark variant must contrast with the system's light selected
-text; do not use near-white there. Unfocused selection remains system-managed.
+(`#4A4A4E`) in dark appearance. The accent can fill native selected controls,
+so its dark variant must contrast
+with the system's light selected text; do not use near-white there. The cockpit
+console uses its own neutral primary-opacity fill and primary text, without an
+accent-colored selection.
 New color rules require updating this document.
 
 ## Typography and Geometry
@@ -62,7 +64,11 @@ and time readouts can use monospaced digits.
 
 ## Screens and Interaction
 
-The sidebar uses `NavigationSplitView`. Details remain backdrop-led without an
+Navigation uses a pinned bottom instrument console of native buttons, with
+icons and visible labels for all eight destinations. A neutral plate and short
+underline identify the selected instrument in either appearance. Keep native
+keyboard focus, the Navigate menu shortcuts and the full-width destination
+NavigationStacks. Details remain backdrop-led without an
 extra poster in the hero. Shared primary/secondary action helpers keep Play,
 Resume, watched, and download controls consistent. A small quiet checkmark marks
 watched items; partial progress is neutral over artwork.
@@ -90,8 +96,8 @@ is not the source of truth for this fork.
 ## Futuristic Mac Presentation
 
 The Mac interface keeps the neutral palette and native
-navigation, with a more architectural presentation: a typographic Cinerama sidebar
-masthead, Discover/Workspace groups, ruled shelf headings, illuminated artwork
+navigation, with a more architectural presentation: a Cinerama cockpit instrument
+console, ruled shelf headings, illuminated artwork
 edges, and a framed cinematic hero information panel. Hero copy always uses a
 dark environment over its black panel for contrast in either app appearance.
 Reduce Transparency makes that panel opaque. Artwork hover adds brightness and
@@ -116,8 +122,9 @@ accessibility; no decorative animation loop or invented equipment status is used
 The header count and viewport index reflect the actual featured items.
 
 The viewport stays dark; the surrounding deck follows light/dark appearance.
-The native toolbar remains visible and the sidebar keeps its confirmed charcoal
-selection. The hero panel reserves its internal padding when calculating width,
+The native toolbar remains visible above the full-width destination; the
+instrument console reserves a bottom safe-area inset. The hero panel reserves
+its internal padding when calculating width,
 uses compact typography in smaller windows and preserves native Play/Resume and
 pager interaction. Reduce Transparency makes library bays and the hero panel
 opaque. The underlying Plex Home content and TV interface are unchanged.

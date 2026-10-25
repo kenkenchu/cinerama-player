@@ -12,7 +12,7 @@ its neutral palette. The mark has no wordmark or baked tile/mask.
   icon shape, lighting and appearance handling. The old darken blend override is
   removed so sunset highlights remain visible.
 - In-app branding: `LaunchLogo.imageset/cinerama-west-coast.png` is an exact
-  copy of the master, used by sign-in and the Mac sidebar masthead.
+  copy of the master, used by sign-in and the Mac instrument console.
 - TV: `swift scripts/generate_tvos_icon.swift` centers the visible master
   into transparent Front layers and generates opaque midnight-blue Back layers
   at 400 × 240, 800 × 480 and 1280 × 768. Native tvOS supplies masking/parallax.

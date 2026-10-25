@@ -5,6 +5,7 @@ private enum MacDestination: String, CaseIterable, Identifiable {
     case home = "Home", movies = "Movies", shows = "TV Shows", videos = "Videos"
     case liveTV = "Live TV", search = "Search", downloads = "Downloads", settings = "Settings"
     var id: Self { self }
+    var shortcutNumber: Int { (Self.allCases.firstIndex(of: self) ?? 0) + 1 }
     var symbol: String {
         switch self {
         case .home: "house"
@@ -23,8 +24,8 @@ struct MainTabView: View {
     @Environment(PlexService.self) private var plex
     @Environment(PlaybackCoordinator.self) private var playback
     @State private var playbackIsDetached = false
-    @State private var columnVisibility: NavigationSplitViewVisibility = .all
-    @State private var selection: MacDestination? = .home
+    @State private var selection: MacDestination = .home
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var paths: [MacDestination: NavigationPath] = [:]
     @State private var libraries: LibrariesViewModel?
     @State private var liveTV: LiveTVViewModel?
@@ -72,67 +73,84 @@ struct MainTabView: View {
         .onReceive(NotificationCenter.default.publisher(for: .duskShowSearch)) { _ in
             selection = .search
         }
+        .onReceive(NotificationCenter.default.publisher(for: .duskSelectDestination)) { notification in
+            guard let name = notification.object as? String,
+                  let destination = MacDestination(rawValue: name) else { return }
+            selection = destination
+        }
     }
 
     /// Playback is a sibling above this shell, never a replacement for a
     /// NavigationStack root that may have a pushed detail destination.
     private var navigationShell: some View {
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            List(selection: $selection) {
-                Section("Discover") {
-                    ForEach([MacDestination.home, .movies, .shows, .videos, .liveTV]) { item in
-                        sidebarRow(item)
-                    }
-                }
-                Section("Workspace") {
-                    ForEach([MacDestination.search, .downloads, .settings]) { item in
-                        sidebarRow(item)
-                    }
-                }
-            }
-            .listStyle(.sidebar)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                HStack(spacing: 12) {
-                    Image("LaunchLogo")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 32, height: 32)
-                        .padding(7)
-                        .accessibilityHidden(true)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("CINERAMA")
-                            .font(.system(.title3, design: .rounded, weight: .bold))
-                            .tracking(2)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.75)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(18)
-                .accessibilityElement(children: .combine)
-            }
-            .navigationTitle("")
-            .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 290)
-        } detail: {
+        Group {
             if let libraries, let liveTV {
-                destination(selection ?? .home, libraries: libraries, liveTV: liveTV)
+                destination(selection, libraries: libraries, liveTV: liveTV)
             } else {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            navigationConsole
+        }
     }
 
-    private func sidebarRow(_ item: MacDestination) -> some View {
-        Label {
-            Text(item.rawValue)
-                .font(.system(.body, weight: selection == item ? .semibold : .regular))
-        } icon: {
-            Image(systemName: item.symbol)
-                .symbolVariant(selection == item ? .fill : .none)
+    private var navigationConsole: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 20) {
+                HStack(spacing: 10) {
+                    Image("LaunchLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 36, height: 36)
+                        .accessibilityHidden(true)
+                    Text("CINERAMA")
+                        .font(.system(.caption, design: .monospaced, weight: .semibold))
+                        .tracking(1.5)
+                }
+                .accessibilityElement(children: .combine)
+                Divider().frame(height: 36)
+                navigationInstruments
+            }
+            navigationInstruments
         }
-        .padding(.vertical, 7)
-        .tag(item)
+        .padding(12)
+        .background {
+            let shape = RoundedRectangle(cornerRadius: 28, style: .continuous)
+            if reduceTransparency {
+                shape.fill(Color.duskSurface)
+            } else {
+                shape.fill(.regularMaterial)
+            }
+        }
+        .overlay {
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .strokeBorder(.primary.opacity(0.14), lineWidth: 0.75)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var navigationInstruments: some View {
+        HStack(spacing: 6) {
+            ForEach(MacDestination.allCases) { item in
+                MacNavigationInstrument(
+                    title: item.rawValue,
+                    symbol: item.symbol,
+                    shortcutNumber: item.shortcutNumber,
+                    isSelected: selection == item
+                ) {
+                    selection = item
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Navigation instruments")
     }
 
     private func path(_ item: MacDestination) -> Binding<NavigationPath> {
@@ -153,9 +171,61 @@ struct MainTabView: View {
     }
 }
 
+/// Native buttons keep keyboard focus and activation while the instrument
+/// face supplies an appearance-aware neutral selection, independent of tint.
+private struct MacNavigationInstrument: View {
+    let title: String
+    let symbol: String
+    let shortcutNumber: Int
+    let isSelected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 7) {
+                Image(systemName: symbol)
+                    .symbolVariant(isSelected ? .fill : .none)
+                    .font(.system(.title3, weight: .medium))
+                    .frame(height: 22)
+                Text(title)
+                    .font(.system(.caption, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+                Capsule()
+                    .fill(.primary.opacity(isSelected ? 0.8 : 0.12))
+                    .frame(width: 18, height: 2)
+                    .accessibilityHidden(true)
+            }
+            .foregroundStyle(isSelected ? Color.primary : Color.secondary)
+            .frame(width: 76)
+            .padding(.vertical, 10)
+            .background {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(.primary.opacity(isSelected ? 0.10 : 0.025))
+            }
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(.primary.opacity(isSelected ? 0.25 : 0.06), lineWidth: 0.75)
+            }
+            .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+        .pointerStyle(.link)
+        .help("\(title) (⌘\(shortcutNumber))")
+        .accessibilityLabel(title)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
 struct DuskMacCommands: Commands {
     var body: some Commands {
-        SidebarCommands()
+        CommandMenu("Navigate") {
+            ForEach(MacDestination.allCases) { item in
+                Button(item.rawValue, systemImage: item.symbol) {
+                    NotificationCenter.default.post(name: .duskSelectDestination, object: item.rawValue)
+                }
+                .keyboardShortcut(KeyEquivalent(Character(String(item.shortcutNumber))), modifiers: .command)
+            }
+        }
         CommandGroup(after: .textEditing) {
             Button("Search Library") { NotificationCenter.default.post(name: .duskShowSearch, object: nil) }
                 .keyboardShortcut("f", modifiers: .command)
@@ -165,6 +235,7 @@ struct DuskMacCommands: Commands {
 
 extension Notification.Name {
     static let duskShowSearch = Notification.Name("DuskShowSearch")
+    static let duskSelectDestination = Notification.Name("DuskSelectDestination")
 }
 
 /// Reparents one hosting view so fullscreen never recreates the player session

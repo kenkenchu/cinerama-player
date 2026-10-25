@@ -12,15 +12,21 @@ gates Plex authentication and Home selection, then mounts
 `App/MainTabView.swift`. `ServerConnectionCoordinator` connects all enabled
 servers beneath the shell and retries on profile, foreground, and network changes.
 
-The shell is a `NavigationSplitView` with fixed Home, Movies, TV Shows, Videos,
-Live TV, Search, Downloads, and Settings destinations and per-destination
-navigation paths. The native List uses the neutral AccentColor asset for
-focused selection; its dark-appearance variant is charcoal, keeping the system's
-light selected text readable. Focus moving into the detail view or another
-window may still change the native highlight emphasis. Do not replace the List
-or clear keyboard focus to suppress that change. Cmd-F selects Search. Shared
-`AppNavigationRoute` values carry server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
-feature's stack. Switching destinations dismisses the active player.
+The shell is a full-width destination view with a pinned bottom instrument
+console, replacing the sidebar. Home, Movies, TV Shows, Videos, Live TV, Search,
+Downloads and Settings remain available on every catalog screen. Native buttons
+use icons, labels and an underlined neutral selected state. Selection follows
+appearance-aware primary/secondary colors instead of the accent fill.
+`ViewThatFits` drops the console wordmark first when space is tight; it keeps
+all eight destinations visible at the supported minimum window width.
+Reduce Transparency substitutes an opaque console surface.
+
+Each destination retains its own `NavigationPath`. The Navigate menu supplies
+Cmd-1 through Cmd-8 in instrument order; Cmd-F still selects Search. The obsolete
+Show/Hide Sidebar command is removed. Shared `AppNavigationRoute` values carry
+server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
+feature's stack. Switching destinations dismisses the active player; selecting
+the current instrument preserves its pushed route.
 
 Availability is per server. Connecting or failing servers do not block Downloads
 or replace working content. Retry goes through the connection coordinator.
@@ -108,7 +114,8 @@ above the whole shell in both windowed and fullscreen playback. The catalog
 stack stays mounted, invisible and noninteractive underneath, so a pushed detail
 page cannot stay in front of the player when Play is selected. Do not replace a
 split-view detail root to present playback: native pushed destinations can remain
-in front while audio starts. Closing playback restores the same page and sidebar.
+in front while audio starts. Closing playback restores the same page and
+instrument console.
 The player hides the navigation toolbar and uses one video canvas in windowed
 and fullscreen playback. Controls attach as a bottom overlay of that canvas,
 so windowed toolbar/safe-area insets cannot offset them from their background. The bottom control bar contains a fullscreen toggle that
@@ -134,7 +141,7 @@ player session. View disappearance during this transfer releases UI timers and
 display-sleep activity without pausing the engine; reappearance restores those
 resources without repeating track selection. Playing and paused states are
 preserved in both directions. Closing playback (including the separate window) restores the
-shell with its previous sidebar visibility and navigation path. The main window's
+shell with its previous destination and navigation path. The main window's
 green button remains independent; the player button, double-click and Ctrl-Cmd-F
 use the playback window.
 
@@ -205,7 +212,7 @@ The fork has no StoreKit purchasing, supporter prompts or alternate icon picker.
 pending Plex write on exit. Server/library rows use the shared native list
 editors; do not reintroduce remote focus-driven ordering.
 
-Downloads remain a fixed sidebar destination, including when empty or offline.
+Downloads remain a fixed instrument destination, including when empty or offline.
 Their queue, metadata, disk paths and delayed watch-state sync stay in the
 manager layer; see `downloads-and-offline.md`. Subtitle appearance is configured
 only in macOS System Settings → Accessibility → Captions; see `playback.md` for
@@ -221,9 +228,9 @@ Archived mobile/TV layouts in `upstream/ui-features.md` are historical only.
 
 ## Futuristic Mac presentation
 
-`MainTabView` groups the destinations into
-Discover and Workspace beneath a Cinerama masthead. Native sidebar selection,
-per-destination paths and the separate playback host are unchanged.
+`MainTabView` presents the destinations as a bottom cockpit instrument console
+with a Cinerama wordmark when space permits. Per-destination paths and the
+separate playback host are retained.
 `HomeCinematicHero` places its title/actions in a dark framed panel with a
 featured/continue-watching label; its dark environment preserves readable copy
 in light appearance. `MediaCarousel` supplies ruled headings, while
@@ -251,3 +258,11 @@ Live TV only. Reduce Transparency substitutes opaque surfaces. The prior empty
 error and outage routes remain owned by `HomeView`. TV does not compile any of
 these Mac view types. Verify light/dark, narrow windows, long titles, hero drag,
 pager, Show All and return from playback when runtime inspection is authorized.
+
+The console is inserted outside the destination NavigationStack using a bottom
+safe-area inset, reserving space rather than covering the last content row.
+The whole catalog shell, including its instruments, stays mounted but hidden
+and disabled beneath windowed playback. Detached fullscreen keeps the catalog
+window's console visible. `MacPlaybackHost` and its fullscreen/Escape handling
+are unchanged. Runtime checks should cover all eight instruments, the Navigate
+menu/shortcuts, narrow-window labels, back navigation and return from playback.

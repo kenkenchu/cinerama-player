@@ -10,7 +10,7 @@ outside the Mac UI tree and explicitly reuse models/services; see
 
 ```text
 Dusk/Sources/
-  App/              DuskApp, auth gate, sidebar MainTabView, routes, server connection lifecycle
+  App/              DuskApp, auth gate, instrument-console MainTabView, routes, server connection lifecycle
   Analytics/        Anonymous app-open event and reporting transport
   Models/           Plex/Seerr response models and app media types
   PlexService/      Auth, server pool, account/server APIs, images, playback URLs
@@ -50,9 +50,9 @@ bootstrap, optionally presents the profile picker, then opens `MainTabView`.
 `ServerConnectionCoordinator` connects enabled servers under the shell, refreshes
 on session/foreground/network changes, and exposes Retry to screens.
 
-`App/MainTabView.swift` owns the `NavigationSplitView` sidebar and per-destination
-paths. Home, Movies, TV Shows, Videos, Live TV, Search, Downloads, and Settings
-are fixed sidebar destinations. Player presentation is a separate navigation
+`App/MainTabView.swift` owns the full-width shell, pinned bottom instrument
+console, Navigate menu commands and per-destination paths. Home, Movies, TV
+Shows, Videos, Live TV, Search, Downloads, and Settings are fixed instruments. Player presentation is a separate navigation
 stack above the entire shell. The shell stays mounted but hidden during playback
 to preserve pushed detail routes and prevent them from covering the player.
 `AppNavigationRoute` carries server-scoped identities into detail/library flows.

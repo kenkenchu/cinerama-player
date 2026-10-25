@@ -6,7 +6,7 @@ have been removed; they are not evidence of the current Mac UI or this fork's
 store availability.
 
 For an explicitly requested visual check, use the native `Dusk-macOS` app on the
-Mac and inspect light/dark appearance, window resizing, sidebar/search, details,
+Mac and inspect light/dark appearance, window resizing, navigation instruments/search, details,
 and player controls. Use a local demonstration library or avoid exposing account,
 server or private media details in published captures.
 

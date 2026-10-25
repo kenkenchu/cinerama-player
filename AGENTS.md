@@ -13,7 +13,7 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   `Dusk-tvOS` (Apple TV HD/A8, tvOS 26+, user device on 26.6).
   Feature availability differs; do not imply full TV/Mac parity.
 - `project.yml` is the source of truth; XcodeGen produces `Dusk.xcodeproj`.
-- `App/` owns app lifetime and sidebar navigation; `Features/Player/` owns the
+- `App/` owns app lifetime and instrument-console navigation; `Features/Player/` owns the
   native player controls; `Playback/` owns AVPlayer and desktop VLCKit engines.
 - Maintain native Mac behavior, keyboard/pointer interaction, resizable windows,
   fullscreen, and Local Network permission handling.
@@ -137,7 +137,7 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   TV bundle identifier despite its historical `.prototype` suffix to retain
   the user’s linked account and app storage.
 
-- Native entry and sidebar: `Dusk/Sources/App/DuskApp.swift` and
+- Native entry and instrument console: `Dusk/Sources/App/DuskApp.swift` and
   `Dusk/Sources/App/MainTabView.swift`. Player controls live in
   `Dusk/Sources/Features/Player/PlayerView.swift`; Mac settings live in
   `Dusk/Sources/Features/Settings/SettingsMacView.swift`.
@@ -150,6 +150,11 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - Apple Development signing is now configured and the user confirmed the result
   works. The missing WWDR G3 intermediate was installed from Apple. Preserve
   certificate signing on future builds to avoid repeated Keychain authorization.
+- The Mac sidebar has been replaced by a pinned bottom instrument console in
+  `MainTabView`. All eight destinations retain independent paths. Navigate uses
+  Cmd-1 through Cmd-8; Cmd-F opens Search. The console is hidden with the shell
+  during windowed playback. Keep native buttons, readable neutral selection and
+  the separate playback host; TV navigation remains independent.
 - Player presentation belongs above the whole navigation shell in its own
   stack. Keep catalog stacks mounted but hidden/disabled underneath; replacing
   the split-view detail root can leave a pushed catalog page in front of active
