@@ -37,7 +37,20 @@ or runs tests. Output: `.build/macos/DerivedData/Build/Products/Debug/Cinerama.a
 
 The supported app is arm64 on macOS 26+. Only the desktop VLC framework and
 `macos-arm64` CineramaDovi slice are needed. `CineramaTests` is a native hosted test target
-for retained model/service tests; tests are not part of the routine agent gate.
+for retained model/service tests. Automated tests are now part of the routine
+agent gate after code changes. Run the Mac scheme's test action with the same
+Apple Development identity and derived-data directory as the signed build:
+
+```bash
+xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Debug \
+  -destination 'platform=macOS,arch=arm64' -derivedDataPath .build/macos/DerivedData \
+  CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual \
+  "CODE_SIGN_IDENTITY=${CINERAMA_MACOS_SIGNING_IDENTITY}" test
+```
+
+The hosted test process is authorized for automated verification. Manual app
+launches and visual inspection are left to the user. A passing test suite does
+not establish rendered video, focus or visual correctness on either device.
 
 ## VLCKit Bootstrap
 
@@ -143,8 +156,7 @@ xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Deb
 ```
 
 The unsigned product is only a compiler check. Rebuild with the signing script
-before handing an app to the user. Do not launch the app or run tests unless
-explicitly requested. Docs-only edits need link/reference and diff checks.
+before handing an app to the user. Run automated tests; leave manual app launches and visual inspection to the user. Docs-only edits need link/reference and diff checks.
 
 ## Independent Cinerama Development
 
@@ -173,4 +185,4 @@ changes require both signed builds. The Mac signing identity and sandbox/
 executable identity settings remain unchanged. TV uses its own development
 profile and team setting; see [TV device workflow](tvos-prototype.md).
 A successful compile is not visual or input parity. Do not launch apps or run
-tests without explicit authorization; the user verifies device behavior.
+manual runtime checks; automated tests are authorized and the user verifies device behavior.

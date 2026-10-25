@@ -69,8 +69,8 @@ allows explicit version and track choices. This does not constrain Mac routing.
 
 Both signed builds and the generated-project boundary check are required.
 Moved model/conformance/availability/navigation definitions were compared with
-their originals to preserve Mac behavior. Agents do not launch either app or
-run tests without explicit authorization.
+their originals to preserve Mac behavior. Agents run automated tests and leave manual app launches and visual inspection
+to the user.
 
 On the Apple TV HD, verify:
 

@@ -129,8 +129,8 @@ Never expose media/artwork URLs, tokens or credentials in these diagnostics.
 
 Run both signed builds and the generated-project platform-boundary check.
 The build scripts run this structural check automatically after XcodeGen.
-Install the signed TV build on Apple TV HD for user verification. Agents do not
-launch apps or run tests unless explicitly requested. Verify Home/library
+Install the signed TV build on Apple TV HD for user verification. Agents run automated tests; manual app launches and visual inspection are
+left to the user. Verify Home/library
 browsing, search, focus/Back, paging, direct/remux playback, audio/subtitles,
 remembered Off across episodes/profiles, system captions, progress/resume and
 completion. Mac visuals/input need their own authorized runtime check.

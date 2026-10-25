@@ -34,16 +34,20 @@ struct PlaybackFallbackTests {
 
     @Test func explicitServerConversionsAreRejectedBeforeServerAccess() async {
         let service = PlexService()
-        let modes: [PlexService.TranscodeDeliveryMode] = [
-            .manualTranscode(.original), .spatialAudioRemux(convertsAudio: true)
-        ]
-        for mode in modes {
+        for convertsAudio in [false, true] {
             do {
-                _ = try await service.transcodeLadderSession(
-                    ratingKey: "1", mediaIndex: 0, mode: mode,
-                    sessionIdentifier: "test", transcodeSessionID: "test",
-                    audioStreamID: nil, subtitleStreamID: nil, serverID: nil
-                )
+                if convertsAudio {
+                    _ = try await service.spatialAudioRemuxURL(
+                        ratingKey: "1", mediaIndex: 0,
+                        sessionIdentifier: "test", transcodeSessionID: "test",
+                        audioStreamID: nil, subtitleStreamID: nil, convertsAudio: true
+                    )
+                } else {
+                    _ = try await service.transcodeURL(
+                        ratingKey: "1", mediaIndex: 0, preset: .p720_4Mbps,
+                        sessionIdentifier: "test", transcodeSessionID: "test"
+                    )
+                }
                 Issue.record("Server conversion must be rejected")
             } catch {
                 #expect(error.localizedDescription.contains("transcoding is disabled"))

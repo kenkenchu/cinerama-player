@@ -104,8 +104,11 @@ steps in `docs/development-workflow.md`. Never commit private keys or certificat
 
 After code changes, complete this signed, compile-only Mac build before
 finishing. TV, shared-source and project changes also require the signed
-`scripts/build_tvos.sh` build (see `docs/tvos-prototype.md`). The Mac build verifies nested signatures and the embedded VLC binary. Do not
-run tests or launch the app unless the user explicitly asks.
+`scripts/build_tvos.sh` build (see `docs/tvos-prototype.md`). The Mac build verifies nested signatures and the embedded VLC binary. Run automated tests after code changes, using the Mac scheme's hosted unit-test
+suite for applicable shared/Mac logic and any platform-specific automated checks.
+The user has authorized automated test execution, including its required test host.
+Do not manually launch apps or perform visual inspection; the user handles visual
+and device interaction verification.
 
 For a compiler check after bootstrap only:
 
@@ -182,7 +185,14 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
   windowed/fullscreen control-bar alignment, and Home Resume progress-fill
   corners. The player uses one canvas with no navigation toolbar; keep the
   fullscreen toggle and Close icon (`rectangle.portrait.and.arrow.right`) in the
-  bottom control bar. Escape closes playback; there is no top-left Close overlay.
+  bottom control bar. Escape exits fullscreen to windowed playback, then closes
+  playback on a separate press; there is no top-left Close overlay.
+- Mac playback window transfers keep a stable SwiftUI root and renderer host.
+  `MacPlaybackWindowState` serializes enter/exit transitions and ignores held
+  Escape repeats. Retired-window callbacks must not restore or dismiss a newer
+  presentation. See `MacPlaybackWindowTests` for automated sequence coverage;
+  the user's reported fullscreen/Resume video loss still needs device confirmation
+  after the fix. Agents run automated tests; the user performs visual inspection.
 - Controls hide after two seconds, but stay visible while hovered, paused, or
   scrubbing. The compact bar shows series name, season/episode numbers and title.
   The monitor-and-waveform button (Cmd-I) opens safe playback diagnostics.
@@ -222,9 +232,12 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
   diagnostics contract, Mac-only forwarding wrappers, and upstream website/mobile
   screenshot assets. Historical Markdown stays under `docs/upstream/`; the
   current player menus, overlay, subtitle search, and native build inputs remain.
-- Latest source changes passed Apple Development-signed compile-only builds;
-  agents did not launch the app or run tests. Basic user-confirmed playback is
-  not HDR/Atmos fidelity, offline, or comprehensive subtitle runtime verification.
+- Latest window-sequence changes passed both signed builds and 18 focused
+  automated tests. The full Mac suite ran 177 tests with four assertion failures
+  in three existing HDR/Dolby Vision test areas; see `docs/ui-features.md`.
+  Automated hosted tests are authorized; manual/visual verification is user-owned.
+  Basic user-confirmed playback is not HDR/Atmos fidelity, offline, or
+  comprehensive subtitle runtime verification.
 - The user handles browser-based actions. Provide instructions when a browser
   step is needed; use local CLI workflows for authorized repository work.
 

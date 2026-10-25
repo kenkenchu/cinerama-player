@@ -256,8 +256,8 @@ manager preferences do not imply an existing UI control.
 
 ## Verification
 
-Run the signed Mac compile after code changes. Do not launch the app or run tests
-unless requested. For authorized visual checks, switch the system appearance
+Run the signed Mac compile and automated tests after code changes. Leave
+manual app launches and visual inspection to the user. For authorized visual checks, switch the system appearance
 while checking that the app stays metallic-blue, then inspect resized
 windows, keyboard/pointer navigation, error states and player dismissal.
 Archived mobile/TV layouts in `upstream/ui-features.md` are historical only.
@@ -299,8 +299,7 @@ The console is inserted outside the destination NavigationStack using a bottom
 safe-area inset, reserving space rather than covering the last content row.
 The whole catalog shell, including its instruments, stays mounted but hidden
 and disabled beneath windowed playback. Detached fullscreen keeps the catalog
-window's console visible. `MacPlaybackHost` and its fullscreen/Escape handling
-are unchanged. Runtime checks should cover all eight instruments, the Navigate
+window's console visible. `MacPlaybackHost` owns stable-root window transfers and serialized fullscreen/Escape handling. Runtime checks should cover all eight instruments, the Navigate
 menu/shortcuts, narrow-window instruments, back navigation and return from playback.
 
 While the pointer is inside the visible Home hero, unmodified Left/Right arrows
@@ -336,3 +335,34 @@ Reduce Transparency swaps in the opaque metal-blue background. Native forms,
 artwork fades and player surfaces retain their own readability/compositing fills.
 The signed Mac compile passed; desktop transparency and contrast need user visual
 verification, and agents did not launch the app or run tests.
+
+## Playback Window Sequence Hardening
+
+`MacPlaybackContent` stays the same typed SwiftUI root through fullscreen entry
+and exit. Only its observable presentation flag changes; do not replace the
+hosting view's root/navigation stack while moving a shared engine renderer.
+`updateNSView` remembers the current inline container and repairs attachment
+when inline. Restore attaches and lays out the host before clearing detached
+state, closing the retired fullscreen window and focusing the main window.
+
+`MacPlaybackWindowState` separates inline, entering, fullscreen, exiting and
+closed phases. Escape repeats and commands during transitions are consumed;
+leaving fullscreen cannot turn a held Escape into a windowed Close. Native
+fullscreen callbacks use the same state transitions, and callbacks are accepted
+only from the currently owned window. Teardown marks the host closed before
+removing the view/window so late delegate events cannot restore it. Both the
+SwiftUI Exit command and key monitor route through this policy. TV's native
+AVKit fullscreen presentation is independent of this Mac window lifecycle.
+
+Automated sequence coverage in `MacPlaybackWindowTests` exercises Escape,
+repeated transitions, failed entry/exit, native exit, closing mid-transition and
+fresh state after dismissal/Resume. AppKit attachment tests additionally verify
+host identity and layout through reparenting, inline-container replacement, and
+retired-host teardown after a new presentation. The focused run passed all 18
+tests across the two window suites and playback recovery suite. Both signed
+builds passed. The full suite also exposes existing failures in Dolby Vision
+playlist dimensions, empty-RPU error classification, and 10-bit H.264 engine
+expectations; those unrelated production paths are unchanged by this fix.
+These checks do not prove rendered video.
+The user should retry fullscreen → Escape → windowed playback, then close and
+Resume, for both playing and paused sessions; visual inspection is user-owned.

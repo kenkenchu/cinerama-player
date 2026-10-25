@@ -387,9 +387,80 @@ extension Notification.Name {
     static let cineramaSelectDestination = Notification.Name("CineramaSelectDestination")
 }
 
+/// Fullscreen animation and key handling must agree on one presentation phase.
+struct MacPlaybackWindowState {
+    enum Phase: Equatable { case inline, enteringFullscreen, fullscreen, exitingFullscreen, closed }
+    enum EscapeAction: Equatable { case ignore, exitFullscreen, dismissPlayback }
+    private(set) var phase: Phase = .inline
+
+    var isTransitioning: Bool { phase == .enteringFullscreen || phase == .exitingFullscreen }
+
+    mutating func beginEntering() -> Bool {
+        guard phase == .inline else { return false }
+        phase = .enteringFullscreen
+        return true
+    }
+
+    mutating func didEnter() {
+        guard phase == .enteringFullscreen else { return }
+        phase = .fullscreen
+    }
+
+    mutating func beginExiting() -> Bool {
+        guard phase == .fullscreen else { return false }
+        phase = .exitingFullscreen
+        return true
+    }
+
+    mutating func didRestoreInline() {
+        guard phase != .closed else { return }
+        phase = .inline
+    }
+
+    mutating func failedToExit() {
+        guard phase == .exitingFullscreen else { return }
+        phase = .fullscreen
+    }
+
+    func escapeAction(isRepeat: Bool) -> EscapeAction {
+        guard !isRepeat else { return .ignore }
+        switch phase {
+        case .inline: return .dismissPlayback
+        case .fullscreen: return .exitFullscreen
+        case .enteringFullscreen, .exitingFullscreen, .closed: return .ignore
+        }
+    }
+
+    mutating func close() { phase = .closed }
+}
+
+@MainActor @Observable
+private final class MacPlaybackPresentation {
+    var isFullScreen = false
+}
+
+/// Stable SwiftUI root: changing windows must not replace the navigation stack
+/// or construct a second renderer for the same engine.
+private struct MacPlaybackContent: View {
+    let playback: PlaybackCoordinator
+    let presentation: MacPlaybackPresentation
+    let toggleFullScreen: () -> Void
+    let exitPlayback: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            PlayerView(isFullScreen: presentation.isFullScreen,
+                       toggleFullScreen: toggleFullScreen, exitPlayback: exitPlayback)
+                .ignoresSafeArea(.container, edges: .all)
+        }
+        .toolbarVisibility(.hidden, for: .windowToolbar)
+        .environment(playback)
+    }
+}
+
 /// Reparents one hosting view so fullscreen never recreates the player session
 /// or changes the catalog window's fullscreen state.
-private struct MacPlaybackHost: NSViewRepresentable {
+struct MacPlaybackHost: NSViewRepresentable {
     let playback: PlaybackCoordinator
     @Binding var isDetached: Bool
 
@@ -399,12 +470,13 @@ private struct MacPlaybackHost: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSView {
         let container = NSView()
-        context.coordinator.container = container
-        context.coordinator.attachPlayer(to: container)
+        context.coordinator.updateContainer(container)
         return container
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.updateContainer(nsView)
+    }
 
     static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
         coordinator.tearDown()
@@ -413,11 +485,12 @@ private struct MacPlaybackHost: NSViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, NSWindowDelegate {
         let playback: PlaybackCoordinator
-        weak var container: NSView?
-        private var hostingView: NSHostingView<AnyView>?
+        private weak var container: NSView?
+        private var hostingView: NSHostingView<MacPlaybackContent>?
         private var fullscreenWindow: NSWindow?
         private var escapeMonitor: Any?
-        private var transitioning = false
+        private var windowState = MacPlaybackWindowState()
+        private let presentation = MacPlaybackPresentation()
         private let detached: Binding<Bool>
 
         init(playback: PlaybackCoordinator, detached: Binding<Bool>) {
@@ -426,37 +499,46 @@ private struct MacPlaybackHost: NSViewRepresentable {
             super.init()
         }
 
-        private func player(isFullScreen: Bool) -> AnyView {
-            AnyView(
-                NavigationStack {
-                    PlayerView(isFullScreen: isFullScreen, toggleFullScreen: { [weak self] in
-                        self?.toggleFullScreen()
-                    })
-                    .ignoresSafeArea(.container, edges: .all)
-                }
-                .toolbarVisibility(.hidden, for: .windowToolbar)
-                .environment(playback)
-            )
+        func updateContainer(_ container: NSView) {
+            self.container = container
+            // SwiftUI can update/replace the inline NSView while its player is
+            // detached. Remember the current destination; only attach inline.
+            if windowState.phase == .inline { attachPlayer(to: container) }
         }
 
         func attachPlayer(to parent: NSView) {
-            let host: NSHostingView<AnyView>
+            guard windowState.phase != .closed else { return }
+            let host: NSHostingView<MacPlaybackContent>
             if let hostingView {
                 host = hostingView
-                host.removeFromSuperview()
             } else {
-                host = NSHostingView(rootView: player(isFullScreen: false))
+                host = NSHostingView(rootView: MacPlaybackContent(
+                    playback: playback, presentation: presentation,
+                    toggleFullScreen: { [weak self] in self?.toggleFullScreen() },
+                    exitPlayback: { [weak self] in self?.handleEscape(isRepeat: false) }
+                ))
                 hostingView = host
                 installEscapeMonitor()
             }
+            if host.superview !== parent {
+                host.removeFromSuperview()
+                parent.addSubview(host)
+            }
             host.frame = parent.bounds
             host.autoresizingMask = [.width, .height]
-            parent.addSubview(host)
+            parent.needsLayout = true
+            host.layoutSubtreeIfNeeded()
+        }
+
+        private func handleEscape(isRepeat: Bool) {
+            switch windowState.escapeAction(isRepeat: isRepeat) {
+            case .ignore: break
+            case .exitFullscreen: toggleFullScreen()
+            case .dismissPlayback: playback.showPlayer = false
+            }
         }
 
         private func installEscapeMonitor() {
-            // The catalog may retain first responder when this separate hosting
-            // view appears. Handle Escape independently of SwiftUI focus.
             escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
                 let handled = MainActor.assumeIsolated {
                     guard let self, self.playback.showPlayer,
@@ -465,11 +547,7 @@ private struct MacPlaybackHost: NSViewRepresentable {
                           let window = self.hostingView?.window,
                           event.window === window, window.isKeyWindow,
                           window.attachedSheet == nil else { return false }
-                    if self.fullscreenWindow != nil {
-                        self.toggleFullScreen()
-                    } else {
-                        self.playback.showPlayer = false
-                    }
+                    self.handleEscape(isRepeat: event.isARepeat)
                     return true
                 }
                 return handled ? nil : event
@@ -477,15 +555,14 @@ private struct MacPlaybackHost: NSViewRepresentable {
         }
 
         private func toggleFullScreen() {
-            guard !transitioning else { return }
+            guard playback.showPlayer, !windowState.isTransitioning else { return }
             if let fullscreenWindow {
-                transitioning = true
+                guard windowState.beginExiting() else { return }
                 fullscreenWindow.toggleFullScreen(nil)
                 return
             }
-            guard let container, let mainWindow = container.window else { return }
-            // contentLayoutRect is window-local; a new window needs screen coordinates.
-            // Preserve the playback display even when it is not the primary display.
+            guard let container, let mainWindow = container.window,
+                  windowState.beginEntering() else { return }
             let playbackRect = mainWindow.convertToScreen(container.convert(container.bounds, to: nil))
             let window = NSWindow(
                 contentRect: playbackRect,
@@ -500,53 +577,77 @@ private struct MacPlaybackHost: NSViewRepresentable {
             let content = NSView(frame: NSRect(origin: .zero, size: playbackRect.size))
             window.contentView = content
             fullscreenWindow = window
+            presentation.isFullScreen = true
             detached.wrappedValue = true
             attachPlayer(to: content)
-            hostingView?.rootView = player(isFullScreen: true)
-            transitioning = true
             window.makeKeyAndOrderFront(nil)
             window.toggleFullScreen(nil)
         }
 
+        private func owns(_ notification: Notification) -> Bool {
+            guard windowState.phase != .closed, let window = notification.object as? NSWindow else { return false }
+            return window === fullscreenWindow
+        }
+
+        func windowWillEnterFullScreen(_ notification: Notification) {
+            guard owns(notification) else { return }
+            _ = windowState.beginEntering()
+        }
+
         func windowDidEnterFullScreen(_ notification: Notification) {
-            transitioning = false
+            guard owns(notification) else { return }
+            windowState.didEnter()
+        }
+
+        func windowWillExitFullScreen(_ notification: Notification) {
+            guard owns(notification) else { return }
+            _ = windowState.beginExiting()
         }
 
         func windowDidExitFullScreen(_ notification: Notification) {
+            guard owns(notification) else { return }
             restoreInlinePlayer()
         }
 
         func windowDidFailToEnterFullScreen(_ window: NSWindow) {
+            guard window === fullscreenWindow, windowState.phase != .closed else { return }
             restoreInlinePlayer()
         }
 
         func windowDidFailToExitFullScreen(_ window: NSWindow) {
-            transitioning = false
+            guard window === fullscreenWindow, windowState.phase != .closed else { return }
+            windowState.failedToExit()
         }
 
         func windowShouldClose(_ sender: NSWindow) -> Bool {
+            guard sender === fullscreenWindow else { return true }
             playback.showPlayer = false
             return false
         }
 
         private func restoreInlinePlayer() {
-            guard let container else { return }
+            guard windowState.phase != .closed, let container else { return }
+            // Reattach and lay out before revealing the player in the main
+            // window, then retire the old window without delegate callbacks.
             attachPlayer(to: container)
-            hostingView?.rootView = player(isFullScreen: false)
-            closeFullscreenWindow()
+            presentation.isFullScreen = false
+            windowState.didRestoreInline()
             detached.wrappedValue = false
-            container.window?.makeKeyAndOrderFront(nil)
+            let mainWindow = container.window
+            closeFullscreenWindow()
+            mainWindow?.makeKeyAndOrderFront(nil)
         }
 
         private func closeFullscreenWindow() {
-            fullscreenWindow?.delegate = nil
-            fullscreenWindow?.orderOut(nil)
-            fullscreenWindow?.close()
+            let window = fullscreenWindow
             fullscreenWindow = nil
-            transitioning = false
+            window?.delegate = nil
+            window?.orderOut(nil)
+            window?.close()
         }
 
         func tearDown() {
+            windowState.close()
             if let escapeMonitor {
                 NSEvent.removeMonitor(escapeMonitor)
                 self.escapeMonitor = nil

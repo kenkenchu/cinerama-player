@@ -4,6 +4,7 @@ import SwiftUI
 struct PlayerView: View {
     var isFullScreen = false
     var toggleFullScreen: () -> Void
+    var exitPlayback: () -> Void
     @Environment(PlaybackCoordinator.self) private var playback
     @Environment(\.scenePhase) private var scenePhase
 
@@ -25,13 +26,7 @@ struct PlayerView: View {
                 }.padding(40).background(.regularMaterial, in: RoundedRectangle(cornerRadius: 28))
             }
         }
-        .onExitCommand {
-            if isFullScreen {
-                toggleFullScreen()
-            } else {
-                playback.showPlayer = false
-            }
-        }
+        .onExitCommand(perform: exitPlayback)
         .toolbarVisibility(.hidden, for: .windowToolbar)
         .preferredColorScheme(.dark)
         .environment(\.colorScheme, .dark)
