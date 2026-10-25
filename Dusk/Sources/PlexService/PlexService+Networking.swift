@@ -6,7 +6,7 @@ extension PlexService {
         [
             "Accept": "application/json",
             "X-Plex-Client-Identifier": clientIdentifier,
-            "X-Plex-Product": "Dusk",
+            "X-Plex-Product": "Cinerama",
             "X-Plex-Version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0",
         ]
     }

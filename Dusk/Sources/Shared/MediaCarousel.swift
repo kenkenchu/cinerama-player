@@ -18,11 +18,21 @@ struct MediaCarousel<Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DuskPosterMetrics.carouselSectionSpacing) {
-            Text(title)
-                .font(DuskFont.sectionHeader(style: .title3.bold()))
-                .foregroundStyle(Color.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, horizontalPadding)
+            HStack(spacing: 14) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(.primary.opacity(0.65))
+                    .frame(width: 3, height: 18)
+                    .accessibilityHidden(true)
+                Text(title)
+                    .font(DuskFont.sectionHeader(style: .title3.bold()))
+                    .tracking(0.4)
+                    .foregroundStyle(Color.primary)
+                Rectangle()
+                    .fill(.primary.opacity(0.10))
+                    .frame(height: 1)
+                    .accessibilityHidden(true)
+            }
+            .padding(.horizontal, horizontalPadding)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: DuskPosterMetrics.carouselItemSpacing) {

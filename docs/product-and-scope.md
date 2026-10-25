@@ -2,7 +2,7 @@
 
 ## Product Shape
 
-Dusk Player is a native macOS/tvOS Plex client maintained in
+Cinerama (formerly Dusk Player) is a native macOS/tvOS Plex client maintained in
 `kenkenchu/dusk-player-mac`, forked from `marvinvr/dusk-player`. It is a
 two-platform project for people who want focused access to their own Plex
 libraries without promoted content or extra service layers.
@@ -86,3 +86,12 @@ code, and user-requested external links. Never log token-bearing URLs.
 macOS Local Network permission is required for local Plex servers. A usage
 description, sandbox entitlements, and correct signing are necessary build
 pieces; the user still controls the permission in System Settings.
+
+## App Naming and Upgrade Identity
+
+Both apps display Cinerama and build as `Cinerama.app` in their separate Mac/TV
+product directories. The Xcode project, schemes, source folders and Swift module
+names retain Dusk naming. Bundle identifiers, Keychain keys, UserDefaults keys,
+Plex client identifiers and download/cache paths remain unchanged so the rename
+does not create a separate account or storage domain. Plex product labels and
+sign-in prompts use Cinerama. Existing Dusk app copies are not removed by builds.

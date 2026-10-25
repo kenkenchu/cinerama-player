@@ -42,7 +42,7 @@ struct DuskApp: App {
     }
 
     var body: some Scene {
-        Window("Dusk", id: "main") { appContent }
+        Window("Cinerama", id: "main") { appContent }
             .defaultSize(width: 1200, height: 800)
             .commands { DuskMacCommands() }
     }

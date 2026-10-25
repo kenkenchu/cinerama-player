@@ -43,7 +43,7 @@ struct ServerAvailabilityStateView: View {
         .serverPrioritySheet(isPresented: $showsServerPriority)
     }
 
-    static let unreachableMessage = "Dusk can't reach any of your Plex servers right now."
+    static let unreachableMessage = "Cinerama can't reach any of your Plex servers right now."
 
     /// Why a still-pending pool is actually stuck: the first connect pass has
     /// finished, nothing is running, and it left us without a single server
@@ -58,7 +58,7 @@ struct ServerAvailabilityStateView: View {
             FeatureErrorView(message: message) {
                 Task { await connections.refresh() }
             }
-            Text("For a local Plex server, allow Dusk in System Settings → Privacy & Security → Local Network, then choose Retry.")
+            Text("For a local Plex server, allow Cinerama in System Settings → Privacy & Security → Local Network, then choose Retry.")
                 .font(DuskFont.caption(style: .callout))
                 .foregroundStyle(Color.duskTextSecondary)
                 .multilineTextAlignment(.center)

@@ -60,7 +60,7 @@ extension PlexService {
     }
 
     func authURL(for pin: PlexPin) -> URL? {
-        URL(string: "https://app.plex.tv/auth#?clientID=\(clientIdentifier)&code=\(pin.code)&context%5Bdevice%5D%5Bproduct%5D=Dusk")
+        URL(string: "https://app.plex.tv/auth#?clientID=\(clientIdentifier)&code=\(pin.code)&context%5Bdevice%5D%5Bproduct%5D=Cinerama")
     }
 
     var isAuthenticationFresh: Bool {

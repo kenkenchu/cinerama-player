@@ -17,7 +17,7 @@ xcodebuild -project Dusk.xcodeproj -scheme Dusk-tvOS -configuration Debug \
     -destination "${TV_DESTINATION}" -derivedDataPath .build/tvos/DerivedData \
     -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
     "DUSK_TVOS_TEAM=${DUSK_TVOS_TEAM}" CODE_SIGNING_ALLOWED=YES build
-TV_APP_PATH="${ROOT_DIR}/.build/tvos/DerivedData/Build/Products/Debug-appletvos/DuskTV.app"
+TV_APP_PATH="${ROOT_DIR}/.build/tvos/DerivedData/Build/Products/Debug-appletvos/Cinerama.app"
 if [ ! -f "${TV_APP_PATH}/embedded.mobileprovision" ]; then
     echo 'error: no device provisioning profile was embedded.' >&2
     exit 1

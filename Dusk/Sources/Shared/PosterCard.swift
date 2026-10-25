@@ -73,6 +73,15 @@ struct PosterArtwork: View {
             }
         }
         .clipShape(artworkShape)
+        .overlay {
+            artworkShape
+                .strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.38), .white.opacity(0.04), .white.opacity(0.16)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 0.75
+                )
+                .allowsHitTesting(false)
+        }
     }
 
     private var isHorizontalArtwork: Bool {
@@ -290,6 +299,7 @@ extension PlexItem {
 private struct MacMediaCardInteraction: ViewModifier {
     let isInteractive: Bool
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
 
     func body(content: Content) -> some View {
@@ -301,7 +311,9 @@ private struct MacMediaCardInteraction: ViewModifier {
                     .strokeBorder(.primary.opacity(isInteractive && isHovered && isEnabled ? 0.2 : 0), lineWidth: 1)
                     .allowsHitTesting(false)
             }
+            .shadow(color: .black.opacity(isInteractive && isHovered && isEnabled ? 0.28 : 0), radius: 8, y: 4)
+            .brightness(isInteractive && isHovered && isEnabled ? 0.06 : 0)
             .onHover { isHovered = $0 }
-            .animation(.easeOut(duration: 0.12), value: isHovered)
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: isHovered)
     }
 }

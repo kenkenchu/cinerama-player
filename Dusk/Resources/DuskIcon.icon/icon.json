@@ -1,42 +1,37 @@
 {
-  "fill" : "automatic",
-  "groups" : [
+  "fill": {
+    "automatic-gradient": "extended-srgb:0.02500,0.04000,0.08000,1.00000"
+  },
+  "groups": [
     {
-      "layers" : [
+      "layers": [
         {
-          "blend-mode-specializations" : [
-            {
-              "appearance" : "dark",
-              "value" : "darken"
-            }
-          ],
-          "fill" : "automatic",
-          "hidden" : false,
-          "image-name" : "dusk_icon_new_transparentcropped.png",
-          "name" : "dusk_icon_new_transparentcropped",
-          "position" : {
-            "scale" : 1,
-            "translation-in-points" : [
-              -5.53125,
-              -1
+          "fill": "automatic",
+          "hidden": false,
+          "image-name": "cinerama-west-coast.png",
+          "name": "Cinerama West Coast",
+          "position": {
+            "scale": 0.82,
+            "translation-in-points": [
+              0,
+              0
             ]
           }
         }
       ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.5
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.25
       },
-      "translucency" : {
-        "enabled" : true,
-        "value" : 0.5
+      "translucency": {
+        "enabled": false,
+        "value": 0.5
       }
     }
   ],
-  "supported-platforms" : {
-    "circles" : [
-      "watchOS"
-    ],
-    "squares" : "shared"
+  "supported-platforms": {
+    "squares": [
+      "macOS"
+    ]
   }
 }

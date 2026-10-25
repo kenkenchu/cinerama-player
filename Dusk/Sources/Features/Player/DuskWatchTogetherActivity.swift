@@ -25,7 +25,7 @@ struct DuskWatchTogetherActivity: GroupActivity, Equatable, Sendable {
         var metadata = GroupActivityMetadata()
         metadata.type = .watchTogether
         metadata.title = title
-        metadata.subtitle = subtitle ?? "Watch together in Dusk"
+        metadata.subtitle = subtitle ?? "Watch together in Cinerama"
         metadata.supportsContinuationOnTV = true
         metadata.lifetimePolicy = .automatic
         return metadata

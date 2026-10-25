@@ -212,3 +212,17 @@ Run the signed Mac compile after code changes. Do not launch the app or run test
 unless requested. For authorized visual checks, inspect both themes, resized
 windows, keyboard/pointer navigation, error states and player dismissal.
 Archived mobile/TV layouts in `upstream/ui-features.md` are historical only.
+
+## Futuristic Mac presentation
+
+`MainTabView` groups the destinations into
+Discover and Workspace beneath a Dusk masthead. Native sidebar selection,
+per-destination paths and the separate playback host are unchanged.
+`HomeCinematicHero` places its title/actions in a dark framed panel with a
+featured/continue-watching label; its dark environment preserves readable copy
+in light appearance. `MediaCarousel` supplies ruled headings, while
+`PosterArtwork` and `MacMediaCardInteraction` supply fine edges and artwork-only
+hover illumination. The player transport gains the same neutral edge treatment.
+No TV views or playback/data decisions change. Signed compilation is the agent
+verification gate; light/dark, resized-window and input inspection remain user
+runtime verification.

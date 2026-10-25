@@ -1,17 +1,17 @@
 #!/usr/bin/env swift
 import AppKit
 
-// Package the existing Mac brand artwork into native TV icon layers. No logo
-// redraw, generated imagery, rounded mask or text is baked into these assets.
+// Package the Cinerama West Coast master into native TV icon layers. The
+// foreground stays transparent; the platform supplies masking and parallax.
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-let sourceURL = root.appendingPathComponent("Dusk/Resources/DuskIcon.icon/Assets/dusk_icon_new_transparentcropped.png")
+let sourceURL = root.appendingPathComponent("Dusk/Resources/DuskIcon.icon/Assets/cinerama-west-coast.png")
 let catalog = root.appendingPathComponent("DuskTV/Resources/Assets.xcassets/TVIcon.brandassets")
 guard let source = NSImage(contentsOf: sourceURL),
       let sourceData = try? Data(contentsOf: sourceURL),
       let sourceBitmap = NSBitmapImageRep(data: sourceData) else {
     fatalError("Missing Mac icon source artwork")
 }
-// Center the visible mark, whose transparent canvas is optically asymmetric.
+// Center the visible mark independently of transparent source padding.
 var minX = sourceBitmap.pixelsWide, minY = sourceBitmap.pixelsHigh, maxX = 0, maxY = 0
 for y in 0..<sourceBitmap.pixelsHigh {
     for x in 0..<sourceBitmap.pixelsWide {
@@ -45,9 +45,9 @@ func render(width: Int, height: Int, foreground: Bool) -> NSBitmapImageRep {
         source.draw(in: target, from: NSRect(origin: .zero, size: source.size),
                     operation: .sourceOver, fraction: 1)
     } else {
-        // Match the Mac icon's light automatic fill, full bleed for TV masking.
-        NSGradient(starting: NSColor(calibratedWhite: 0.995, alpha: 1),
-                   ending: NSColor(calibratedRed: 0.90, green: 0.905, blue: 0.92, alpha: 1))!
+        // Match the Mac icon's midnight-blue fill, full bleed for TV masking.
+        NSGradient(starting: NSColor(calibratedRed: 0.055, green: 0.08, blue: 0.14, alpha: 1),
+                   ending: NSColor(calibratedRed: 0.015, green: 0.025, blue: 0.055, alpha: 1))!
             .draw(in: canvas, angle: -90)
     }
     NSGraphicsContext.restoreGraphicsState()
@@ -72,4 +72,4 @@ NSGraphicsContext.restoreGraphicsState()
 let previewURL = root.appendingPathComponent(".build/tvos-icon-preview.png")
 try FileManager.default.createDirectory(at: previewURL.deletingLastPathComponent(), withIntermediateDirectories: true)
 try preview.representation(using: .png, properties: [:])!.write(to: previewURL)
-print("TV icon layers generated from the existing Mac logo. Preview: \(previewURL.path)")
+print("TV icon layers generated from the Cinerama West Coast master. Preview: \(previewURL.path)")

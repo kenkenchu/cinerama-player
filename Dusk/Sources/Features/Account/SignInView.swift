@@ -73,7 +73,7 @@ struct SignInView: View {
                 .frame(width: iconSize, height: iconSize)
 
             VStack(spacing: 6) {
-                Text("Dusk")
+                Text("Cinerama")
                     .font(titleFont)
                     .foregroundStyle(Color.duskTextPrimary)
                 Text("The Plex App we Deserve.")

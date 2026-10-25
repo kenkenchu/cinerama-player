@@ -142,7 +142,7 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   `Dusk/Sources/Features/Player/PlayerView.swift`; Mac settings live in
   `Dusk/Sources/Features/Settings/SettingsMacView.swift`.
 - The signed Debug app is produced at
-  `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+  `.build/macos/DerivedData/Build/Products/Debug/Cinerama.app`.
 - The user confirmed Plex sign-in and Home loading worked after the Mac
   signing/Local Network fix. Permission appearing enabled alone did not fix
   the earlier Home timeout; preserve the signing and executable identity

@@ -82,3 +82,22 @@ window-resize inspection when the user authorizes a runtime check; a compiler
 check does not prove layout or contrast. Default agent verification does not
 launch the app. Historical styling is archived in `docs/upstream/STYLE.md` and
 is not the source of truth for this fork.
+
+## Futuristic Mac Presentation
+
+The Mac interface keeps the neutral palette and native
+navigation, with a more architectural presentation: a typographic Dusk sidebar
+masthead, Discover/Workspace groups, ruled shelf headings, illuminated artwork
+edges, and a framed cinematic hero information panel. Hero copy always uses a
+dark environment over its black panel for contrast in either app appearance.
+Reduce Transparency makes that panel opaque. Artwork hover adds brightness and
+shadow without changing card geometry; Reduce Motion disables its animation.
+The player retains its native compositing fill with a fine neutral edge.
+
+## Cinerama Icon Identity
+
+The West Coast icon uses a sculpted glass C/lens with sunset coral/amber and
+Pacific teal/blue over midnight blue. These colors belong to the icon and
+in-app brand artwork only; controls retain the neutral palette. Native Icon
+Composer and TV layers supply platform-specific presentation. See
+[icon design](docs/icon-design.md) for assets, regeneration and the final prompt.

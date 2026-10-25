@@ -1,6 +1,6 @@
-# Dusk Player for Mac and Apple TV
+# Cinerama for Mac and Apple TV
 
-Native **macOS and tvOS Plex clients**, maintained in
+Formerly Dusk Player. Native **macOS and tvOS Plex clients**, maintained in
 [kenkenchu/dusk-player-mac](https://github.com/kenkenchu/dusk-player-mac), forked
 from [marvinvr/dusk-player](https://github.com/marvinvr/dusk-player).
 
@@ -48,7 +48,7 @@ DUSK_MACOS_SIGNING_IDENTITY='YOUR_APPLE_DEVELOPMENT_IDENTITY' ./scripts/build_ma
 
 The script fetches checksum-pinned desktop VLCKit, builds DuskDovi, generates the
 project, checks platform source boundaries, builds and verifies nested signatures.
-Output: `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+Output: `.build/macos/DerivedData/Build/Products/Debug/Cinerama.app`.
 Do not silently fall back to ad hoc signing on this workstation. Allow Local
 Network access in System Settings so the app can reach local Plex servers.
 
@@ -58,7 +58,7 @@ For Apple TV, pair the device in Xcode, then:
 DUSK_TVOS_TEAM=YOUR_TEAM_ID DUSK_TVOS_DEVICE_ID=YOUR_XCODE_DESTINATION_ID \
   ./scripts/build_tvos.sh
 xcrun devicectl device install app --device YOUR_DEVICECTL_ID \
-  .build/tvos/DerivedData/Build/Products/Debug-appletvos/DuskTV.app
+  .build/tvos/DerivedData/Build/Products/Debug-appletvos/Cinerama.app
 ```
 
 Open **Dusk** on the TV, permit Local Network access and link at `plex.tv/link`.

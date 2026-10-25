@@ -149,7 +149,7 @@ final class AnalyticsClient {
     private static let userAgent: String = {
         let system = "macOS"
         let version = ProcessInfo.processInfo.operatingSystemVersionString
-        return "Dusk/\(appVersion) (\(system) \(version))"
+        return "Cinerama/\(appVersion) (\(system) \(version))"
     }()
 
     private static let language: String = {

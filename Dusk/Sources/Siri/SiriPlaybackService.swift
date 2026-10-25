@@ -192,10 +192,10 @@ final class SiriPlaybackService {
 
         while true {
             guard plexService.isAuthenticated else {
-                return "Sign in to Plex in Dusk first."
+                return "Sign in to Plex in Cinerama first."
             }
             if plexService.homeBootstrapCompleted, plexService.needsHomeUserSelection {
-                return "Choose your Plex profile in Dusk first."
+                return "Choose your Plex profile in Cinerama first."
             }
 
             if plexService.isSessionReady {
@@ -207,9 +207,9 @@ final class SiriPlaybackService {
                         return nil
                     }
                 case .allDisabled:
-                    return "All your Plex servers are switched off in Dusk’s settings."
+                    return "All your Plex servers are switched off in Cinerama’s settings."
                 case .unreachable:
-                    return "Dusk can’t reach your Plex server right now."
+                    return "Cinerama can’t reach your Plex server right now."
                 case .unknown, .connecting:
                     break
                 }
@@ -218,7 +218,7 @@ final class SiriPlaybackService {
             guard clock.now < deadline else {
                 return plexService.pool.availability.isReady
                     ? nil
-                    : "Dusk can’t reach your Plex server right now."
+                    : "Cinerama can’t reach your Plex server right now."
             }
             try? await Task.sleep(for: .milliseconds(200))
         }

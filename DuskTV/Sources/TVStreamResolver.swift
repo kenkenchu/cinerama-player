@@ -42,7 +42,7 @@ enum TVStreamResolver {
         if resolutionLabel.contains("4k") || resolutionLabel.contains("uhd")
             || [media.height, video?.height].compactMap({ $0 }).contains(where: { $0 >= 2160 })
             || [media.width, video?.width].compactMap({ $0 }).contains(where: { $0 >= 3840 }) {
-            throw TVPlaybackFailure.unsupported("4K video is not supported on this Apple TV HD. Choose an HD version of this title. Dusk does not downscale 4K or ask Plex to convert it.")
+            throw TVPlaybackFailure.unsupported("4K video is not supported on this Apple TV HD. Choose an HD version of this title. Cinerama does not downscale 4K or ask Plex to convert it.")
         }
         if [media.height, video?.height].compactMap({ $0 }).contains(where: { $0 > 1080 })
             || [media.width, video?.width].compactMap({ $0 }).contains(where: { $0 > 1920 }) {

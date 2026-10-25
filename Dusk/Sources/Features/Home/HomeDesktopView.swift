@@ -98,7 +98,7 @@ struct HomeDesktopView: View {
                         )
                     }
 
-                    LazyVStack(alignment: .leading, spacing: 18) {
+                    LazyVStack(alignment: .leading, spacing: 32) {
                         ServerOutageNote(offlineServerNames: offlineServerNames)
                             .padding(.horizontal, 20)
 
