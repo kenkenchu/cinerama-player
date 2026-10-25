@@ -153,6 +153,7 @@ private struct MacPlaybackHost: NSViewRepresentable {
         weak var container: NSView?
         private var hostingView: NSHostingView<AnyView>?
         private var fullscreenWindow: NSWindow?
+        private var escapeMonitor: Any?
         private var transitioning = false
         private let detached: Binding<Bool>
 
@@ -183,10 +184,33 @@ private struct MacPlaybackHost: NSViewRepresentable {
             } else {
                 host = NSHostingView(rootView: player(isFullScreen: false))
                 hostingView = host
+                installEscapeMonitor()
             }
             host.frame = parent.bounds
             host.autoresizingMask = [.width, .height]
             parent.addSubview(host)
+        }
+
+        private func installEscapeMonitor() {
+            // The catalog may retain first responder when this separate hosting
+            // view appears. Handle Escape independently of SwiftUI focus.
+            escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                let handled = MainActor.assumeIsolated {
+                    guard let self, self.playback.showPlayer,
+                          event.keyCode == 53,
+                          event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                          let window = self.hostingView?.window,
+                          event.window === window, window.isKeyWindow,
+                          window.attachedSheet == nil else { return false }
+                    if self.fullscreenWindow != nil {
+                        self.toggleFullScreen()
+                    } else {
+                        self.playback.showPlayer = false
+                    }
+                    return true
+                }
+                return handled ? nil : event
+            }
         }
 
         private func toggleFullScreen() {
@@ -260,6 +284,10 @@ private struct MacPlaybackHost: NSViewRepresentable {
         }
 
         func tearDown() {
+            if let escapeMonitor {
+                NSEvent.removeMonitor(escapeMonitor)
+                self.escapeMonitor = nil
+            }
             hostingView?.removeFromSuperview()
             hostingView = nil
             closeFullscreenWindow()

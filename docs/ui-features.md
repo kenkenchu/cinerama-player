@@ -111,7 +111,9 @@ not duplicated in the toolbar or top overlay. A Close icon button
 (`rectangle.portrait.and.arrow.right`) sits
 beside the fullscreen toggle in the control bar; there is no top-left close
 overlay. Escape exits fullscreen while keeping playback running; in windowed
-playback it closes the player, including during loading. In both windowed and
+playback it closes the player, including during loading. The playback host handles Escape for its own key window
+independently of SwiftUI focus, and leaves attached sheets to handle cancellation.
+In both windowed and
 fullscreen playback, controls fade after two seconds of inactivity; pointer
 movement or a click reveals them again. Hovering anywhere over the control bar
 keeps it visible, including with a stationary pointer. Leaving the bar starts a
