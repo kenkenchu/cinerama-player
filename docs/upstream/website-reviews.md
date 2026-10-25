@@ -1,3 +1,7 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
@@ -9,11 +13,11 @@ Updating the reviews means editing only that file.
 
 ## Format
 
-`reviews.js` assigns a JSON array to `window.DUSK_REVIEWS`, in the shape App
+`reviews.js` assigns a JSON array to `window.CINERAMA_REVIEWS`, in the shape App
 Store Connect's customer reviews export uses:
 
 ```js
-window.DUSK_REVIEWS = [
+window.CINERAMA_REVIEWS = [
   {"id":"…","rating":5,"title":"…","body":"…","reviewerNickname":"…","createdDate":"2026-10-12T20:16:14-07:00","territory":"USA"}
 ];
 ```
@@ -32,5 +36,5 @@ window.DUSK_REVIEWS = [
 ## Deploy
 
 Push to `main`. Coolify (homelab host `coolify`) builds `website/Dockerfile`
-(`nginx:alpine` serving `website/`) and redeploys getdusk.app behind
+(`nginx:alpine` serving `website/`) and redeploys the original project website behind
 Cloudflare, within seconds of the push. There's no GitHub Actions workflow.

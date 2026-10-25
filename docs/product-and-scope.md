@@ -2,15 +2,15 @@
 
 ## Product Shape
 
-Cinerama (formerly Dusk Player) is a native macOS/tvOS Plex client maintained in
-`kenkenchu/cinerama-player`. It originated from `marvinvr/dusk-player` and is now
-developed independently without routine upstream synchronization. Original
-credits and license notices are preserved. It is a
+Cinerama is a native macOS/tvOS Plex client maintained in
+`kenkenchu/cinerama-player` and developed independently without upstream
+synchronization. Original-project credit is in README.md; license notices are
+preserved. It is a
 two-platform project for people who want focused access to their own Plex
 libraries without promoted content or extra service layers.
 
-Maintained targets are **Dusk-macOS: macOS 26+ on Apple silicon** and
-**Dusk-tvOS: tvOS 26+ on Apple TV HD (A8)**, with the user's TV running 26.6.
+Maintained targets are **Cinerama-macOS: macOS 26+ on Apple silicon** and
+**Cinerama-tvOS: tvOS 26+ on Apple TV HD (A8)**, with the user's TV running 26.6.
 `project.yml` is authoritative. The TV client is growing from user-confirmed
 library playback and text-subtitle feasibility; it does not yet match Mac
 features. See [TV design](tvos-design.md) and [TV UI](tvos-ui.md).
@@ -21,9 +21,9 @@ No iOS app target or App Store release is maintained.
 - Plex owns metadata, libraries, watch state, and server identity.
 - Store auth in Keychain; preferences in UserDefaults. Downloads, offline sync,
   and caches are explicit, documented exceptions to otherwise stateless use.
-- Library order belongs to the Plex account, not a private Dusk sync service.
+- Library order belongs to the Plex account, not a private Cinerama sync service.
 - Start playback direct. Remuxes may copy compatible video/audio into HLS;
-  server video/audio re-encoding is prohibited for all Dusk playback. Refuse
+  server video/audio re-encoding is prohibited for all Cinerama playback. Refuse
   incompatible streams rather than silently converting them on the server.
 - Keep view models observable and Plex-specific services straightforward.
 - Use distinct native Mac and TV interfaces. Mac follows `STYLE.md`; TV uses
@@ -41,7 +41,7 @@ track selection, original-quality playback, timeline/watch-state reporting, intr
 skipping, continuous play, downloads/offline sync, Plex Live TV, and optional
 Seerr requests. Availability depends on server capabilities and media.
 
-AVPlayer retains HDR/Atmos remux and DuskDovi conversion paths. The stock desktop
+AVPlayer retains HDR/Atmos remux and CineramaDovi conversion paths. The stock desktop
 VLC build does not advertise local TrueHD support; undecodable audio requires
 another locally playable track rather than Plex conversion. HDR/audio output must be verified with actual media,
 display, and audio hardware; compiling does not validate format fidelity.
@@ -67,7 +67,7 @@ downloads and HDR conversion are deferred; prioritize library playback first.
 - Desktop VLCKit is checksum-pinned, fetched into git-ignored `Frameworks/`, and
   dynamically linked for LGPL compliance. No private upstream VLC repo access
   is needed for the Mac build.
-- DuskDovi is an arm64 macOS static library built from `Native/DuskDovi` with a
+- CineramaDovi is an arm64 macOS static library built from `Native/CineramaDovi` with a
   pinned Rust toolchain. New crates need corresponding license notices.
 - XcodeGen owns project generation. System frameworks and URLSession are
   preferred elsewhere; artwork uses the existing Plex-aware image pipeline.
@@ -75,25 +75,33 @@ downloads and HDR conversion are deferred; prioritize library playback first.
 ## Privacy and Network Boundaries
 
 No advertising identifiers, Plex-derived telemetry, or third-party analytics
-SDKs. The Mac app’s inherited release-build anonymous `app_opened` reporting uses the
-upstream Rybbit endpoint described in `analytics.md`, with a random install ID,
-no retry queue, and a Settings opt-out. Debug builds report nothing. This fork
-does not own the upstream endpoint or its published privacy policy.
+SDKs. Cinerama has no analytics endpoint configured and sends no usage events in
+Debug or Release. See [analytics](analytics.md) and [privacy](privacy.md).
 
 Network traffic is limited to Plex account/server APIs, media/artwork derived
-from Plex, explicit optional Seerr setup/requests, that documented reporting,
-explicit Group Activities sessions supported by the inherited coordination
-code, and user-requested external links. Never log token-bearing URLs.
+from Plex, explicit optional Seerr setup/requests, explicit Group Activities
+sessions supported by inherited coordination code, and user-requested external
+links. Never log token-bearing URLs.
 
 macOS Local Network permission is required for local Plex servers. A usage
 description, sandbox entitlements, and correct signing are necessary build
 pieces; the user still controls the permission in System Settings.
 
-## App Naming and Upgrade Identity
+## Cinerama Application Identity
 
-Both apps display Cinerama and build as `Cinerama.app` in their separate Mac/TV
-product directories. The Xcode project, schemes, source folders and Swift module
-names retain Dusk naming. Bundle identifiers, Keychain keys, UserDefaults keys,
-Plex client identifiers and download/cache paths remain unchanged so the rename
-does not create a separate account or storage domain. Plex product labels and
-sign-in prompts use Cinerama. Existing Dusk app copies are not removed by builds.
+The project, schemes, source folders, Swift modules, icons and native converter
+all use Cinerama naming. Both platforms build as `Cinerama.app` in their own
+product directories. Schemes are `Cinerama-macOS` and `Cinerama-tvOS` in
+`Cinerama.xcodeproj`; the converter is `Native/CineramaDovi`.
+
+The user explicitly chose new identifiers: `com.cinerama-player.mac` and
+`com.cinerama-player.tv`. Keychain uses `com.cinerama-player.app`; local downloads
+use `Application Support/Cinerama/Downloads`. Background-session and group
+activity identifiers also use the new namespace. This creates a separate app,
+preferences, Keychain and storage identity. First launch requires Plex sign-in
+and local preferences to be set again. Existing apps and their stored data are
+not deleted or automatically migrated. TV requires its new development profile
+and a separate install before runtime verification.
+
+Original-project naming survives only in README's credit section and Git
+history. Copyright and third-party license notices remain preserved.

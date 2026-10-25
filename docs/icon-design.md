@@ -6,8 +6,8 @@ its neutral palette. The mark has no wordmark or baked tile/mask.
 
 ## Sources and Packaging
 
-- Master: `Dusk/Resources/DuskIcon.icon/Assets/cinerama-west-coast.png`.
-- Mac: `DuskIcon.icon/icon.json` places the transparent master at 0.82 scale
+- Master: `Cinerama/Resources/CineramaIcon.icon/Assets/cinerama-west-coast.png`.
+- Mac: `CineramaIcon.icon/icon.json` places the transparent master at 0.82 scale
   over a midnight-blue automatic gradient. Native Icon Composer supplies the
   icon shape, lighting and appearance handling. The old darken blend override is
   removed so sunset highlights remain visible.

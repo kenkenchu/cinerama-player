@@ -2,8 +2,8 @@
 
 Cinerama, maintained in `kenkenchu/cinerama-player`, is an independent native
 **macOS and tvOS** Plex client for the user's Apple silicon Mac and Apple TV HD.
-It originated from `marvinvr/dusk-player`, credited in README.md, but no longer
-tracks or routinely synchronizes with that project.
+Original-project credit is retained in README.md. Cinerama no longer tracks or
+routinely synchronizes with the original project.
 Read this file before planning, editing, committing, or pushing. Read
 `AGENTS.local.md` immediately afterward if it exists. Then read
 `docs/product-and-scope.md`, `docs/codebase-map.md`, and the relevant topic guide
@@ -11,10 +11,10 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
 
 ## Platform and Ownership
 
-- Maintained app schemes: `Dusk-macOS` (Apple silicon, macOS 26+) and
-  `Dusk-tvOS` (Apple TV HD/A8, tvOS 26+, user device on 26.6).
+- Maintained app schemes: `Cinerama-macOS` (Apple silicon, macOS 26+) and
+  `Cinerama-tvOS` (Apple TV HD/A8, tvOS 26+, user device on 26.6).
   Feature availability differs; do not imply full TV/Mac parity.
-- `project.yml` is the source of truth; XcodeGen produces `Dusk.xcodeproj`.
+- `project.yml` is the source of truth; XcodeGen produces `Cinerama.xcodeproj`.
 - `App/` owns app lifetime and instrument-console navigation; `Features/Player/` owns the
   native player controls; `Playback/` owns AVPlayer and desktop VLCKit engines.
 - Maintain native Mac behavior, keyboard/pointer interaction, resizable windows,
@@ -37,16 +37,16 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   not globally unique: use `PlexItemID` (server ID + rating key).
 - Playback starts direct, except for documented unsupported-format, remux, and
   local-download routes. Failed online direct play may fall back to Plex HLS.
-  Server video/audio re-encoding is prohibited for all Dusk playback, including
+  Server video/audio re-encoding is prohibited for all Cinerama playback, including
   Live TV, manual quality and audio rescue. HLS may start only after Plex confirms
   both tracks are copied; missing decisions fail closed. Remuxing is allowed.
 - Mac engines conform to `PlaybackEngine`. Mac resolver decisions belong in
   `StreamResolver`; orchestration belongs in `PlaybackCoordinator`. TV uses
   `TVStreamResolver` and `TVPlaybackCoordinator` over shared Plex APIs until
   platform-neutral engine extraction is justified by actual reuse.
-- Minimal dependencies: desktop VLCKit and DuskDovi on Mac; native AVKit on TV.
+- Minimal dependencies: desktop VLCKit and CineramaDovi on Mac; native AVKit on TV.
   New Rust dependencies need
-  notices in `Dusk/Resources/ThirdPartyNotices.txt` and the native license list.
+  notices in `Cinerama/Resources/ThirdPartyNotices.txt` and the native license list.
 - Never log tokens or raw token-bearing media/artwork URLs.
 
 ## Style
@@ -66,7 +66,7 @@ TV interaction/layout rules live separately in `docs/tvos-ui.md`.
   controls and rendering hosts. Apple TV uses remote/focus interaction, not a
   touchscreen. Preserve existing Mac layouts and keyboard/pointer behavior.
 - Enforce UI ownership through explicit XcodeGen source membership: neither
-  target compiles the other platform's UI. Do not include all `Dusk/Sources`
+  target compiles the other platform's UI. Do not include all `Cinerama/Sources`
   indiscriminately in a new TV target or scatter TV branches through Mac views.
 - Share platform-neutral Plex/data/session logic. Extract platform adapters
   where needed without changing Mac behavior; keep existing AppKit player hosts.
@@ -88,7 +88,7 @@ and native converter are fetched/built locally and are never committed:
 ```
 
 Before building, run `security find-identity -v -p codesigning` and set
-`DUSK_MACOS_SIGNING_IDENTITY` to the installed Apple Development identity.
+`CINERAMA_MACOS_SIGNING_IDENTITY` to the installed Apple Development identity.
 Keep using the same identity across rebuilds; do not silently fall back to ad hoc
 signing on this workstation. See the signing and certificate troubleshooting
 steps in `docs/development-workflow.md`. Never commit private keys or certificates.
@@ -101,7 +101,7 @@ run tests or launch the app unless the user explicitly asks.
 For a compiler check after bootstrap only:
 
 ```bash
-xcodebuild -project Dusk.xcodeproj -scheme Dusk-macOS -configuration Debug \
+xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Debug \
   -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath .build/macos/DerivedData CODE_SIGNING_ALLOWED=NO build
 ```
@@ -113,11 +113,11 @@ track Local Network permission. See `docs/development-workflow.md`.
 
 Run `xcodegen generate` after changing `project.yml` or adding, removing, or
 renaming source files. Never hand-edit the generated Xcode project. Use the
-pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
+pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 ## Next-Session Handoff
 
-- TV target: `DuskTV/Sources`, scheme `Dusk-tvOS`. See
+- TV target: `CineramaTV/Sources`, scheme `Cinerama-tvOS`. See
   `docs/tvos-prototype.md` for signing, pairing, install and user verification.
   `TVStreamResolver` and `TVPlaybackCoordinator` are TV-owned implementations;
   the Mac playback contract is not yet platform-neutral. Keep current
@@ -135,14 +135,14 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   `scripts/generate_tvos_icon.swift`. Other new behaviors need user runtime
   verification. TV library Home now reuses the Mac Home data model, with a
   TV-owned hero, personalized shelves, long-press watched/removal actions and
-  Show All; see `docs/tvos-home.md`. Live TV remains deferred. Keep the existing
-  TV bundle identifier despite its historical `.prototype` suffix to retain
-  the user’s linked account and app storage.
+  Show All; see `docs/tvos-home.md`. Live TV remains deferred. The project-wide
+  rename uses a new TV application identity; first launch
+  requires linking Plex again.
 
-- Native entry and instrument console: `Dusk/Sources/App/DuskApp.swift` and
-  `Dusk/Sources/App/MainTabView.swift`. Player controls live in
-  `Dusk/Sources/Features/Player/PlayerView.swift`; Mac settings live in
-  `Dusk/Sources/Features/Settings/SettingsMacView.swift`.
+- Native entry and instrument console: `Cinerama/Sources/App/CineramaApp.swift` and
+  `Cinerama/Sources/App/MainTabView.swift`. Player controls live in
+  `Cinerama/Sources/Features/Player/PlayerView.swift`; Mac settings live in
+  `Cinerama/Sources/Features/Settings/SettingsMacView.swift`.
 - The signed Debug app is produced at
   `.build/macos/DerivedData/Build/Products/Debug/Cinerama.app`.
 - The user confirmed Plex sign-in and Home loading worked after the Mac
@@ -226,3 +226,18 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
 - Docs-only changes need link/reference and diff checks, not a build. If docs
   disagree with source, fix them and mention the correction in the summary.
 - User instructions override local skill guidelines and workflow defaults.
+
+## Project-Wide Cinerama Rename
+
+The user chose new application and storage identities. Use schemes
+`Cinerama-macOS` and `Cinerama-tvOS` in `Cinerama.xcodeproj`, source trees
+`Cinerama`, `CineramaTV`, `CineramaTests`, and `Native/CineramaDovi`. Signing
+variables are `CINERAMA_MACOS_SIGNING_IDENTITY`, `CINERAMA_TVOS_TEAM` and
+`CINERAMA_TVOS_DEVICE_ID`. Bundle IDs are `com.cinerama-player.mac` and
+`com.cinerama-player.tv`; Keychain and downloads use the new namespace. This
+requires fresh Plex sign-in/preferences and does not migrate or delete data
+from previous app identities. Do not restore old identifiers for convenience.
+The native C API is `cinerama_dovi_*` with ABI version 2. Original-project name
+and links belong only in README's credit section. Preserve copyright notices.
+No analytics endpoint is configured; do not send events to original-project
+infrastructure. Settings and privacy documentation describe reporting as disabled.

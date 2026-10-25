@@ -12,14 +12,14 @@ if ! xcrun --sdk macosx metal --version >/dev/null 2>&1; then
     exit 1
 fi
 ./ci_scripts/install_macos_vlckit.sh
-./ci_scripts/install_dusk_dovi.sh
+./ci_scripts/install_cinerama_dovi.sh
 xcodegen generate
 python3 scripts/verify_platform_boundaries.py
-xcodebuild -project Dusk.xcodeproj -scheme Dusk-macOS -configuration Debug \
+xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Debug \
     -destination 'platform=macOS,arch=arm64' \
     -derivedDataPath .build/macos/DerivedData \
     CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual \
-    "CODE_SIGN_IDENTITY=${DUSK_MACOS_SIGNING_IDENTITY:--}" build
+    "CODE_SIGN_IDENTITY=${CINERAMA_MACOS_SIGNING_IDENTITY:--}" build
 
 APP_PATH="${ROOT_DIR}/.build/macos/DerivedData/Build/Products/Debug/Cinerama.app"
 codesign --verify --deep --strict "${APP_PATH}"

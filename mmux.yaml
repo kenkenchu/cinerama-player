@@ -1,5 +1,5 @@
 # Optional Mac development processes. Nothing autostarts or launches the app.
-name: dusk-player-mac
+name: cinerama-player
 processes:
   - name: Fetch Desktop VLCKit
     cmd: ./ci_scripts/install_macos_vlckit.sh

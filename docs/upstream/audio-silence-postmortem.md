@@ -1,9 +1,13 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
 # Post-mortem: The VLCKit Silent-Audio Saga (2026-07)
 
-> **2026-07-06 addendum — the stack this describes was retired.** Dusk moved
+> **2026-07-06 addendum — the stack this describes was retired.** Cinerama moved
 > from the self-built, self-patched VLCKit `4.0.0a19` (libvlc 4.0-dev) to
 > VideoLAN's official prebuilt **stable MobileVLCKit/TVVLCKit 3.7.3**
 > (libvlc 3.0.23), whose field-proven audiounit output has none of the
@@ -70,9 +74,9 @@ failing sessions on device (2026-07-05).
      persist — invisible in collected archives. Diagnostic breadcrumbs must
      be `.notice` or higher.
    Capture procedure: reproduce on device, then
-   `sudo log collect --device --last 30m --output dusk.logarchive` and read
+   `sudo log collect --device --last 30m --output cinerama.logarchive` and read
    with `/usr/bin/log show --archive … --info --predicate 'subsystem ==
-   "com.dusk-player.app"'` (note: zsh has a `log` builtin — use the full
+   "com.cinerama-player.app"'` (note: zsh has a `log` builtin — use the full
    path).
 
 3. **Stale VLCKit embeds shipped to devices.**

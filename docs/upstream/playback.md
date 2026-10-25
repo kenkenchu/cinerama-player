@@ -1,8 +1,12 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
 # Playback System
-Operational notes for changing Dusk playback without crossing layer boundaries.
+Operational notes for changing Cinerama playback without crossing layer boundaries.
 
 ## Boundaries
 - `PlexService/` owns Plex endpoints, direct-play/transcode URL construction,
@@ -258,11 +262,11 @@ so the whole live HUD is derived from one instant.
   lone AAC target, Plex downmixed every 5.1/7.1 source to 2-channel AAC on the
   server-side rungs — which is what the direct-stream fallback and every
   TrueHD title (undecodable in stock VLCKit, so routed through the server
-  before Dusk's own build) received. AVPlayer decodes AC-3/E-AC-3 in HLS/mpegts natively on
+  before Cinerama's own build) received. AVPlayer decodes AC-3/E-AC-3 in HLS/mpegts natively on
   both platforms. `.airPlay` is deliberately excluded: that rung targets
   whatever receiver the user picked, which is not necessarily AC-3 capable.
   There is deliberately no `aac` channel limitation — capping it would fight
-  Plex's decision engine rather than widening what Dusk accepts.
+  Plex's decision engine rather than widening what Cinerama accepts.
 
 ## Dolby Atmos and Spatial Audio
 
@@ -388,7 +392,7 @@ so the whole live HUD is derived from one instant.
   picture would lower audio quality, and the remux never lowers quality.
   DV7 + TrueHD is the picture-priority exception: request converted E-AC-3
   audio up front and keep DV7 → 8.1 on AVPlayer. Other TrueHD-only files
-  use local lossless decoding on Dusk's VLCKit build. TrueHD with a copyable
+  use local lossless decoding on Cinerama's VLCKit build. TrueHD with a copyable
   sibling remuxes the sibling (see "Dolby TrueHD decoding").
 - Delivery and acceptance are the Atmos remux's
   (`requestSpatialAudioRemux`, session type `.spatialAudio`, lossless only,
@@ -400,7 +404,7 @@ so the whole live HUD is derived from one instant.
   - **HDR10 / HLG**: no signaling needed; the copied HEVC carries its VUI.
   - **HDR10+**: the ST 2094-40 SEI rides the copied bitstream and AVPlayer
     forwards it (Apple TV 4K 3rd gen and later, HDR10+ TV). Plex metadata
-    does not distinguish HDR10+, so these read as HDR10 everywhere in Dusk.
+    does not distinguish HDR10+, so these read as HDR10 everywhere in Cinerama.
   - **Dolby Vision 8.1 / 8.4** (`DolbyVisionSignaling`, profile 8 path): the
     track stays `hvc1` (the base layer remains decodable everywhere) and
     gains a `dvvC` box built from Plex's `DOVIProfile`/`DOVILevel`/
@@ -526,7 +530,7 @@ so the whole live HUD is derived from one instant.
     `hvc1` + an 8.1 `dvvC`; the Atmos `dec3` patch (`EAC3JOCSignaling`) runs
     here too when `restoresDolbyAtmos`.
   - Segments (`FMP4FragmentRewriter` + `DoviBridgeSampleRewriter`): every
-    video sample goes through the Rust bridge (`Native/DuskDovi`, libdovi
+    video sample goes through the Rust bridge (`Native/CineramaDovi`, libdovi
     `ConversionMode::To81`): NAL 63 (EL) dropped, NAL 62 (RPU) rewritten;
     `trun` sizes and data offsets are rebuilt, `sidx` dropped, audio bytes
     copied. Before anything is allocated, a fragment's runs share one
@@ -598,9 +602,9 @@ so the whole live HUD is derived from one instant.
 
 ## AirPlay (iOS/iPadOS)
 
-- Dusk is the AirPlay sender and remains the playback coordinator/remote. The
-  receiver needs AirPlay support but never needs Dusk installed. This is native
-  AVPlayer external playback, not screen mirroring and not a Dusk-to-Dusk sync
+- Cinerama is the AirPlay sender and remains the playback coordinator/remote. The
+  receiver needs AirPlay support but never needs Cinerama installed. This is native
+  AVPlayer external playback, not screen mirroring and not a Cinerama-to-Cinerama sync
   protocol.
 - `PlaybackAirPlayController` observes the system-owned long-form-video route.
   `PlayerAirPlayRoutePicker` wraps `AVRoutePickerView` and prioritizes video
@@ -610,7 +614,7 @@ so the whole live HUD is derived from one instant.
 - The route picker is rendered with clear tints and `PlayerAirPlayControl`
   draws the visible `airplayvideo` symbol on top of it. `AVRoutePickerView`
   positions its own glyph on its own metrics instead of centering it in the
-  size it is given, so the system glyph sits high in Dusk's 44pt circle and
+  size it is given, so the system glyph sits high in Cinerama's 44pt circle and
   never matches the weight of the buttons beside it. The picker stays the
   actual control — discovery, route naming, and connection UI remain Apple's —
   and it also reports the proposed size rather than its intrinsic one so it
@@ -632,7 +636,7 @@ so the whole live HUD is derived from one instant.
   a direct-play or downloaded source, the coordinator snapshots position/state
   and asks `PlexService.airPlayStreamURL` for uncapped HLS. Plex may direct-stream
   compatible tracks but has an H.264/AAC target for receiver-incompatible media;
-  Dusk then swaps to AVPlayer without finalizing timeline/scrobble state.
+  Cinerama then swaps to AVPlayer without finalizing timeline/scrobble state.
 - Manual transcodes, automatic server streams, and Live TV are already HLS and
   hand off directly when they use AVPlayer. AirPlay overrides the debug-only
   Force VLCKit choice when a new library or Live TV session starts.
@@ -644,18 +648,18 @@ so the whole live HUD is derived from one instant.
   avoids a second visible handoff back to direct play/VLCKit. The next item uses
   the currently selected route normally.
 - Completed downloads require the matching Plex server to be connected for
-  AirPlay. Dusk does not run an on-device transcoder or local HTTP server for
+  AirPlay. Cinerama does not run an on-device transcoder or local HTTP server for
   offline VLC-only files.
 - `PlaybackCoordinator` continues to own timeline, scrobble, markers, continuous
-  playback, and Up Next. No state is synchronized from a Dusk receiver app.
+  playback, and Up Next. No state is synchronized from a Cinerama receiver app.
 
 ## SharePlay (iOS/iPadOS and tvOS)
 
 - SharePlay is coordinated playback, not screen mirroring. Every participant
-  runs Dusk and resolves the shared Plex item with their own Plex account/token;
+  runs Cinerama and resolves the shared Plex item with their own Plex account/token;
   Group Activities carries only the hosting server identifier, rating key, and
   display metadata. Playback URLs and Plex tokens are never shared.
-- `DuskWatchTogetherActivity` identifies content by server identifier + rating
+- `CineramaWatchTogetherActivity` identifies content by server identifier + rating
   key. That same stable value is the AVFoundation playback-item identifier, so
   participants may independently use AVPlayer, VLCKit, a completed download,
   direct play, or a per-user Plex HLS stream without breaking synchronization.
@@ -709,7 +713,7 @@ so the whole live HUD is derived from one instant.
   tuned Plex session owns a different sliding DVR window, so equal engine times
   do not guarantee equal broadcast moments. A stable shared timeline would
   require a separate live-specific synchronization design.
-- `Dusk.entitlements` declares `com.apple.developer.group-session`; the app ID
+- `Cinerama.entitlements` declares `com.apple.developer.group-session`; the app ID
   and provisioning profiles used for device/archive builds must also have the
   Group Activities capability enabled in the Apple Developer portal.
 
@@ -727,7 +731,7 @@ so the whole live HUD is derived from one instant.
   and `/video/:/transcode/universal/start.m3u8`, swaps the engine/source, and
   resumes from the same position without finalizing or scrobbling the session.
 - Transcoded playback uses AVPlayer by default because the server emits HLS.
-  `forceVLCKit` still forces VLCKit for debugging. Dusk currently advertises
+  `forceVLCKit` still forces VLCKit for debugging. Cinerama currently advertises
   H.264/AAC for manual Plex HLS transcodes; direct-play HEVC remains supported,
   but HEVC HLS transcoding is not advertised until the app can request a proven
   Apple-compatible package.
@@ -804,7 +808,7 @@ so the whole live HUD is derived from one instant.
   protocol-extension defaults (`false` / no-op). See "External (sidecar)
   subtitles".
 - Engine tracks carry `isDecodable`. A stock VLCKit build cannot decode
-  TrueHD/MLP, and Dusk's TrueHD decoder can fail on a stream (see "Dolby
+  TrueHD/MLP, and Cinerama's TrueHD decoder can fail on a stream (see "Dolby
   TrueHD decoding" below).
   Automatic selection only considers decodable tracks; the pickers list all of
   them, and picking an undecodable one reroutes through
@@ -836,7 +840,7 @@ so the whole live HUD is derived from one instant.
 ## AVPlayer and VLCKit Split
 - `AVPlayerEngine` is for MP4/MOV/M4V-style direct play with AV-compatible
   video, audio, and text subtitles. `VLCKitEngine` is the fallback for MKV,
-  DTS/TrueHD audio (TrueHD with Dusk's own VLCKit build only), bitmap/complex
+  DTS/TrueHD audio (TrueHD with Cinerama's own VLCKit build only), bitmap/complex
   subtitles, and other VLC-only combinations.
 - Current AV-compatible sets live in `StreamResolver`: containers
   `mp4`, `mov`, `m4v`; video `h264` (8-bit only), `hevc`, `av1` (hardware
@@ -976,7 +980,7 @@ so the whole live HUD is derived from one instant.
   passes `subtitleStreamID` to the transcode decision, which burns it.
 
 ### Dolby TrueHD decoding (TrueHD/MLP)
-- Dusk ships its OWN MobileVLCKit/TVVLCKit 3.7.3 build
+- Cinerama ships its OWN MobileVLCKit/TVVLCKit 3.7.3 build
   (`ci_scripts/build_vlckit.sh`, see `development-workflow.md` → "VLCKit
   build"). VideoLAN's stock prebuilts disable ffmpeg's mlp
   decoder/demuxer/parser on iOS/tvOS (VLCKit patch 0003, "App Store ToS" —
@@ -987,35 +991,35 @@ so the whole live HUD is derived from one instant.
   can bitstream TrueHD on Apple TV (tvOS has no MLP/MAT passthrough; Infuse
   does the same 7.1 decode).
 - **Licensing — a deliberate decision by Marvin (2026-10-16):** Dolby TrueHD
-  is patent-encumbered and Dusk holds no Dolby license. VideoLAN removed the
+  is patent-encumbered and Cinerama holds no Dolby license. VideoLAN removed the
   decoder from its App Store builds for exactly this reason
   (videolan/vlc#25040); Infuse ships it under a license. Shipping the decoder
   is a known legal/App Review risk that rests with the maintainer, not a
   technical default. Reverting is one step: drop patch 0100, bump
-  `DUSK_VLCKIT_BUILD`, rebuild and republish — the app then falls back to the
+  `CINERAMA_VLCKIT_BUILD`, rebuild and republish — the app then falls back to the
   Plex route below on its own (`VLCKitBuildInfo.decodesTrueHD` is false).
-  The binaries are hosted only in the private repo `marvinvr/dusk-vlckit`,
+  The binaries are hosted only in the private repo the original private VLC repository,
   never as a public download; builds without access to it get VideoLAN's
   stock VLCKit and the Plex route (`development-workflow.md` → "VLCKit
   Bootstrap").
   Never add Atmos object rendering (TrueHD/DTS:X → APAC): it is lossy, needs a
   new audio path, and carries the object-audio patent risk Firecore declined.
 - Capability gate: the build script stamps every framework slice's Info.plist
-  (`DuskVLCKitBuild`, `DuskVLCKitTrueHD`). `VLCKitBuildInfo.decodesTrueHD`
+  (`CineramaVLCKitBuild`, `CineramaVLCKitTrueHD`). `VLCKitBuildInfo.decodesTrueHD`
   reads it from the loaded binary, so a stale stock framework in a local
   `Frameworks/` keeps the old routing instead of playing TrueHD silent.
-  Playback Info's "VLCKit Build" row shows `Dusk VLCKit 3.7.3-dusk1 (…,
+  Playback Info's "VLCKit Build" row shows `Cinerama VLCKit 3.7.3-cinerama1 (…,
   TrueHD)`; "Stock VLCKit 3.x" means the frameworks are stale.
 - libvlc 3.x tags TrueHD `trhd`, MLP `mlp `; `mlpa` was the 4.x alpha's
   TrueHD fourcc. `VLCKitEngine.trueHDAudioFourCCs` holds all three and only
   marks tracks undecodable on a stock build.
-- Routing with the Dusk build:
+- Routing with the Cinerama build:
   - Direct play: TrueHD is an ordinary decodable track. On tvOS it ranks top
     (lossless) and VLCKit opens straight on it via `:audio-track`; iPhone/iPad
     still prefer a lossy surround sibling (`platformAudioCodecAdjustment`).
   - Startup remux decisions (DV5, HDR video, Dolby Atmos / spatial audio) are
     made for `PlayerViewModel.preferredRemuxAudioStream`: the local pick with
-    TrueHD treated as undecodable, i.e. the pre-Dusk-build policy. TrueHD
+    TrueHD treated as undecodable, i.e. the pre-Cinerama-build policy. TrueHD
     cannot ride the lossless fMP4 remux, so letting it win there would turn a
     UHD remux with TrueHD Atmos + E-AC-3/AC-3 from HDR/Atmos on AVPlayer into
     VLCKit without HDR. These files keep exactly their old remux; only when
@@ -1034,7 +1038,7 @@ so the whole live HUD is derived from one instant.
     retry): `PlaybackCoordinator.remuxAudioConversion` records the converted
     stream, because the codec no longer says so — TrueHD is decodable, and
     re-deriving it from decodability dropped the remux (and HDR) for VLCKit.
-- Failure case (`VLCKitEngine.watchTrueHDDecoding`): the decoder is Dusk's
+- Failure case (`VLCKitEngine.watchTrueHDDecoding`): the decoder is Cinerama's
   addition. One that fails to open leaves the ES selected and silent; its
   only trace is libvlc's error "Codec `trhd' (…) is not supported."
   (`src/input/decoder.c`), which `VLCLibraryLogBridge` counts. A TrueHD/MLP
@@ -1257,7 +1261,7 @@ so the whole live HUD is derived from one instant.
   interruptions, and headphone/route removal remain authoritative and are
   never auto-resumed by this recovery path.
   tvOS sets the `.playback`/`.moviePlayback` category at app launch
-  (`DuskApp.configurePlaybackAudioSession`).
+  (`CineramaApp.configurePlaybackAudioSession`).
 - tvOS drives true multichannel output to the connected receiver over
   HDMI/eARC at the session level, and **timing is the whole game**. libvlc 3's
   `avas_setPreferredNumberOfChannels` reads the route's
@@ -1281,7 +1285,7 @@ so the whole live HUD is derived from one instant.
     measuring first permanently justifies never asking for surround.
   - stock libvlc overwrote `supportsMultichannelContent` on every
     audio-output start (`avas_SetActive` passed its own spatial-audio flag,
-    still false on first bring-up). Dusk's build (`vlc-patches/0101`) always
+    still false on first bring-up). Cinerama's build (`vlc-patches/0101`) always
     opts in on tvOS, accepts any multichannel route instead of requiring the
     exact requested count, and when the route carries fewer channels than the
     source (7.1 TrueHD/DTS-HD into a 5.1 receiver) mixes down to 5.1 in
@@ -1290,7 +1294,7 @@ so the whole live HUD is derived from one instant.
     keeps a stock framework working). Without it, one VLCKit title on a stock
     build left every later AVPlayer title in stereo.
   - passthrough/bitstreaming is impossible on this stack regardless: libvlc 3
-    returns `VLC_EGENERIC` for SPDIF/HDMI formats on Apple platforms. Dusk
+    returns `VLC_EGENERIC` for SPDIF/HDMI formats on Apple platforms. Cinerama
     always software-decodes to PCM; the goal is only that the PCM is discrete
     multichannel rather than a fold-down.
   - Playback Info's "Output Channels" row reads
@@ -1334,7 +1338,7 @@ so the whole live HUD is derived from one instant.
   stretched to many seconds of silent-but-"healthy" audio after every start
   and seek (a manual pause→play "cured" it only because pausing shifts the
   clocks by the pause duration). VLC-iOS ships 999 ms on the same stack.
-  Dusk does not configure an explicit back-buffer size.
+  Cinerama does not configure an explicit back-buffer size.
 - Both engines implement stall recovery by reloading/restarting near the
   observed position. Keep recovery behavior engine-specific.
 - iOS VLCKit has extra drawable and video-output refresh behavior and hosts the
@@ -1390,7 +1394,7 @@ so the whole live HUD is derived from one instant.
 - With Video Enhancement already on, the tap and output are already live and
   the button starts PiP directly (no reload).
 - Prerequisites already in place: the audio session is
-  `.playback`/`.moviePlayback`/`.longFormVideo` (`DuskApp`) and `UIBackgroundModes`
+  `.playback`/`.moviePlayback`/`.longFormVideo` (`CineramaApp`) and `UIBackgroundModes`
   includes `audio` (`Info-iOS.plist`). PiP will not run without both.
 - Availability: `isPictureInPicturePossible` is true for VLC sessions whenever
   media is loaded (the button may trigger the support-mode swap) and for the
@@ -1473,7 +1477,7 @@ so the whole live HUD is derived from one instant.
     while captions are selected. HDR/DV never gets this renderer handoff.
   - VLCKit supports enhancement with embedded text/ASS/bitmap and mounted
     sidecar subtitles. libVLC 3's `vmem` output CPU-blends SPU subtitles into
-    the pixels before `DuskVLCRawVideoOutput` forwards them to Metal (see the
+    the pixels before `CineramaVLCRawVideoOutput` forwards them to Metal (see the
     [callback API contract](https://videolan.videolan.me/vlc-3.0/group__libvlc__media__player.html)).
     Keep those pixels intact; no separate overlay or Plex burn-in is needed.
   - AVPlayer's `AVPlayerItemVideoOutput` excludes native captions. While a
@@ -1482,7 +1486,7 @@ so the whole live HUD is derived from one instant.
     Turning subtitles off restores Metal without reloading or seeking; a forced
     frame refresh handles this while paused too. The cached engine view contains
     an observing SwiftUI wrapper, so changes apply immediately. Item media
-    selection notifications cover automatic/system choices as well as Dusk's
+    selection notifications cover automatic/system choices as well as Cinerama's
     picker; observers are removed on load, stop, recovery, and deinit.
     Playback Info reports `Native AVPlayer renderer required while subtitles
     are selected` only while that selection is active (Off/HDR/fps reasons
@@ -1495,7 +1499,7 @@ so the whole live HUD is derived from one instant.
   pulls the time-current pixel buffer (`itemTime(forHostTime:)` +
   `hasNewPixelBuffer`) into `VideoEnhancementRenderer.submit`. This path paces
   itself by time, so it drops to the current frame under load. VLCKit installs
-  raw libvlc callbacks through `DuskVLCRawVideoOutput`, retains `CVPixelBuffer`
+  raw libvlc callbacks through `CineramaVLCRawVideoOutput`, retains `CVPixelBuffer`
   frames, and pushes them through the Objective-C frame-consumer bridge into
   `VideoEnhancementRenderer.enqueue`. Keep both paths aligned when changing
   frame ownership, channel layout, or teardown.
@@ -1849,7 +1853,7 @@ so the whole live HUD is derived from one instant.
   The panel and an in-flight scrub hold the HUD up via the existing
   `beginControlsInteractionHold()` / `endControlsInteractionHold()` pair.
 - Chapters are marker-backed only. Plex exposes no chapter list through the
-  endpoints Dusk uses, so `PlayerViewModel.chapterMarkers` (intro + credits) drives
+  endpoints Cinerama uses, so `PlayerViewModel.chapterMarkers` (intro + credits) drives
   both the bar's ticks and the Chapters tab, and the tab is hidden when it is empty.
 - Playback speed is `PlayerViewModel.playbackRate` / `setPlaybackRate(_:)`
   (platform-neutral, tvOS-only UI). It is refused for Live TV, the Speed tab is
@@ -2038,7 +2042,7 @@ so the whole live HUD is derived from one instant.
   `PlayerControlsSharedViews`/`PlayerView`.
 - Video enhancement: `Playback/VideoEnhancement*.swift`,
   `Playback/VideoEnhancementShaders.metal`, and
-  `Playback/DuskVLCRawVideoOutput.*`.
+  `Playback/CineramaVLCRawVideoOutput.*`.
 - Concrete playback: `AVPlayerEngine.swift`, `VLCKitEngine.swift`, and the
   platform `VLCKitRenderer*.swift` files.
 - Plex playback calls: `PlexService+Playback.swift`; metadata shape/fetching:
@@ -2048,15 +2052,15 @@ so the whole live HUD is derived from one instant.
   `dolbyVisionRemuxBlocker`), Plex request in `PlexService+Playback.swift`,
   session logic in `PlaybackCoordinator+SpatialAudio.swift`, Atmos and Dolby
   Vision init-segment/playlist fixes in `Playback/RemuxHLSLoader.swift`
-  (tests: `DuskTests/HDRVideoRemuxTests.swift`).
+  (tests: `CineramaTests/HDRVideoRemuxTests.swift`).
 - Dolby Vision 7 → 8.1: gate in `remuxDolbyVision7Conversion`
   (`PlaybackCoordinator+SpatialAudio.swift`) and
   `StreamResolver.dolbyVision7ConversionTarget`, retry branch in
   `performDirectPlayServerStreamFallback`, proxy lifecycle in
   `AVPlayerEngine`, proxy/fMP4/playlist rewriting in
-  `Playback/DolbyVision7/`, RPU conversion in `Native/DuskDovi` (Rust,
+  `Playback/DolbyVision7/`, RPU conversion in `Native/CineramaDovi` (Rust,
   libdovi) behind `DoviBridge.swift` (tests:
-  `DuskTests/DolbyVision7*Tests.swift`, `DuskTests/DoviBridgeTests.swift`).
+  `CineramaTests/DolbyVision7*Tests.swift`, `CineramaTests/DoviBridgeTests.swift`).
 - Session orchestration: `PlaybackCoordinator+Session.swift`; timeline:
   `PlaybackCoordinator+Timeline.swift`; Up Next: `PlaybackCoordinator+UpNext.swift`.
 - Display mode matching (tvOS): `Features/Player/DisplayModeMatcher.swift`,
@@ -2076,7 +2080,7 @@ so the whole live HUD is derived from one instant.
 - Do not duplicate track metadata logic in views; merge Plex stream metadata in
   `PlayerViewModel+TrackSelection`.
 - Do not make views call Plex APIs directly.
-- Source-file changes under `Dusk/Sources` require `xcodegen generate`; this
+- Source-file changes under `Cinerama/Sources` require `xcodegen generate`; this
   doc-only file does not.
 
 ## Safe-Change Checklist
@@ -2095,7 +2099,7 @@ so the whole live HUD is derived from one instant.
 
 ## Native macOS Playback
 
-The `Dusk-macOS` scheme reuses the resolver, coordinator, timeline/scrobble,
+The `Cinerama-macOS` scheme reuses the resolver, coordinator, timeline/scrobble,
 remux/Dolby Vision conversion, offline playback, and track-selection view model.
 AVPlayer renders through an `NSViewRepresentable` hosting `AVPlayerLayer`;
 the shared Metal enhancement renderer has an AppKit layer host and a screen
@@ -2103,8 +2107,8 @@ CADisplayLink on Mac. Desktop VLC is implemented in `Mac/VLCKitMacEngine.swift`
 with `VLCVideoView`, not the mobile raw-video/audio-session pipeline.
 
 Desktop VLCKit is the checksum-pinned stock VideoLAN 3.7.3 framework. It has no
-Dusk TrueHD capability stamp, so the shared undecodable-audio fallback keeps
+Cinerama TrueHD capability stamp, so the shared undecodable-audio fallback keeps
 TrueHD server-assisted. VLC subtitle size is applied when opening media; its
-native desktop renderer does not run Dusk's Metal enhancement path. Mac AVPlayer
-retains remux and DuskDovi support, but HDR/Atmos output must be checked with the
+native desktop renderer does not run Cinerama's Metal enhancement path. Mac AVPlayer
+retains remux and CineramaDovi support, but HDR/Atmos output must be checked with the
 actual Mac, display, and audio route; compilation alone does not validate it.

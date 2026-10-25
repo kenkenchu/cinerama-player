@@ -1,22 +1,26 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
 # Supporter Tier (In-App Purchases)
 
-Dusk stays fully free; the supporter tier is an optional tip jar with cosmetic
+Cinerama stays fully free; the supporter tier is an optional tip jar with cosmetic
 perks. This doc covers the StoreKit flow, the one subscription, the prompt
 gating, the alternate app icons, and the App Store Connect setup.
 
 ## Product Catalog
 
 Defined in `SupporterProduct` (`Features/Supporter/SupporterStore.swift`) and
-mirrored in the local test config `Dusk/Support/Dusk.storekit`. App Store
+mirrored in the local test config `Cinerama/Support/Cinerama.storekit`. App Store
 Connect must define the same IDs (full metadata in
 [App Store Connect](#app-store-connect)):
 
-- **Dusk Supporter** subscription: `supporter.monthly` $2.99/month,
+- **Cinerama Supporter** subscription: `supporter.monthly` $2.99/month,
   `supporter.yearly` $24.99/year — auto-renewable, both on level 1 of group
-  "Dusk Supporter". These are the IDs that shipped in 1.6 (then $1.99 /
+  "Cinerama Supporter". These are the IDs that shipped in 1.6 (then $1.99 /
   $14.99), so existing subscribers keep working with no migration and get
   every subscription perk; App Store Connect keeps their old price (see
   [Grandfathering](#grandfathering-existing-subscribers)).
@@ -30,21 +34,21 @@ schedules the switch and then shows "Starts <date>").
 
 History: 1.7 development briefly had two levels (Front Row = `supporter.*`,
 Director's Cut = `directorscut.*`). That never shipped and is gone; the
-`directorscut.*` products are not in the app or `Dusk.storekit`.
+`directorscut.*` products are not in the app or `Cinerama.storekit`.
 
 Prices are the agreed USD reference prices; App Store Connect is the source of
-truth for storefront pricing, and `Dusk.storekit` must mirror it so local
+truth for storefront pricing, and `Cinerama.storekit` must mirror it so local
 testing matches production.
 
 Tips are deliberately **consumables** so they can be purchased repeatedly
 ("support again"). Tip display names/descriptions shown in the sheet come from
 StoreKit product metadata (fallbacks for empty names only). The iOS
-subscription card is app copy ("Dusk Supporter", perks) with StoreKit prices on
+subscription card is app copy ("Cinerama Supporter", perks) with StoreKit prices on
 its two buttons; tvOS rows use the StoreKit display name.
 
 ## Supporter Status Rules
 
-`SupporterStore` (`@MainActor @Observable`, injected in `DuskApp` alongside the
+`SupporterStore` (`@MainActor @Observable`, injected in `CineramaApp` alongside the
 other services) owns all state:
 
 - **Supporter status vs. perks.** `isSupporter` (the "You're a Supporter"
@@ -75,7 +79,7 @@ other services) owns all state:
   later is possible but can't be undone.
 - Entitlements are re-read on every transaction update, after purchases and
   restores, when the app becomes active (`sceneDidBecomeActive()` from
-  `DuskApp`), and one second after the active period's expiration date if the
+  `CineramaApp`), and one second after the active period's expiration date if the
   app is still open — expirations produce no transaction update.
 - Finished consumables appear in `Transaction.all` only because
   `SKIncludeConsumableInAppPurchaseHistory` is set to true in **both**
@@ -95,7 +99,7 @@ credentials — only call it from an explicit user action.
   adds a "Maybe Later" glass button and adapts the headline per prompt). iOS renders custom purchase rows; tvOS reuses
   `TVSettingsSection`/`TVSettingsActionRow` so focus behavior matches Settings.
   Under a "Recurring" heading the subscription is one card (iOS
-  `SupporterSubscriptionCard`, modelled on MealMate's): "Dusk Supporter", its
+  `SupporterSubscriptionCard`, modelled on MealMate's): "Cinerama Supporter", its
   perks (all nine icons, the three subscriber exclusives shown as thumbnails),
   then two price buttons ("$2.99 / month", "$24.99 / year", the StoreKit
   price, never hardcoded) with "Billed monthly" / "Saves N%" under each.
@@ -164,7 +168,7 @@ presenter. All intervals are constants at the top of `SupporterPromptSchedule`:
 - At most one prompt per session falls out of the gaps (weeks at least between
   prompts); calm moments only: never while the player is up, 2s grace delay
   after activation.
-- Prompt 2 onward uses the neutral "Still enjoying Dusk?" headline. The sheet
+- Prompt 2 onward uses the neutral "Still enjoying Cinerama?" headline. The sheet
   does not describe the cadence or promise that a prompt is the final ask.
 
 ## Reporting
@@ -179,12 +183,12 @@ exist to catch bugs this feature is prone to:
   presentation failure would otherwise be invisible.
 - `supporter_products_unavailable` vs `supporter_sheet_shown` catches App Store
   products failing to resolve in production. Local runs cannot catch that: both
-  schemes attach `Dusk/Support/Dusk.storekit`, so Xcode always serves products
+  schemes attach `Cinerama/Support/Cinerama.storekit`, so Xcode always serves products
   from the local file rather than App Store Connect.
 
 ## Alternate App Icons (iOS/iPadOS only)
 
-- Icon Composer bundles `Dusk/Resources/DuskIcon{Dawn,Midnight,Neon,Mono,Aurora,GoldenHour,Velvet,Emerald,Gilded}.icon`,
+- Icon Composer bundles `Cinerama/Resources/CineramaIcon{Dawn,Midnight,Neon,Mono,Aurora,GoldenHour,Velvet,Emerald,Gilded}.icon`,
   registered via `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES` in
   `project.yml` (iOS target) and excluded from the tvOS target (tvOS alternates
   would need layered image stacks — out of scope; the Apple TV app only
@@ -192,7 +196,7 @@ exist to catch bugs this feature is prone to:
 - Each bundle is two layers: an opaque `background.png` and `mark.png` (the
   primary mark's alpha, recolored), with the shared `icon.json`. Previews are
   flattened 512px `IconPreview*` imagesets in `Assets.xcassets`, shared with tvOS.
-- Access (`DuskAppIcon.isUnlocked`): the primary "Dusk" icon is free; the six
+- Access (`CineramaAppIcon.isUnlocked`): the primary "Cinerama" icon is free; the six
   classic alternates need an active subscription or a tip from Generous up
   (`SupporterStore.hasIconAccess`); three jewel-tone icons with a gold accent
   only while the subscription is active (`requiresSubscription`):
@@ -212,22 +216,22 @@ exist to catch bugs this feature is prone to:
   `setAlternateIconName` fails while the app is inactive; the next activation
   retries.
 - Velvet/Emerald/Gilded were generated with `scripts/generate_directors_cut_icons.py`
-  (Pillow + NumPy; `python3 scripts/generate_directors_cut_icons.py Dusk/Resources <out>`),
+  (Pillow + NumPy; `python3 scripts/generate_directors_cut_icons.py Cinerama/Resources <out>`),
   which reuses the primary mark's alpha so they match the other alternates.
-- Adding a variant: new `.icon` bundle + preview imageset + `DuskAppIcon` case
+- Adding a variant: new `.icon` bundle + preview imageset + `CineramaAppIcon` case
   + the two `project.yml` spots + `xcodegen generate`.
 
 ## Verification
 
 - Build both targets (compile-only, per `AGENTS.md`).
-- `DuskTests` / `DuskTests-tvOS` (unit-test bundles hosted by the apps, wired
-  into the `Dusk` / `Dusk-tvOS` schemes' Test action):
+- `CineramaTests` / `CineramaTests-tvOS` (unit-test bundles hosted by the apps, wired
+  into the `Cinerama` / `Cinerama-tvOS` schemes' Test action):
   - `SupporterEntitlementsTests` — pure rules: subscription resolution
     (active, a 1.6 subscriber, `isUpgraded`, plan switch at renewal, lapse,
     refund, tips), the icon revert rule (exclusives, classic icons, Coffee vs.
     Generous-and-up tips), icon access, and the store's cache.
   - `SupporterStoreKitTests` — StoreKitTest (`SKTestSession` with
-    `Dusk.storekit`, copied into the test bundle): catalog/level/prices/Family
+    `Cinerama.storekit`, copied into the test bundle): catalog/level/prices/Family
     Sharing, buy monthly → scheduled switch to yearly → forced renewal, lapse
     (auto-renew off + expire; expiring alone leaves an auto-renewing test
     subscription in force) then a Coffee tip (still locked) and a Generous tip
@@ -235,7 +239,7 @@ exist to catch bugs this feature is prone to:
     environment is shared state. Trap: the first run right after the app
     is (re)installed on a simulator can still hit the real sandbox (App Store
     Connect products, Apple Account sign-in on purchase) — run it again.
-- Runtime purchase flows in the app use the `Dusk.storekit` config attached to
+- Runtime purchase flows in the app use the `Cinerama.storekit` config attached to
   both schemes' Run action (`project.yml` `schemes:`); Xcode's transaction
   manager can grant/refund/expire test purchases, including testing that a
   refunded-free install still resolves supporter status from history.
@@ -245,10 +249,10 @@ exist to catch bugs this feature is prone to:
 
 ## App Store Connect
 
-Everything here mirrors `Dusk.storekit`. Prices are USD tier references; let
+Everything here mirrors `Cinerama.storekit`. Prices are USD tier references; let
 App Store Connect derive the other storefronts as for the existing products.
 
-### Subscription group "Dusk Supporter" (existing)
+### Subscription group "Cinerama Supporter" (existing)
 
 One level only:
 
@@ -263,11 +267,11 @@ One level only:
 | Level | 1 | 1 |
 | Duration | 1 month | 1 year |
 | Price (USD) | $2.99 (was $1.99) | $24.99 (was $14.99) |
-| Reference name | Dusk Supporter Monthly | Dusk Supporter Yearly |
-| Display name EN | Dusk Supporter Monthly | Dusk Supporter Yearly |
-| Description EN | Supports Dusk + all 9 alternate app icons. | Supports Dusk + all 9 alternate app icons. |
-| Display name DE | Dusk Supporter monatlich | Dusk Supporter jährlich |
-| Description DE | Unterstützt Dusk + alle 9 alternativen Icons. | Unterstützt Dusk + alle 9 alternativen Icons. |
+| Reference name | Cinerama Supporter Monthly | Cinerama Supporter Yearly |
+| Display name EN | Cinerama Supporter Monthly | Cinerama Supporter Yearly |
+| Description EN | Supports Cinerama + all 9 alternate app icons. | Supports Cinerama + all 9 alternate app icons. |
+| Display name DE | Cinerama Supporter monatlich | Cinerama Supporter jährlich |
+| Description DE | Unterstützt Cinerama + alle 9 alternativen Icons. | Unterstützt Cinerama + alle 9 alternativen Icons. |
 | Family Sharing | Off (unchanged) | Off (unchanged) |
 | Introductory / promotional offers | None | None |
 
@@ -293,12 +297,12 @@ build); otherwise remove them from sale. Their IDs can't be reused either way.
 
 ### Review notes (both subscription products)
 
-> Dusk is a free Plex client; all features stay free. The "Dusk Supporter"
+> Cinerama is a free Plex client; all features stay free. The "Cinerama Supporter"
 > subscription (monthly or yearly) is an optional way to support development.
 > While it is active it unlocks nine alternate app icons on iPhone and iPad,
 > including three subscriber exclusives (Velvet, Emerald and Gilded); when it
 > ends, the app switches back to the default icon. To review: Settings →
-> "Support Dusk" (top row) opens the supporter sheet; Settings → Appearance →
+> "Support Cinerama" (top row) opens the supporter sheet; Settings → Appearance →
 > App Icon shows the icons. No Plex account is needed to view the purchase
 > sheet after signing in with the demo account provided in the app review
 > information. On Apple TV the same sheet is under Settings → Support;

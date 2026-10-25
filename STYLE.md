@@ -1,4 +1,4 @@
-# Dusk Mac Design System
+# Cinerama Mac Design System
 
 ## Native Mac Controls and Neutral UI
 
@@ -13,26 +13,26 @@ and native fullscreen.
 2. Keep the palette neutral. Show selection and progress through system
    treatment, weight, opacity, or neutral fills. Semantic status colors retain
    their meaning: destructive/error red, rating yellow, normal system toggle.
-3. No app-wide custom tint. Never tint active UI states with `Color.duskAccent`.
+3. No app-wide custom tint. Never tint active UI states with `Color.cineramaAccent`.
 4. Sunset Coral is reserved for the logo/icon. The Mac app has no purchase page
    or alternate icon picker.
 5. Let artwork lead. Keep controls clear and metadata readable in either theme.
 
 ## Colors
 
-Dynamic `NSColor` providers in `Dusk/Sources/Shared/MacPlatform.swift` back the
+Dynamic `NSColor` providers in `Cinerama/Sources/Shared/MacPlatform.swift` back the
 SwiftUI colors. Keep these light/dark values consistent:
 
 | Token | Light | Dark | Purpose |
 | --- | --- | --- | --- |
-| `duskBackground` | `#F5F7FA` | `#090A0F` | Window/page background |
-| `duskSurface` | `#FFFFFF` | `#161824` | Cards, rows, elevated content |
-| `duskTextPrimary` | `#1C1C1E` | `#F2F2F7` | Titles and emphasized labels |
-| `duskTextSecondary` | `#636366` | `#8E95A8` | Metadata, captions, placeholders |
-| `duskAccent` | `#FF6B4A` | `#FF6B4A` | Logo/icon only |
+| `cineramaBackground` | `#F5F7FA` | `#090A0F` | Window/page background |
+| `cineramaSurface` | `#FFFFFF` | `#161824` | Cards, rows, elevated content |
+| `cineramaTextPrimary` | `#1C1C1E` | `#F2F2F7` | Titles and emphasized labels |
+| `cineramaTextSecondary` | `#636366` | `#8E95A8` | Metadata, captions, placeholders |
+| `cineramaAccent` | `#FF6B4A` | `#FF6B4A` | Logo/icon only |
 
-`duskPrimaryActionLabel` supplies the contrasting primary-action label.
-`duskPrimaryButtonTint` is translucent primary, not the brand color. The global
+`cineramaPrimaryActionLabel` supplies the contrasting primary-action label.
+`cineramaPrimaryButtonTint` is translucent primary, not the brand color. The global
 `AccentColor` asset is neutral: black in light appearance and charcoal
 (`#4A4A4E`) in dark appearance. The accent can fill native selected controls,
 so its dark variant must contrast
@@ -43,11 +43,11 @@ New color rules require updating this document.
 
 ## Typography and Geometry
 
-Use system text styles through the semantic roles in `DuskTypography.swift`:
+Use system text styles through the semantic roles in `CineramaTypography.swift`:
 
 ```swift
-.font(DuskFont.sectionHeader(style: .title3.bold()))
-.font(DuskFont.metadata(style: .subheadline).monospacedDigit())
+.font(CineramaFont.sectionHeader(style: .title3.bold()))
+.font(CineramaFont.metadata(style: .subheadline).monospacedDigit())
 ```
 
 Roles preserve the provided native style. Respect inherited fonts; use fixed
@@ -59,7 +59,7 @@ and time readouts can use monospaced digits.
 - Actions: native glass or bordered controls; capsules where the shared hero
   helpers use them. Keep the default system control sizing.
 - Borders: thin, neutral, low-opacity strokes.
-- Layout: generous whitespace, consistent `DuskPosterMetrics` spacing, and grids
+- Layout: generous whitespace, consistent `CineramaPosterMetrics` spacing, and grids
   sized from the actual window content width. Do not use mobile device idioms.
 
 ## Screens and Interaction

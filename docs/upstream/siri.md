@@ -1,25 +1,29 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
 # Siri
 
-"Hey Siri, play Brooklyn Nine-Nine in Dusk" plays the movie, or the next
+"Hey Siri, play Brooklyn Nine-Nine in Cinerama" plays the movie, or the next
 episode of the show, from the user's Plex libraries. Everything lives in
-`Dusk/Sources/Siri/`. It uses App Intents only, so there is no Siri
+`Cinerama/Sources/Siri/`. It uses App Intents only, so there is no Siri
 entitlement, no Intents extension and no permission prompt.
 
 ## Routes
 
 | Route | What Siri hears | How the title is resolved |
 | --- | --- | --- |
-| `PlayTitleIntent` (App Shortcut) | "Play/Watch/Resume/Continue *title* in/on Dusk" | Siri matches *title* against the titles Dusk registered beforehand (`SiriTitleCatalog`) and hands over a `PlexTitleEntity`. |
-| `PlayInDuskIntent` (`PlayVideoIntent`, a system intent) | Siri's own "play *video* in *app*" | Siri passes the spoken text as `term`; Dusk searches Plex. |
-| `PlayInDuskIntent` (App Shortcut) | "Play/Watch something in/on Dusk", "Find something to watch in Dusk" | Siri asks "What would you like to watch?" and Dusk searches the free-form answer. |
+| `PlayTitleIntent` (App Shortcut) | "Play/Watch/Resume/Continue *title* in/on Cinerama" | Siri matches *title* against the titles Cinerama registered beforehand (`SiriTitleCatalog`) and hands over a `PlexTitleEntity`. |
+| `PlayInCineramaIntent` (`PlayVideoIntent`, a system intent) | Siri's own "play *video* in *app*" | Siri passes the spoken text as `term`; Cinerama searches Plex. |
+| `PlayInCineramaIntent` (App Shortcut) | "Play/Watch something in/on Cinerama", "Find something to watch in Cinerama" | Siri asks "What would you like to watch?" and Cinerama searches the free-form answer. |
 
 App Shortcut phrases only match parameter values that were registered in
 advance (`suggestedEntities()` → `updateAppShortcutParameters()`). A title that
 is not in the catalog goes through the free-form routes. Whether Siri sends a
-bare "Play X in Dusk" to `PlayVideoIntent` for an unregistered title is up to
+bare "Play X in Cinerama" to `PlayVideoIntent` for an unregistered title is up to
 Siri and has not been verified on a device.
 
 Both intents run in the app and open it first (`openAppWhenRun` on iOS 18+,
@@ -29,7 +33,7 @@ would have nothing to search.
 
 ## Flow
 
-`SiriPlaybackService` (registered with `AppDependencyManager` in `DuskApp.init`):
+`SiriPlaybackService` (registered with `AppDependencyManager` in `CineramaApp.init`):
 
 1. Waits up to 15s for the session and the pool. It gives other servers 1.5s
    once the first one answers. Signed out, profile picker, every server off and
@@ -76,9 +80,9 @@ Entities carry synonyms ("Brooklyn 99", "The Office" for "The Office (US)").
 
 ## Verification
 
-- Unit tests: `DuskTests/SiriTitleMatchingTests.swift` (query parsing,
+- Unit tests: `CineramaTests/SiriTitleMatchingTests.swift` (query parsing,
   folding, resolution, next-episode rule) on iOS and tvOS.
-- iOS simulator: Shortcuts app → Dusk → "Play by Name" runs the intent end to
+- iOS simulator: Shortcuts app → Cinerama → "Play by Name" runs the intent end to
   end (prompt, app opens, spoken reply). There is no way to trigger intents
   programmatically on the tvOS simulator.
 - Device only: real Siri speech on iPhone and Apple TV, signed-in playback.

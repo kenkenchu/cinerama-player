@@ -2,12 +2,12 @@
 
 Read this with `STYLE.md`, `codebase-map.md`, and `data-and-plex.md`.
 The Mac interface is maintained independently of the TV interface under
-`DuskTV/Sources`; see [TV design](tvos-design.md) and [TV UI](tvos-ui.md).
+`CineramaTV/Sources`; see [TV design](tvos-design.md) and [TV UI](tvos-ui.md).
 TV focus/layout changes must not alter the Mac views described here.
 
 ## App and Navigation Shell
 
-`DuskApp` creates the shared services in a single native window. `ContentView`
+`CineramaApp` creates the shared services in a single native window. `ContentView`
 gates Plex authentication and Home selection, then mounts
 `App/MainTabView.swift`. `ServerConnectionCoordinator` connects all enabled
 servers beneath the shell and retries on profile, foreground, and network changes.
@@ -35,7 +35,7 @@ the captions makes the strip shorter.
 Each destination retains its own `NavigationPath`. The Navigate menu supplies
 Cmd-1 through Cmd-8 in instrument order; Cmd-F still selects Search. The obsolete
 Show/Hide Sidebar command is removed. Shared `AppNavigationRoute` values carry
-server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
+server-scoped identities. Attach `cineramaAppNavigationDestinations()` inside each
 feature's stack. Switching destinations dismisses the active player; selecting
 the current instrument preserves its pushed route. Entering Search remembers
 the previous destination. The toolbar magnifying glass posts the same Search
@@ -53,14 +53,14 @@ On Mac, unreachable-server UI includes Local Network permission guidance.
 
 ## Shared UI
 
-- `DuskAsyncImage` uses the authenticated Plex image pipeline and native images.
+- `CineramaAsyncImage` uses the authenticated Plex image pipeline and native images.
 - `PosterArtwork`, poster cards and `PlexItemPosterCollections` own artwork,
   subtitles, watched marks, progress, grids, carousels and routes.
-- `AdaptivePosterGridLayout` and `DuskPosterMetrics` own responsive geometry.
+- `AdaptivePosterGridLayout` and `CineramaPosterMetrics` own responsive geometry.
 - `MediaFormatting`/`PlexItemPresentation` own shared media labels and progress.
 - `FeatureStateViews` and `ServerAvailabilityViews` own loading/error/outage UI.
 - `DetailSharedViews` owns reused detail hero controls and layout helpers.
-- `DuskFont` roles resolve native system styles. Theme providers are AppKit
+- `CineramaFont` roles resolve native system styles. Theme providers are AppKit
   colors in `Shared/MacPlatform.swift`.
 
 Interactive media thumbnails use the system link cursor and a subtle neutral

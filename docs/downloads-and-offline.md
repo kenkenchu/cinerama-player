@@ -2,8 +2,8 @@
 
 ## Boundaries
 
-Core state is in `Dusk/Sources/Downloads/`; UI is in
-`Dusk/Sources/Features/Downloads/`. Detail screens consume injected
+Core state is in `Cinerama/Sources/Downloads/`; UI is in
+`Cinerama/Sources/Features/Downloads/`. Detail screens consume injected
 `DownloadManager` and `OfflinePlaybackSyncManager`; they should not touch files
 directly. Playback stays in `PlaybackCoordinator`; offline playback swaps only
 the URL/source and timeline reporting path. Plex remains the source of truth.
@@ -28,7 +28,7 @@ wired into `DownloadActionButton`, `DownloadsView`, or settings.
 `DownloadFileStore` owns all paths under:
 
 ```text
-Application Support/Dusk/Downloads/
+Application Support/Cinerama/Downloads/
   downloads.json
   playback-sync.json
   Metadata/Profiles/<profile-id>/<server-id>/<endpoint-hash>.json

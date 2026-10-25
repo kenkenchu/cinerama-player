@@ -1,0 +1,319 @@
+import SwiftUI
+
+struct PosterArtwork: View {
+    static let cornerRadius: CGFloat = 16
+
+    let imageURL: URL?
+    var progress: Double?
+    var width: CGFloat = 130
+    var imageAspectRatio: CGFloat = 2.0 / 3.0
+    var cornerRadius: CGFloat = Self.cornerRadius
+    var showsPlayOverlay: Bool = false
+    var availabilityBadge: String? = nil
+    var isDimmed: Bool = false
+
+    private var artworkShape: RoundedRectangle {
+        RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+    }
+
+    var body: some View {
+        CineramaAsyncImage(url: imageURL) { phase in
+            switch phase {
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            case .failure:
+                placeholder
+            default:
+                placeholder
+            }
+        }
+        .frame(width: width, height: imageHeight)
+        .overlay {
+            if isDimmed {
+                Color.black.opacity(0.42)
+            }
+        }
+        .overlay {
+            if showsPlayOverlay {
+                Image(systemName: "play.fill")
+                    .font(.system(size: playOverlaySymbolSize, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.92))
+                    .padding(playOverlayPadding)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .overlay(
+                        Circle()
+                            .strokeBorder(Color.white.opacity(0.10), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if let availabilityBadge, !availabilityBadge.isEmpty {
+                Text(availabilityBadge)
+                    .font(CineramaFont.badge(style: .caption2.weight(.bold)))
+                    .foregroundStyle(Color.primary)
+                    .lineLimit(1)
+                    .padding(.horizontal, availabilityBadgeHorizontalPadding)
+                    .padding(.vertical, 5)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
+                    )
+                    .padding(8)
+            }
+        }
+        .overlay(alignment: .bottomLeading) {
+            if let progress, progress > 0 {
+                progressBar(progress: progress)
+                    .padding(.horizontal, 8)
+                    .padding(.bottom, 8)
+            }
+        }
+        .clipShape(artworkShape)
+        .overlay {
+            artworkShape
+                .strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.38), .white.opacity(0.04), .white.opacity(0.16)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 0.75
+                )
+                .allowsHitTesting(false)
+        }
+    }
+
+    private var isHorizontalArtwork: Bool {
+        imageAspectRatio > 1
+    }
+
+    private var availabilityBadgeHorizontalPadding: CGFloat {
+        7
+    }
+
+    private var playOverlaySymbolSize: CGFloat {
+        25
+    }
+
+    private var playOverlayPadding: CGFloat {
+        14
+    }
+
+    private var placeholder: some View {
+        artworkShape
+            .fill(Color.cineramaSurface)
+            .overlay {
+                Image(systemName: isHorizontalArtwork ? "play.rectangle" : "film")
+                    .font(CineramaFont.glyphLarge(style: .title2))
+                    .foregroundStyle(Color.cineramaTextSecondary)
+            }
+    }
+
+    private var imageHeight: CGFloat {
+        guard imageAspectRatio > 0 else { return width * 1.5 }
+        return width / imageAspectRatio
+    }
+
+    /// Resume progress in the neutral TV-app look: white on a dark track.
+    private func progressBar(progress: Double) -> some View {
+        let clampedProgress = max(0, min(progress, 1.0))
+        let height = CineramaPosterMetrics.posterProgressBarHeight
+
+        return ZStack(alignment: .leading) {
+            Capsule()
+                .fill(Color.black.opacity(0.42))
+                .frame(height: height)
+            GeometryReader { geo in
+                Capsule()
+                    .fill(Color.white.opacity(0.92))
+                    .frame(width: geo.size.width * clampedProgress, height: height, alignment: .leading)
+            }
+        }
+        .frame(height: height)
+        .shadow(color: .black.opacity(0.28), radius: 2, y: 1)
+    }
+}
+
+struct PosterCardText: View {
+    let title: String
+    var subtitle: String?
+    var width: CGFloat = 130
+    /// Adds a small checkmark to the subtitle line (a watched episode, a fully
+    /// watched season). Deliberately quiet: same colour and size as the
+    /// subtitle, so a fully watched row doesn't turn into a wall of badges.
+    var isWatched: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: CineramaPosterMetrics.cardTextSpacing) {
+            titleRow
+
+            subtitleRow
+        }
+    }
+
+    @ViewBuilder
+    private var titleRow: some View {
+        Text(title)
+            .font(CineramaPosterMetrics.titleFont)
+            .foregroundStyle(Color.primary)
+            .lineLimit(2)
+            .frame(width: width, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var subtitleRow: some View {
+        let subtitle = subtitle?.nilIfEmpty
+        if subtitle != nil || isWatched {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                if let subtitle {
+                    Text(subtitle)
+                        .lineLimit(1)
+                }
+
+                if isWatched {
+                    Image(systemName: "checkmark")
+                        .imageScale(.small)
+                        .fontWeight(.semibold)
+                        .accessibilityLabel("Watched")
+                }
+            }
+            .font(CineramaPosterMetrics.subtitleFont)
+            .foregroundStyle(Color.primary.opacity(0.68))
+            .frame(width: width, alignment: .leading)
+        } else {
+            Text(" ")
+                .font(CineramaPosterMetrics.subtitleFont)
+                .hidden()
+                .frame(width: width, alignment: .leading)
+        }
+    }
+}
+
+/// Reusable poster card with async image, title, and optional progress bar.
+struct PosterCard: View {
+    let imageURL: URL?
+    let title: String
+    var subtitle: String?
+    /// 0...1 progress for partially watched items. Nil hides the bar.
+    var progress: Double?
+    var width: CGFloat = 130
+    var imageAspectRatio: CGFloat = 2.0 / 3.0
+    var showsPlayOverlay: Bool = false
+    var availabilityBadge: String? = nil
+    var isDimmed: Bool = false
+    var isWatched: Bool = false
+    var showsPointerFeedback = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            PosterArtwork(
+                imageURL: imageURL,
+                progress: progress,
+                width: width,
+                imageAspectRatio: imageAspectRatio,
+                showsPlayOverlay: showsPlayOverlay,
+                availabilityBadge: availabilityBadge,
+                isDimmed: isDimmed
+            )
+            .modifier(MacMediaCardInteraction(isInteractive: showsPointerFeedback))
+
+            PosterCardText(
+                title: title,
+                subtitle: subtitle,
+                width: width,
+                isWatched: isWatched
+            )
+        }
+        .frame(width: width, alignment: .topLeading)
+    }
+}
+
+struct PlexItemContextMenuContent: View {
+    let item: PlexItem
+    var onMarkWatched: (() -> Void)?
+    var onMarkUnwatched: (() -> Void)?
+    var detailsRoute: AppNavigationRoute? = nil
+    var detailsLabel: String = "View Details"
+
+    var body: some View {
+        if item.canMarkWatchedFromContextMenu, let onMarkWatched {
+            Button(action: onMarkWatched) {
+                Label("Mark Watched", systemImage: "eye")
+            }
+        }
+
+        if item.canMarkUnwatchedFromContextMenu, let onMarkUnwatched {
+            Button(action: onMarkUnwatched) {
+                Label("Mark Unwatched", systemImage: "eye.slash")
+            }
+        }
+
+        if let detailsRoute {
+            NavigationLink(value: detailsRoute) {
+                Label(detailsLabel, systemImage: "info.circle")
+            }
+        }
+
+        if let seasonRoute = item.contextMenuSeasonRoute {
+            NavigationLink(value: seasonRoute) {
+                Label("Go to Season", systemImage: "rectangle.stack")
+            }
+        }
+
+        if let showRoute = item.contextMenuShowRoute {
+            NavigationLink(value: showRoute) {
+                Label("Go to Show", systemImage: "tv.fill")
+            }
+        }
+    }
+}
+
+extension PlexItem {
+    /// A relative of this item — its season or its show — always lives on the
+    /// same server, so the route inherits this item's `serverID`.
+    private func relativeID(_ ratingKey: String) -> PlexItemID {
+        PlexItemID(serverID: serverID, ratingKey: ratingKey)
+    }
+
+    var contextMenuSeasonRoute: AppNavigationRoute? {
+        guard type == .episode, let parentRatingKey else { return nil }
+        return .media(type: .season, id: relativeID(parentRatingKey))
+    }
+
+    var contextMenuShowRoute: AppNavigationRoute? {
+        switch type {
+        case .episode:
+            guard let grandparentRatingKey else { return nil }
+            return .media(type: .show, id: relativeID(grandparentRatingKey))
+        case .season:
+            guard let parentRatingKey else { return nil }
+            return .media(type: .show, id: relativeID(parentRatingKey))
+        default:
+            return nil
+        }
+    }
+}
+
+/// Pointer feedback is confined to interactive artwork, excluding card text.
+private struct MacMediaCardInteraction: ViewModifier {
+    let isInteractive: Bool
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovered = false
+
+    func body(content: Content) -> some View {
+        content
+            .contentShape(RoundedRectangle(cornerRadius: 16))
+            .pointerStyle(isInteractive && isEnabled ? .link : nil)
+            .overlay {
+                RoundedRectangle(cornerRadius: 16)
+                    .strokeBorder(.primary.opacity(isInteractive && isHovered && isEnabled ? 0.2 : 0), lineWidth: 1)
+                    .allowsHitTesting(false)
+            }
+            .shadow(color: .black.opacity(isInteractive && isHovered && isEnabled ? 0.28 : 0), radius: 8, y: 4)
+            .brightness(isInteractive && isHovered && isEnabled ? 0.06 : 0)
+            .onHover { isHovered = $0 }
+            .animation(reduceMotion ? nil : .easeOut(duration: 0.18), value: isHovered)
+    }
+}

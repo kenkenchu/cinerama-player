@@ -1,16 +1,16 @@
 # macOS and tvOS Codebase Map
 
-`project.yml` defines the native `Dusk-macOS` app, hosted Mac tests, and an
-maintained `Dusk-tvOS` app for Apple TV HD. TV sources live in `DuskTV/Sources`
+`project.yml` defines the native `Cinerama-macOS` app, hosted Mac tests, and an
+maintained `Cinerama-tvOS` app for Apple TV HD. TV sources live in `CineramaTV/Sources`
 outside the Mac UI tree and explicitly reuse models/services; see
 [TV device workflow](tvos-prototype.md).
-`Dusk/Sources` has no mobile shell, TV HUD/extension, or mobile VLC renderer.
+`Cinerama/Sources` has no mobile shell, TV HUD/extension, or mobile VLC renderer.
 
 ## Source Layout
 
 ```text
-Dusk/Sources/
-  App/              DuskApp, auth gate, instrument-console MainTabView, routes, server connection lifecycle
+Cinerama/Sources/
+  App/              CineramaApp, auth gate, instrument-console MainTabView, routes, server connection lifecycle
   Analytics/        Anonymous app-open event and reporting transport
   Models/           Plex/Seerr response models and app media types
   PlexService/      Auth, server pool, account/server APIs, images, playback URLs
@@ -32,16 +32,16 @@ Dusk/Sources/
     Settings/       SettingsMacView, preferences, server/library editors, Seerr setup
     Seerr/          Request-only detail screens
   Siri/             Inherited App Intents/title matching; Mac runtime behavior unverified
-DuskTV/Sources/     TV app/auth gate, tab shell, artwork, Home/search, library/details,
+CineramaTV/Sources/     TV app/auth gate, tab shell, artwork, Home/search, library/details,
                     TVStreamResolver, TVPlaybackCoordinator, scoped track preferences,
                     native AVKit host and system-caption adapter
-Native/DuskDovi/     Mac Rust Dolby Vision conversion crate and C header
-DuskTests/          Retained shared model/service tests hosted by the Mac app
+Native/CineramaDovi/     Mac Rust Dolby Vision conversion crate and C header
+CineramaTests/          Retained shared model/service tests hosted by the Mac app
 ```
 
 ## App Lifetime and Navigation
 
-`DuskApp` creates Plex/Seerr services, preferences, analytics, download manager,
+`CineramaApp` creates Plex/Seerr services, preferences, analytics, download manager,
 offline sync, and `PlaybackCoordinator`. It registers inherited App Intents and
 injects the long-lived services into a single native window.
 
@@ -85,9 +85,9 @@ to preserve pushed detail routes and prevent them from covering the player.
 
 ## Shared Boundaries and Extension Points
 
-Use `DuskAsyncImage` for Plex-aware artwork, `PlexItemPresentation` and
-`MediaFormatting` for labels/progress, `DuskPosterMetrics` for geometry,
-`DuskFont` for semantic roles, and `FeatureStateViews`/`ServerAvailabilityViews`
+Use `CineramaAsyncImage` for Plex-aware artwork, `PlexItemPresentation` and
+`MediaFormatting` for labels/progress, `CineramaPosterMetrics` for geometry,
+`CineramaFont` for semantic roles, and `FeatureStateViews`/`ServerAvailabilityViews`
 for loading, errors and per-server availability. Theme providers are AppKit
 `NSColor`s in `Shared/MacPlatform.swift`. Native SwiftUI navigation, toolbar and list APIs and
 AppKit `NSImage` are used directly, without mobile platform-selection wrappers.

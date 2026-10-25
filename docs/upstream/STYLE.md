@@ -1,11 +1,15 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
-# Dusk Design System (v1.0)
+# Cinerama Design System (v1.0)
 
 ## 1. Design Philosophy: native vibes, not orange
 
-Dusk is a **content-first** player. The UI recedes so posters and backdrops lead,
+Cinerama is a **content-first** player. The UI recedes so posters and backdrops lead,
 and it should feel like an Apple app, not a themed one.
 
 **The rules (read these even if you read nothing else):**
@@ -13,8 +17,8 @@ and it should feel like an Apple app, not a themed one.
 1. **System first.** Use system controls and styles as they ship: Liquid Glass
    (`.glass` / `.glassProminent`), standard tvOS focus, `Toggle`, `Picker`,
    `ProgressView`, `List`, toolbar and navigation buttons. Don't restyle them.
-2. **Neutral palette.** Colour comes from the Dusk tokens below and semantic
-   colours (`.primary`, `.secondary`, `Color.duskTextPrimary/Secondary`). Use
+2. **Neutral palette.** Colour comes from the Cinerama tokens below and semantic
+   colours (`.primary`, `.secondary`, `Color.cineramaTextPrimary/Secondary`). Use
    system colours only where they already carry meaning: red for destructive or
    errors, yellow for the star rating, green for the system switch.
 3. **No accent colour for UI state.** Selection, focus, progress, active
@@ -22,9 +26,9 @@ and it should feel like an Apple app, not a themed one.
    fill (`TextPrimary` on `Background`), or the system's own treatment, never a
    brand colour.
 4. **No app-wide tint.** The global `AccentColor` asset is the label colour, and
-   nothing sets a root `.tint`. Never add `.tint(Color.duskAccent)` or any other
+   nothing sets a root `.tint`. Never add `.tint(Color.cineramaAccent)` or any other
    colour tint to make something "pop".
-5. **Coral is the brand, not the UI.** Sunset Coral (`Color.duskAccent`,
+5. **Coral is the brand, not the UI.** Sunset Coral (`Color.cineramaAccent`,
    `#FF6B4A`) appears only in the app logo/icon, the Supporter page and the
    App Icon picker. Anywhere else it is a bug.
 
@@ -36,7 +40,7 @@ and it should feel like an Apple app, not a themed one.
 
 ## 2. Color Palettes
 
-### 2.1 Dark Mode (Dusk)
+### 2.1 Dark Mode (Cinerama)
 
 The default experience. Deep, cool-toned blacks so OLED screens shine.
 
@@ -70,12 +74,12 @@ A crisp, high-clarity alternative. Avoids "pure" white to reduce eye strain.
 
 ### 3.1 Fonts (SF Pro)
 
-All type goes through `DuskFont` (`Dusk/Sources/Shared/DuskTypography.swift`).
+All type goes through `CineramaFont` (`Cinerama/Sources/Shared/CineramaTypography.swift`).
 
-**tvOS views go through `DuskFont` — never raw semantic text styles.** SwiftUI's
+**tvOS views go through `CineramaFont` — never raw semantic text styles.** SwiftUI's
 semantic styles resolve 2.1–2.7× larger on tvOS than on iOS (`.subheadline` = 38pt,
 `.title3` = 48pt, `.title` = 76pt) and default to Medium weight, so any `.font(.headline)`
-in a tvOS-reachable view is oversized by construction. `DuskFont` gives tvOS explicit
+in a tvOS-reachable view is oversized by construction. `CineramaFont` gives tvOS explicit
 point sizes; iOS keeps the exact style the call site passes via `ios:`, so iOS
 rendering is unchanged.
 
@@ -107,13 +111,13 @@ Usage — shared views pass the style the site uses today; tvOS-only paths use t
 `TV` namespace; sites where iOS deliberately sets no font use the modifier:
 
 ```swift
-.font(DuskFont.sectionHeader(ios: .title3.bold()))        // shared
-.font(DuskFont.metadata(ios: .subheadline).monospacedDigit())  // chained on both platforms
-.font(DuskFont.TV.pageTitle)                              // inside #if os(tvOS)
-.duskFont(tvOnly: DuskFont.TV.rowValue)                   // iOS keeps inheriting
+.font(CineramaFont.sectionHeader(ios: .title3.bold()))        // shared
+.font(CineramaFont.metadata(ios: .subheadline).monospacedDigit())  // chained on both platforms
+.font(CineramaFont.TV.pageTitle)                              // inside #if os(tvOS)
+.cineramaFont(tvOnly: CineramaFont.TV.rowValue)                   // iOS keeps inheriting
 ```
 
-Raw point sizes for layout structs: `DuskFont.TV.Size.heroTitle`. A genuine one-off
+Raw point sizes for layout structs: `CineramaFont.TV.Size.heroTitle`. A genuine one-off
 (the `plex.tv/link` code, a glyph sized from a layout metric) may stay an explicit
 `.system(size:)` inside `#if os(tvOS)`.
 
@@ -155,11 +159,11 @@ poster** on every platform. Action buttons use the **native Liquid Glass** style
   any colour (even `.primary`) recolours the label, so the focused state goes
   white-on-white. The tvOS tab shell clears its bar tint off the tab content
   (`MainTabTVShell`), so buttons need no `.tint(nil)` of their own.
-* **Color (iOS):** `.tint(Color.duskPrimaryButtonTint)` — a *translucent* `primary` so the
+* **Color (iOS):** `.tint(Color.cineramaPrimaryButtonTint)` — a *translucent* `primary` so the
   button keeps a **dark** (Light mode) / **light** (Dark mode) lean for contrast
   while still reading as liquid glass, not a solid black/white fill. Label/icon use
-  `Color.duskPrimaryActionLabel` (the inverse of `primary`). Tune the tint's opacity
-  (in `DuskApp.swift`) to trade contrast for glassiness.
+  `Color.cineramaPrimaryActionLabel` (the inverse of `primary`). Tune the tint's opacity
+  (in `CineramaApp.swift`) to trade contrast for glassiness.
 * **Height:** `.controlSize(.regular)`, `.capsule` — deliberately short (tvOS used
   to be `.large`; it is now `.regular` too).
 * **Width:** iPhone → ~60% of the screen, **centered**; iPad → fills the hero's
@@ -217,30 +221,30 @@ screens); `homeHeroNativeButtonStyle()` + `HomeHeroActionButtonLabel(fillsWidth:
 
 ## 5. Implementation
 
-Theme tokens live in `Dusk/Sources/App/DuskApp.swift` as dynamic `Color`s backed
+Theme tokens live in `Cinerama/Sources/App/CineramaApp.swift` as dynamic `Color`s backed
 by `UIColor { traitCollection in ... }`. The native Mac target defines the same
 light/dark hex values through dynamic `NSColor` providers in
-`Dusk/Sources/Mac/MacPlatform.swift`.
+`Cinerama/Sources/Mac/MacPlatform.swift`.
 
-* `Color.duskBackground`: root screen backgrounds.
-* `Color.duskSurface`: list rows, cards, sheets, elevated surfaces.
-* `Color.duskTextPrimary`: titles, high-emphasis labels, selected state.
-* `Color.duskTextSecondary`: metadata, captions, icons, placeholders.
-* `Color.duskPrimaryButtonTint` / `Color.duskPrimaryActionLabel`: the iOS
+* `Color.cineramaBackground`: root screen backgrounds.
+* `Color.cineramaSurface`: list rows, cards, sheets, elevated surfaces.
+* `Color.cineramaTextPrimary`: titles, high-emphasis labels, selected state.
+* `Color.cineramaTextSecondary`: metadata, captions, icons, placeholders.
+* `Color.cineramaPrimaryButtonTint` / `Color.cineramaPrimaryActionLabel`: the iOS
   prominent-glass primary action and its label.
-* `Color.duskAccent`: **brand only** (Supporter page, App Icon picker).
+* `Color.cineramaAccent`: **brand only** (Supporter page, App Icon picker).
 
 **Tint.** `AccentColor` is the global accent for both targets
 (`ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME`) and is the label colour:
 black in Light mode, `TextPrimary` in Dark mode. It is the UIKit window tint, so
 alerts, navigation buttons, pickers and the text cursor are neutral without any
 code. There is no root SwiftUI `.tint`. The tvOS tab bar is additionally pinned to
-the same colour (`Color.duskTVTabBarTint`) because SwiftUI's `TabView` tint is not
+the same colour (`Color.cineramaTVTabBarTint`) because SwiftUI's `TabView` tint is not
 sticky there.
 
 **Guardrails.**
 
-* No `Color.duskAccent`, `.orange`, `.blue`, `.purple` or other hues for UI
+* No `Color.cineramaAccent`, `.orange`, `.blue`, `.purple` or other hues for UI
   outside the brand spots above. A new colour needs a deliberate `STYLE.md`
   change first.
 * No colour tint on system controls. If a control looks wrong, fix it with the

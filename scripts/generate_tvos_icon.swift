@@ -4,8 +4,8 @@ import AppKit
 // Package the Cinerama West Coast master into native TV icon layers. The
 // foreground stays transparent; the platform supplies masking and parallax.
 let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
-let sourceURL = root.appendingPathComponent("Dusk/Resources/DuskIcon.icon/Assets/cinerama-west-coast.png")
-let catalog = root.appendingPathComponent("DuskTV/Resources/Assets.xcassets/TVIcon.brandassets")
+let sourceURL = root.appendingPathComponent("Cinerama/Resources/CineramaIcon.icon/Assets/cinerama-west-coast.png")
+let catalog = root.appendingPathComponent("CineramaTV/Resources/Assets.xcassets/TVIcon.brandassets")
 guard let source = NSImage(contentsOf: sourceURL),
       let sourceData = try? Data(contentsOf: sourceURL),
       let sourceBitmap = NSBitmapImageRep(data: sourceData) else {

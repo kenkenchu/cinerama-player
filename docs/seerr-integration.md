@@ -8,7 +8,7 @@ of truth for all playable media.
 
 - `SeerrService/` owns URL validation, Plex-token sign-in, cookie sessions,
   endpoint calls, request status mapping, and Seerr image-proxy URLs.
-- `Models/SeerrModels.swift` mirrors only the Seerr response fields Dusk uses.
+- `Models/SeerrModels.swift` mirrors only the Seerr response fields Cinerama uses.
 - `Features/Settings/SeerrSettings*` owns opt-in setup.
 - `Features/Search/SearchMediaResult.swift` is the presentation union used to
   place Plex and Seerr cards in the same search groups.
@@ -22,9 +22,9 @@ backend and must stay a focused optional integration.
 
 The user enters one Seerr base URL in Settings. An address without a scheme is
 probed over HTTPS first and HTTP second; an explicit `https://` or `http://`
-address is used exactly as entered. Dusk resolves the public endpoint before
+address is used exactly as entered. Cinerama resolves the public endpoint before
 asking the user to confirm that it may send the active Plex credential to the
-resolved host. Dusk then:
+resolved host. Cinerama then:
 
 1. fetches `/api/v1/settings/public`;
 2. requires an initialized Plex-backed Seerr with media-server login enabled;
@@ -65,7 +65,7 @@ Online Plex show details request GUIDs. Missing-season enrichment runs only when
 - live Plex metadata is in use, not cached offline metadata; and
 - the Plex show has an exact `tmdb://` GUID.
 
-Dusk fetches that exact Seerr TV record, removes season numbers already present
+Cinerama fetches that exact Seerr TV record, removes season numbers already present
 in Plex, and sorts the remaining request-only seasons into the same grid.
 Never use fuzzy title matching here: a false match could submit a request for the
 wrong series. Seerr failures are ignored so Plex detail loading remains intact.

@@ -24,7 +24,7 @@ Mac windows, pointer/keyboard behavior and rendering hosts remain separate.
 
 ## Ownership
 
-- `DuskTV/Sources/TVHomeView.swift`: Home navigation stack, composition,
+- `CineramaTV/Sources/TVHomeView.swift`: Home navigation stack, composition,
   contextual actions, availability notes and lifecycle hooks.
 - `TVHomeHero.swift`: TV backdrop/title/action/pager presentation and focus-aware
   rotation. Only the next backdrop is prefetched into the bounded artwork cache.

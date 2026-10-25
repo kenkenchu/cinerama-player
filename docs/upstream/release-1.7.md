@@ -1,7 +1,11 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
-# Dusk 1.7 Release Notes
+# Cinerama 1.7 Release Notes
 
 Range: `a5f00c1` (merge-base of `origin/release/1.6` and `origin/main`) to
 `origin/main` at `2181fd0`. That is 62 non-merge commits plus the
@@ -17,11 +21,11 @@ been seen on real hardware.
 ### iPhone and iPad (596 characters)
 
 ```text
-Dusk now uses all your Plex servers at once.
+Cinerama now uses all your Plex servers at once.
 • Home, Continue Watching and Search combine every server. Choose which copy plays first in Settings › Server Priority.
 • MKV files with Dolby Atmos or 5.1 Dolby audio can play with Atmos and spatial audio, through a lossless Plex remux.
 • Dolby Vision profile 5 files now play.
-• Ask Siri to "play [title] in Dusk".
+• Ask Siri to "play [title] in Cinerama".
 • On iPad, Home opens with a larger, near full-screen hero.
 • Optional Previous and Next Episode buttons in the player.
 • A calmer, more native look.
@@ -48,7 +52,7 @@ Notes on the texts:
 - Counts are Unicode characters of the block, without the trailing newline.
 - Siri is left out of the tvOS text on purpose. Apple TV Siri is unverified,
   and tvOS builds get no App Shortcut NLU assets (see Risks). If a device check
-  passes, swap the "Back from any tab" line for `• Ask Siri to "play [title] in Dusk".`
+  passes, swap the "Back from any tab" line for `• Ask Siri to "play [title] in Cinerama".`
   That line is 37 characters, so the text stays under 600.
 - Not mentioned on purpose: the subscription price change, the new icon unlock
   rules (see Risk 2), and the fixes that shipped in 1.6.1 and 1.6.2.
@@ -83,9 +87,9 @@ Notes on the texts:
   now remuxes the audio only and keeps 4K/HDR video. `f206afd`, `aa8bed3`.
 - **Dolby Vision profile 5** plays through a relabelled video-copy remux on
   AVPlayer (`dvh1` + `dvcC` patch), where it used to dead-end. `05236c5`.
-- **Siri, via App Intents only.** "Play/Watch/Resume/Continue *title* in Dusk"
+- **Siri, via App Intents only.** "Play/Watch/Resume/Continue *title* in Cinerama"
   works through `PlayTitleIntent` and a catalog of 300 titles. "Play something
-  in Dusk" and the free-form term go through `PlayInDuskIntent`
+  in Cinerama" and the free-form term go through `PlayInCineramaIntent`
   (`PlayVideoIntent`). Titles are fuzzy-matched across all servers, and a show
   plays its On Deck episode. There is no entitlement and no extension.
   Phrases are English only. `541e5df`.
@@ -93,7 +97,7 @@ Notes on the texts:
   Episode Buttons, off by default). On tvOS it is always on: Next only, at the
   end of the action row, with a "Next: S2 · E8" tooltip. Skipping marks the
   episode watched only past the credits marker or 90 %. `cd5ddef` (closes #8).
-- **Supporter changes.** There is again a single "Dusk Supporter"
+- **Supporter changes.** There is again a single "Cinerama Supporter"
   subscription on the 1.6 product IDs, now $2.99/month and $24.99/year (1.6
   charged $1.99/$14.99). There are three new subscriber-only icons: Velvet,
   Emerald and Gilded, for nine alternates in total. Every icon the
@@ -105,7 +109,7 @@ Notes on the texts:
   on iOS and tvOS. `1696ee2`, `bda4e14` + `7b545a4` (icons), `b1b269d`,
   `f4f2814`, `0b1ab6f`, `2181fd0`. The Director's Cut and Front Row tiers
   (`bf0fb5a`) were built and then removed in `1696ee2`, so they never shipped.
-  The code and `Dusk.storekit` have no `directorscut` references left.
+  The code and `Cinerama.storekit` have no `directorscut` references left.
 
 ### Improvements
 
@@ -137,7 +141,7 @@ Notes on the texts:
 
 ### tvOS-specific
 
-- **DuskFont type scale.** It fixes text that was 2–2.7x too large on tvOS,
+- **CineramaFont type scale.** It fixes text that was 2–2.7x too large on tvOS,
   and iOS stays byte-identical. The **full-screen Home hero** was added in the
   same change. `a9832ec`
 - **Home hero navigation.** Pages are native focus moves with a Play button on
@@ -164,9 +168,9 @@ Notes on the texts:
   button is gone on tvOS (the player still has it). `606474d`
 - **Back button.** Back at a tab root goes to Home, and Back on a scrolled
   Home goes to the hero. `4433046`, `372b2cc`
-- **Top Shelf** (`DuskTopShelf` appex, App Group `group.com.dusk-player.app`).
+- **Top Shelf** (`CineramaTopShelf` appex, App Group `group.com.cinerama-player.app`).
   It shows Continue Watching and Up Next as 16:9 tiles with progress and
-  `dusk://` deep links, and it is cleared on sign-out and Home switch. The
+  `cinerama://` deep links, and it is cleared on sign-out and Home switch. The
   extension never talks to Plex. `8bafd87`, `c96c336` (arm64 in the appex
   plist), `f96e20e` (write to `Library/Caches`, the only writable part of the
   App Group container on Apple TV).
@@ -186,7 +190,7 @@ Notes on the texts:
 - `scripts/testflight.sh` replaces Xcode Cloud: manual signing, upload and a
   wait for processing, with iOS and tvOS built in parallel. There is an mmux
   TestFlight process. `2d01156`, `bdcf7aa`
-- New `DuskTests` and `DuskTests-tvOS` unit-test bundles: supporter
+- New `CineramaTests` and `CineramaTests-tvOS` unit-test bundles: supporter
   entitlements and StoreKitTest, the prompt schedule, Siri matching, the idle
   timer and stream decoding. They are wired into the schemes' Test actions.
 - Icon generators: `scripts/generate_directors_cut_icons.py` (name left over
@@ -256,9 +260,9 @@ Ranked by severity. I fixed nothing, and the only file I changed is this one.
 5. **The tvOS Top Shelf has never worked on a device.** Build 368 showed
    nothing. The fix (`f96e20e`) is not confirmed on hardware, so test it
    with a TestFlight build first. Check that the App Group capability is on
-   both App IDs (`com.dusk-player.app`, `com.dusk-player.app.topshelf`) and
+   both App IDs (`com.cinerama-player.app`, `com.cinerama-player.app.topshelf`) and
    in their App Store profiles. Only the tvOS app uses
-   `Dusk-tvOS.entitlements`, which carries `group-session` plus the App
+   `Cinerama-tvOS.entitlements`, which carries `group-session` plus the App
    Group, and iOS signing is unchanged.
 
 ### Medium
@@ -277,7 +281,7 @@ Ranked by severity. I fixed nothing, and the only file I changed is this one.
    - Signed-in playback picking the right episode has not been tested.
    - Apple TV Siri is entirely unverified, and tvOS builds have no `nlu/`
      assets.
-   - Whether a bare "Play X in Dusk" reaches `PlayVideoIntent` is unverified.
+   - Whether a bare "Play X in Cinerama" reaches `PlayVideoIntent` is unverified.
    - Phrases are English only.
    - No usage description or entitlement is needed (App Intents only). That
      is confirmed: the Info.plists have no Siri keys.
@@ -321,7 +325,7 @@ Ranked by severity. I fixed nothing, and the only file I changed is this one.
     (`website/index.html` FAQ), but the Coffee tip no longer does. Nothing
     on the site states prices.
 18. **Localization.** The app is English only (no `.xcstrings` or `.lproj`).
-    `Dusk.storekit` has DE subscription names that must also be entered in
+    `Cinerama.storekit` has DE subscription names that must also be entered in
     App Store Connect. Siri phrases are English only.
 19. **Code-hygiene grep across the range:**
     - TODO/FIXME/HACK/XXX: none added. The only match is a `mktemp

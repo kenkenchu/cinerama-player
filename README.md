@@ -45,10 +45,10 @@ For Mac, use the installed Apple Development identity consistently:
 
 ```bash
 security find-identity -v -p codesigning
-DUSK_MACOS_SIGNING_IDENTITY='YOUR_APPLE_DEVELOPMENT_IDENTITY' ./scripts/build_macos.sh
+CINERAMA_MACOS_SIGNING_IDENTITY='YOUR_APPLE_DEVELOPMENT_IDENTITY' ./scripts/build_macos.sh
 ```
 
-The script fetches checksum-pinned desktop VLCKit, builds DuskDovi, generates the
+The script fetches checksum-pinned desktop VLCKit, builds CineramaDovi, generates the
 project, checks platform source boundaries, builds and verifies nested signatures.
 Output: `.build/macos/DerivedData/Build/Products/Debug/Cinerama.app`.
 Do not silently fall back to ad hoc signing on this workstation. Allow Local
@@ -57,7 +57,7 @@ Network access in System Settings so the app can reach local Plex servers.
 For Apple TV, pair the device in Xcode, then:
 
 ```bash
-DUSK_TVOS_TEAM=YOUR_TEAM_ID DUSK_TVOS_DEVICE_ID=YOUR_XCODE_DESTINATION_ID \
+CINERAMA_TVOS_TEAM=YOUR_TEAM_ID CINERAMA_TVOS_DEVICE_ID=YOUR_XCODE_DESTINATION_ID \
   ./scripts/build_tvos.sh
 xcrun devicectl device install app --device YOUR_DEVICECTL_ID \
   .build/tvos/DerivedData/Build/Products/Debug-appletvos/Cinerama.app
@@ -65,7 +65,11 @@ xcrun devicectl device install app --device YOUR_DEVICECTL_ID \
 
 Open **Cinerama** on the TV, permit Local Network access and link at `plex.tv/link`.
 See [TV device workflow](docs/tvos-prototype.md) for provisioning and verification.
-Build scripts never launch either app or run tests.
+Build scripts never launch either app or run tests. The project-wide rename uses
+new Mac and TV application identities, so first launch requires signing in to
+Plex and configuring local preferences again. Data belonging to earlier app
+identities is not deleted or automatically migrated. See
+[application identity](docs/product-and-scope.md#cinerama-application-identity).
 
 ## Development
 
@@ -97,6 +101,6 @@ Mac playback uses desktop [VLCKit](https://code.videolan.org/videolan/VLCKit),
 licensed under LGPL v2.1 and linked dynamically. Dolby Vision profile 7 conversion
 uses quietvoid's MIT-licensed `dolby_vision` crate and its MIT-compatible
 dependencies, linked statically. Notices ship in
-[Dusk/Resources/ThirdPartyNotices.txt](Dusk/Resources/ThirdPartyNotices.txt).
+[Cinerama/Resources/ThirdPartyNotices.txt](Cinerama/Resources/ThirdPartyNotices.txt).
 TV currently uses system frameworks only. Cinerama is not affiliated with or
 certified by Plex or Dolby Laboratories.

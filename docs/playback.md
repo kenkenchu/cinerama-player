@@ -49,7 +49,7 @@ copies. Live timeline and transcode calls stay on the active playback server.
 Direct play is the online startup baseline. Locally unplayable media, eligible
 lossless remuxes and completed downloads take their documented routes. A failed
 online direct attempt may retry through Plex HLS with `directStream=1`.
-Server video/audio re-encoding is prohibited for every Dusk playback route.
+Server video/audio re-encoding is prohibited for every Cinerama playback route.
 `transcodeLadderSession` rejects manual conversion and audio-conversion modes
 before requesting a decision, and never constructs a start URL unless Plex
 confirms both A/V streams are copied (`isLosslessRemux`). Missing decisions fail
@@ -109,7 +109,7 @@ hooks for future PiP/external output do not imply a supported Mac UI.
 
 ### Dolby TrueHD decoding (TrueHD/MLP)
 
-The fetched desktop framework is stock VideoLAN VLCKit 3.7.3. It lacks the Dusk
+The fetched desktop framework is stock VideoLAN VLCKit 3.7.3. It lacks the Cinerama
 TrueHD capability stamp; `VLCKitBuildInfo.decodesTrueHD` therefore defaults false.
 Keep the existing metadata/track checks. An undecodable selection shows a visible
 message requesting another audio track; server audio conversion is prohibited.
@@ -129,7 +129,7 @@ selected/off state across engine changes. Downloaded subtitle search/install rem
 ## System Caption Appearance
 
 macOS System Settings → Accessibility → Captions is the sole source of subtitle
-appearance. Dusk has no subtitle size/style picker or stored appearance override;
+appearance. Cinerama has no subtitle size/style picker or stored appearance override;
 the obsolete `subtitleFontSize` preference is removed at preferences startup.
 AVPlayer leaves `textStyleRules` unset so native caption rendering uses the
 system settings and their content-override behavior.
@@ -141,7 +141,7 @@ options. The player uses a private VLC instance so font options are applied at
 renderer initialization, and refreshes it on the next load if the system style
 changed. Raised/depressed edges use VLC's shadow approximation; caption-window
 geometry and advanced authored ASS styling do not have a complete native match.
-This adapter exposes no independent Dusk or VLC styling preferences.
+This adapter exposes no independent Cinerama or VLC styling preferences.
 
 Bitmap subtitles and text already burned into video cannot adopt system styles.
 Verify caption appearance with real text tracks on both engines; a successful
@@ -291,7 +291,7 @@ hooks may have no Mac UI; check the concrete consumer before promising a feature
 - Track mapping/automatic choices: player view model track-selection extension.
 - Transport/markers: player view model controls and native `PlayerView`.
 - URLs/server decisions: `PlexService+Playback`.
-- Proxy/conversion: `Playback/DolbyVision7` and `Native/DuskDovi`.
+- Proxy/conversion: `Playback/DolbyVision7` and `Native/CineramaDovi`.
 
 Run `scripts/build_macos.sh` after code changes. Do not run tests or launch unless
 requested. Runtime validation must use real Plex media; compilation does not

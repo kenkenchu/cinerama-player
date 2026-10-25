@@ -19,7 +19,8 @@ then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
 | [Plex data](data-and-plex.md) | Account/session pool, API boundaries, models, merging |
 | [Downloads and offline](downloads-and-offline.md) | Queue, local storage, offline state, and sync |
 | [Seerr](seerr-integration.md) | Optional request integration and credential boundaries |
-| [Analytics](analytics.md) | Existing Mac reporting, opt-out, and closed vocabulary |
+| [Privacy](privacy.md) | Cinerama network/data handling and disabled reporting |
+| [Analytics](analytics.md) | Disabled reporting and retained internal event vocabulary |
 | [Siri](siri.md) | Inherited App Intents and Mac validation limits |
 | [Screenshots](screenshots.md) | Mac visual verification and capture limits |
 

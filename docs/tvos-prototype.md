@@ -1,6 +1,6 @@
 # Apple TV Build, Install and Verification
 
-`Dusk-tvOS` is maintained alongside `Dusk-macOS` for Apple TV HD, tvOS 26+.
+`Cinerama-tvOS` is maintained alongside `Cinerama-macOS` for Apple TV HD, tvOS 26+.
 Library playback is the first TV milestone; Mac and TV have different coverage. Read [the design](tvos-design.md)
 for platform boundaries and [the workflow](development-workflow.md) for the
 required separate signed Mac build.
@@ -10,8 +10,8 @@ required separate signed Mac build.
 The maintained TV library client shares PlexService, server-scoped models,
 Keychain auth, Plex Home profiles, discovery/recovery, artwork, account library
 order, merge functions and copy-only Plex playback APIs. TV UI lives exclusively
-in `DuskTV/Sources`, outside the Mac tree. No Mac views, AppKit player hosts,
-desktop VLC or DuskDovi compile into TV; build scripts enforce these boundaries.
+in `CineramaTV/Sources`, outside the Mac tree. No Mac views, AppKit player hosts,
+desktop VLC or CineramaDovi compile into TV; build scripts enforce these boundaries.
 
 Home, Libraries, Search and Settings have separate navigation stacks. Home now
 shares the Mac Home model and presents a cinematic Continue Watching hero,
@@ -40,10 +40,11 @@ Changes take effect on the next Play/Resume. Native AVKit also exposes received
 tracks during playback; complete persistence of in-player native-menu changes
 is not yet implemented.
 
-The display name is Cinerama; its existing bundle ID is preserved so upgrades keep
-the linked account. Native AVKit supplies remote transport controls. Explicit system caption
+The display name is Cinerama. The new bundle identifier is
+`com.cinerama-player.tv`; the renamed app requires a new installation and Plex
+linking. Native AVKit supplies remote transport controls. Explicit system caption
 appearance overrides are adapted into WebVTT style rules and refreshed on
-settings/foreground changes; no Dusk appearance preferences exist. The adapter
+settings/foreground changes; no Cinerama appearance preferences exist. The adapter
 requires user visual verification. Timeline requests are serialized, include
 transport changes, periodic progress and final stopped state. Natural completion
 marks the item watched. Catalog refresh waits for final progress/remux cleanup.
@@ -63,13 +64,13 @@ See [TV UI](tvos-ui.md) for current implementation boundaries and runtime checks
    Enable Developer Mode on Apple TV if Xcode or the device requests it, then
    follow its restart/confirmation prompts.
 4. Find the paired device with `xcrun devicectl list devices` (installation ID)
-   and `xcodebuild -project Dusk.xcodeproj -scheme Dusk-tvOS -showdestinations`
+   and `xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-tvOS -showdestinations`
    (build destination ID). These may use different identifiers for the same TV.
 5. Build with your team ID, optionally specifying the Xcode destination ID to
    register the connected device and generate its development profile:
 
    ```bash
-   DUSK_TVOS_TEAM=YOUR_TEAM_ID DUSK_TVOS_DEVICE_ID=YOUR_XCODE_DESTINATION_ID \
+   CINERAMA_TVOS_TEAM=YOUR_TEAM_ID CINERAMA_TVOS_DEVICE_ID=YOUR_XCODE_DESTINATION_ID \
      ./scripts/build_tvos.sh
    ```
 
@@ -118,9 +119,9 @@ The user authorized maintaining both targets after confirming feasibility,
 prioritizing TV library playback and deferring Live TV. The artwork tab shell,
 search, semantic track preferences, system caption adapter and revised timeline
 lifecycle passed signed Mac/TV builds and were installed for user device
-verification. The platform-boundary gate passed; Mac UI sources were untouched. The existing
-bundle identifier `com.dusk-player.tv.prototype` is retained deliberately to
-preserve the linked account and app storage; the display name is now Cinerama.
+verification. The platform-boundary gate passed; Mac UI sources were untouched. The project-wide rename now uses `com.cinerama-player.tv`, a separate installed
+app and storage identity requiring Plex linking again. Historical device
+confirmations below predate that identity change.
 The user subsequently confirmed library artwork and selecting videos to play.
 Home-specific hero, recommendation, menu and focus changes still need user
 verification. Neither app was launched by agents and no tests were run.

@@ -1,8 +1,8 @@
-# Dusk Mac Plex Data Layer
+# Cinerama Mac Plex Data Layer
 
 This guide describes the shared data layer used by the native macOS app.
 
-Agent-facing map for Dusk's Plex data layer. Plex is the only media/playback
+Agent-facing map for Cinerama's Plex data layer. Plex is the only media/playback
 backend; views call view models, view models call `PlexService`, and
 `PlexService` is the Plex network boundary. The optional Seerr request companion
 has a separate boundary documented in `docs/seerr-integration.md`.
@@ -11,14 +11,14 @@ has a separate boundary documented in `docs/seerr-integration.md`.
 - `PlexService/` owns auth, discovery, request helpers, endpoints, playback
   reporting, direct-play/transcode URLs, and image helpers.
 - `Models/` owns Plex response shapes plus app-level playback models.
-- `PlexService` is `@MainActor @Observable` and is injected from `DuskApp`.
+- `PlexService` is `@MainActor @Observable` and is injected from `CineramaApp`.
 - Plex is the source of truth. Do not persist metadata except for explicit
   offline/download support.
 - No generic provider abstraction. Seerr is not a media provider. Add focused
   Plex methods in the existing same-type extension files.
 
 ## Multi-Server Model
-Dusk is connected to **every enabled server at once**. There is no "current
+Cinerama is connected to **every enabled server at once**. There is no "current
 server" the user picks: the account's servers are discovered, connected in
 parallel, and their content is merged. Server selection exists only as an
 *order* (which server wins when a title is on several) and an *on/off switch*
@@ -141,7 +141,7 @@ Flow:
    one usable member keeps the legacy flow; multiple members require a user
    selection unless a remembered active Home session is valid. Fast user
    switching uses the separate legacy `/api/home/users/<id>/switch` route.
-   Protected members send a transient PIN; Dusk never stores it.
+   Protected members send a transient PIN; Cinerama never stores it.
 6. `discoverServers()` fetches `/api/v2/resources` as the active identity with
    HTTPS/relay and keeps
    resources whose `provides` contains `server`.
@@ -251,7 +251,7 @@ File: `PlexService+Networking.swift`.
 - Use `buildURL(base:path:queryItems:)` for query parameters.
 - `applyHeaders(to:token:)` centralizes Plex headers, platform/device metadata,
   and optional `X-Plex-Token`.
-- Plex requests should identify Dusk consistently with the stable client
+- Plex requests should identify Cinerama consistently with the stable client
   identifier, product/version, platform, and device name headers expected by
   Plex. Keep header changes centralized in `applyHeaders`.
 
@@ -369,7 +369,7 @@ Traps:
   Fall back to server order and keep browsing usable.
 - Last writer wins. Re-read the blob immediately before every write; never write
   from cache.
-- Decode the blob into `DuskJSONValue`, not a strict `Codable` struct: unknown keys
+- Decode the blob into `CineramaJSONValue`, not a strict `Codable` struct: unknown keys
   must survive the round-trip.
 - The setting is per **account**, not per server. One flat list spans every server
   and provider, and Plex Home members each have their own (their own token), so the
@@ -391,7 +391,7 @@ Detail and hierarchy:
   `PlexMetadataCache` and downloads. Keep their endpoint semantics stable.
 
 Subtitle search and download (`PlexService+Subtitles.swift`):
-- Plex Media Server proxies OpenSubtitles, so Dusk needs no OpenSubtitles
+- Plex Media Server proxies OpenSubtitles, so Cinerama needs no OpenSubtitles
   account, API key, or rate limiting of its own.
 - `searchSubtitles(ratingKey:languageCode:hearingImpaired:forced:)` ->
   `GET /library/metadata/{ratingKey}/subtitles?language=&hearingImpaired=0|1&forced=0|1`,
@@ -425,7 +425,7 @@ Where to edit:
 - Subtitle search/download endpoints: `PlexService+Subtitles.swift`.
 - Account-level plex.tv settings (library order): `PlexService+LibraryOrder.swift`,
   with the shared state in `LibraryOrderStore.swift`.
-- New response shapes: `Dusk/Sources/Models/`, near the closest model.
+- New response shapes: `Cinerama/Sources/Models/`, near the closest model.
 
 ## Live TV And Guide Endpoints
 
@@ -485,7 +485,7 @@ File: `PlexService+Images.swift`.
   `pool.connection(for:)`.
 - `imageData(for:)` authenticates URLs matching a connected server's
   scheme/host/defaulted port; other URLs are fetched as plain binary requests.
-- `DuskAsyncImage` uses `DuskImageLoader`, delegating to
+- `CineramaAsyncImage` uses `CineramaImageLoader`, delegating to
   `plexService.imageData(for:)`.
 - `AppImageCache.shared` is the shared URL cache and can be cleared in settings.
 - Image cache entries have a max TTL of 3 days. Older URL cache responses are
@@ -507,9 +507,9 @@ Rating keys, section keys, and hub identifiers are **per server** counters: two
 servers hand out the same `ratingKey` for different titles. Identity therefore
 always carries the server.
 
-- `Models/PlexServerScoped.swift` defines `CodingUserInfoKey.duskServerID`,
-  `Decoder.duskServerID`, and `PlexItemID { serverID, ratingKey }`. Each model's
-  `init(from:)` reads `decoder.duskServerID` and stamps it, so nested items are
+- `Models/PlexServerScoped.swift` defines `CodingUserInfoKey.cineramaServerID`,
+  `Decoder.cineramaServerID`, and `PlexItemID { serverID, ratingKey }`. Each model's
+  `init(from:)` reads `decoder.cineramaServerID` and stamps it, so nested items are
   stamped automatically. Do not add post-decode copy helpers or wrappers.
 - `PlexItem.id`, `PlexMediaDetails.id`, `PlexEpisode.id`, and `PlexSeason.id` are
   `PlexItemID`; `==`/`hash` include the server. `PlexLibrary.id` is
@@ -620,7 +620,7 @@ a heuristic content key can legitimately collide on one server.
 - `PlexPinnedSource` is a typed *read view* over one `pinnedSources` element; its
   `raw` is the element exactly as plex.tv sent it and writes mutate `raw`, so
   unmodeled fields round-trip intact.
-- `DuskJSONValue` is the loss-free JSON tree used for the plex.tv blob. Ints stay
+- `CineramaJSONValue` is the loss-free JSON tree used for the plex.tv blob. Ints stay
   ints, so `schemaVersion` is never rewritten as `12.0`.
 - `PlexStream` decodes selected/default/forced/hearing-impaired as bool-ish
   values because Plex sends both ints and bools.

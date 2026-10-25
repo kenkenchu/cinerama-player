@@ -36,7 +36,7 @@ Define explicit source membership in `project.yml`: each target compiles its own
 UI and the applicable shared logic, never the other platform's UI. The current
 recursive Mac source inclusion must be narrowed or TV sources placed outside
 that tree before adding TV code. Generate the project with XcodeGen; do not
-hand-edit `Dusk.xcodeproj`.
+hand-edit `Cinerama.xcodeproj`.
 
 ## Sharing and Playback Boundaries
 
@@ -57,8 +57,8 @@ Start with AVPlayer and native tvOS playback controls; TVVLCKit requires its own
 dependency, renderer and hardware verification. Desktop VLCKit cannot be reused
 as a tvOS binary. Shared protocol changes must preserve existing Mac behavior.
 
-Downloads, Metal enhancement and DuskDovi are excluded from the initial TV
-milestone. DuskDovi currently builds only for macOS; do not link that binary into
+Downloads, Metal enhancement and CineramaDovi are excluded from the initial TV
+milestone. CineramaDovi currently builds only for macOS; do not link that binary into
 the TV target or make its conversion path a requirement for Apple TV HD.
 
 ## Delivery and Verification

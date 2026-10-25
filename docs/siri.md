@@ -1,6 +1,6 @@
 # Mac App Intents Status
 
-The fork retains `Siri/` title matching, catalog types, and App Intents. `DuskApp`
+The fork retains `Siri/` title matching, catalog types, and App Intents. `CineramaApp`
 registers `SiriPlaybackService`, and intents can request playback through the
 shared coordinator using server-scoped identities.
 

@@ -15,11 +15,11 @@ DerivedData/
 *.dSYM.zip
 *.dSYM
 
-# Swift Package Manager (also the DuskDovi Rust build/stage dirs)
+# Swift Package Manager (also the CineramaDovi Rust build/stage dirs)
 .build/
 
-# Rust (Native/DuskDovi when built with plain cargo)
-/Native/DuskDovi/target/
+# Rust (Native/CineramaDovi when built with plain cargo)
+/Native/CineramaDovi/target/
 Packages/
 Package.resolved
 
@@ -30,7 +30,7 @@ Pods/
 Carthage/Build/
 
 # Desktop VLCKit is fetched and checksum-verified by install_macos_vlckit.sh.
-# DuskDovi is built for macOS from Native/DuskDovi by install_dusk_dovi.sh.
+# CineramaDovi is built for macOS from Native/CineramaDovi by install_cinerama_dovi.sh.
 # Both frameworks and local app builds stay out of Git.
 *.xcframework/
 

@@ -1,6 +1,10 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 # Historical Upstream References
 
-This archive preserves technical context inherited from the original Dusk
+This archive preserves technical context inherited from the original Cinerama
 project before this fork became macOS-only. Mobile/TV code, deployment tooling,
 and purchase/icon flows described here have been removed from this fork.
 

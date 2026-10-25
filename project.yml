@@ -1,6 +1,6 @@
-name: Dusk
+name: Cinerama
 options:
-  bundleIdPrefix: com.dusk-player
+  bundleIdPrefix: com.cinerama-player
   deploymentTarget:
     macOS: "26.0"
     tvOS: "26.0"
@@ -18,12 +18,13 @@ settings:
     CURRENT_PROJECT_VERSION: "1"
 
 targets:
-  Dusk-macOS:
+  Cinerama-macOS:
     type: application
+    productName: Cinerama
     platform: macOS
     sources:
-      - path: Dusk/Sources
-      - path: Dusk/Resources
+      - path: Cinerama/Sources
+      - path: Cinerama/Resources
         buildPhase: resources
     settings:
       base:
@@ -33,14 +34,14 @@ targets:
         ENABLE_DEBUG_DYLIB: NO
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
-        PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.mac
+        PRODUCT_BUNDLE_IDENTIFIER: com.cinerama-player.mac
         PRODUCT_NAME: Cinerama
-        PRODUCT_MODULE_NAME: Dusk
-        INFOPLIST_FILE: Dusk/Support/Info-macOS.plist
+        PRODUCT_MODULE_NAME: Cinerama
+        INFOPLIST_FILE: Cinerama/Support/Info-macOS.plist
         GENERATE_INFOPLIST_FILE: false
-        CODE_SIGN_ENTITLEMENTS: Dusk/Support/Dusk-macOS.entitlements
+        CODE_SIGN_ENTITLEMENTS: Cinerama/Support/Cinerama-macOS.entitlements
         DEVELOPMENT_TEAM: ""
-        ASSETCATALOG_COMPILER_APPICON_NAME: DuskIcon
+        ASSETCATALOG_COMPILER_APPICON_NAME: CineramaIcon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         FRAMEWORK_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Frameworks"
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
@@ -48,89 +49,90 @@ targets:
     dependencies:
       - framework: Frameworks/VLCKit.xcframework
         embed: true
-      - framework: Frameworks/DuskDovi.xcframework
+      - framework: Frameworks/CineramaDovi.xcframework
         embed: false
     postBuildScripts:
       - script: ./scripts/verify_embedded_vlckit.sh
         name: Verify embedded desktop VLCKit
         basedOnDependencyAnalysis: false
 
-  Dusk-tvOS:
+  Cinerama-tvOS:
     type: application
+    productName: Cinerama
     platform: tvOS
     sources:
       # TV UI lives outside the recursive Mac source tree.
-      - path: DuskTV/Sources
-      - path: DuskTV/Resources
+      - path: CineramaTV/Sources
+      - path: CineramaTV/Resources
         buildPhase: resources
-      - path: Dusk/Sources/Models
-      - path: Dusk/Sources/PlexService
-      - path: Dusk/Sources/Shared/AppImageCache.swift
-      - path: Dusk/Sources/Shared/String+NilIfEmpty.swift
-      - path: Dusk/Sources/Features/Home/HomeViewModel.swift
-      - path: Dusk/Sources/Features/Home/HomeHubItemsViewModel.swift
-      - path: Dusk/Sources/Features/Home/HomeRecommendationEngine.swift
-      - path: Dusk/Sources/Features/Home/HomePersonalizedShelf.swift
-      - path: Dusk/Sources/Features/Home/HomeHubFilter.swift
-      - path: Dusk/Sources/Features/Home/HomeHubArrangement.swift
-      - path: Dusk/Sources/Features/Home/HomeFirstPaintGate.swift
-      - path: Dusk/Sources/Features/Libraries/LibraryGenreSupport.swift
-      - path: Dusk/Sources/Features/Libraries/LibraryItemsViewModel.swift
-      - path: Dusk/Sources/Features/Libraries/LibraryUnwatchedFilter.swift
-      - path: Dusk/Sources/Shared/RecommendationCore.swift
-      - path: Dusk/Sources/Shared/MediaFormatting.swift
-      - path: Dusk/Sources/Shared/PlexItemPresentation.swift
-      - path: Dusk/Sources/Shared/PlexService+WatchedFanOut.swift
+      - path: Cinerama/Sources/Models
+      - path: Cinerama/Sources/PlexService
+      - path: Cinerama/Sources/Shared/AppImageCache.swift
+      - path: Cinerama/Sources/Shared/String+NilIfEmpty.swift
+      - path: Cinerama/Sources/Features/Home/HomeViewModel.swift
+      - path: Cinerama/Sources/Features/Home/HomeHubItemsViewModel.swift
+      - path: Cinerama/Sources/Features/Home/HomeRecommendationEngine.swift
+      - path: Cinerama/Sources/Features/Home/HomePersonalizedShelf.swift
+      - path: Cinerama/Sources/Features/Home/HomeHubFilter.swift
+      - path: Cinerama/Sources/Features/Home/HomeHubArrangement.swift
+      - path: Cinerama/Sources/Features/Home/HomeFirstPaintGate.swift
+      - path: Cinerama/Sources/Features/Libraries/LibraryGenreSupport.swift
+      - path: Cinerama/Sources/Features/Libraries/LibraryItemsViewModel.swift
+      - path: Cinerama/Sources/Features/Libraries/LibraryUnwatchedFilter.swift
+      - path: Cinerama/Sources/Shared/RecommendationCore.swift
+      - path: Cinerama/Sources/Shared/MediaFormatting.swift
+      - path: Cinerama/Sources/Shared/PlexItemPresentation.swift
+      - path: Cinerama/Sources/Shared/PlexService+WatchedFanOut.swift
     settings:
       base:
         ARCHS: arm64
-        PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.tv.prototype
+        PRODUCT_BUNDLE_IDENTIFIER: com.cinerama-player.tv
         PRODUCT_NAME: Cinerama
-        PRODUCT_MODULE_NAME: DuskTV
+        PRODUCT_MODULE_NAME: CineramaTV
         CURRENT_PROJECT_VERSION: "4"
         ASSETCATALOG_COMPILER_APPICON_NAME: TVIcon
-        INFOPLIST_FILE: DuskTV/Support/Info.plist
+        INFOPLIST_FILE: CineramaTV/Support/Info.plist
         GENERATE_INFOPLIST_FILE: false
         CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: "$(DUSK_TVOS_TEAM)"
+        DEVELOPMENT_TEAM: "$(CINERAMA_TVOS_TEAM)"
         SWIFT_STRICT_CONCURRENCY: complete
         ENABLE_DEBUG_DYLIB: NO
         TARGETED_DEVICE_FAMILY: "3"
 
-  DuskTests:
+  CineramaTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - path: DuskTests
+      - path: CineramaTests
     settings:
       base:
         ARCHS: arm64
-        PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.mac.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.cinerama-player.mac.tests
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Cinerama.app/Contents/MacOS/Cinerama"
         BUNDLE_LOADER: "$(TEST_HOST)"
     dependencies:
-      - target: Dusk-macOS
+      - target: Cinerama-macOS
 
 schemes:
-  Dusk-macOS:
+  Cinerama-macOS:
     build:
       targets:
-        Dusk-macOS: all
+        Cinerama-macOS: all
     run:
       config: Debug
     test:
       config: Debug
       targets:
-        - DuskTests
+        - CineramaTests
     archive:
       config: Release
 
-  Dusk-tvOS:
+  Cinerama-tvOS:
     build:
       targets:
-        Dusk-tvOS: all
+        Cinerama-tvOS: all
     run:
       config: Debug
     archive:

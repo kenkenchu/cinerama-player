@@ -1,14 +1,18 @@
+> Archived original-project reference. Names and paths were normalized during
+> the Cinerama rename; this is not an active feature or build specification.
+> See the root README for original-project credit.
+
 > Historical upstream reference. This fork supports native macOS only.
 > These platform-specific instructions are not maintenance or verification requirements.
 
-# Dusk UI Feature Layer
+# Cinerama UI Feature Layer
 
 Operational notes for agents changing SwiftUI screens, feature view models, and shared UI
-in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-plex.md`.
+in Cinerama. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-plex.md`.
 
 ## App And Navigation Shell
 
-- `DuskApp` creates the long-lived app services and injects them into the SwiftUI
+- `CineramaApp` creates the long-lived app services and injects them into the SwiftUI
   environment: `PlexService`, `PlaybackCoordinator`, `DownloadManager`,
   `OfflinePlaybackSyncManager`, `SeerrService`, and `UserPreferences`.
 - App-wide color scheme comes from `UserPreferences.appearanceMode`. There is no
@@ -58,12 +62,12 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   down its `NavigationStack` mid-push; defer the new flat/folded layout and clear
   the retired path when leaving it.
 - The tvOS tab shell forces monochrome symbols and a label-color tab bar tint
-  (`Color.duskTVTabBarTint`: `TextPrimary` in Dark mode, black in Light mode).
+  (`Color.cineramaTVTabBarTint`: `TextPrimary` in Dark mode, black in Light mode).
   tvOS draws the selected, unfocused item's icon and title in the bar's tint, so
   a dark tint in Dark mode reads as black-on-black; the focused item's contrast
   against the focus plate is handled by the system, not by the tint.
 - That tint is pinned on the real `UITabBar`, at launch through the appearance
-  proxy and again from the shell on every update (`DuskTVTabBarTintPin`), and a
+  proxy and again from the shell on every update (`CineramaTVTabBarTintPin`), and a
   zero-size sentinel subview inside the bar re-pins on every `tintColorDidChange`
   UIKit reports. SwiftUI's `.tint` on a tvOS `TabView` is not sticky: a bar that
   falls back to the inherited window tint picks up the global accent color
@@ -73,7 +77,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   explicit tint makes tvOS system glass buttons go white-on-white on focus.
 - tvOS Back (Siri Remote Menu) at a tab root goes to Home, and on Home
   scrolled down it returns focus to the hero; only Home at its top leaves the
-  app. `MainTabView.rootBackAction` decides, `DuskTVRootBackInterceptor` (a
+  app. `MainTabView.rootBackAction` decides, `CineramaTVRootBackInterceptor` (a
   Menu-only tap recognizer on the `UITabBarController`'s view) catches the
   press with focus in the content or on the tab bar. The recognizer refuses
   the press whenever the selected tab has a pushed screen, checked on the real
@@ -83,7 +87,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 - `AppNavigationRoute` is the shared route enum. Add new top-level destinations there
   only when multiple features need to navigate to them.
 - Use `NavigationLink(value:)` with `AppNavigationRoute` for media/person/library flows.
-- Attach `.duskAppNavigationDestinations()` inside each tab `NavigationStack`; it maps
+- Attach `.cineramaAppNavigationDestinations()` inside each tab `NavigationStack`; it maps
   routes to concrete destination views with environment services.
 - Detail routing enters through `MediaDetailDestinationView`, which dispatches by
   `PlexMediaType` and passes download/offline context through.
@@ -109,7 +113,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   (never a colour — a fully watched row must not become a wall of badges);
   suppress the progress bar in that case (pass `progress: nil`) so completion
   reads as the checkmark, not a full bar. Partial progress still renders the bar
-  (`DuskPosterMetrics.posterProgressBarHeight`), white on a dark track like the
+  (`CineramaPosterMetrics.posterProgressBarHeight`), white on a dark track like the
   TV app, everywhere.
 - Use `PlexItemPosterCarouselSection` for horizontal shelves and
   `PlexItemPosterGrid` for grids. They already handle image sizing, context menus,
@@ -118,7 +122,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   aspect — a 2:3 request would be cropped server-side.
 - Clip rendering is item-driven: `PlexItem.isClip` (item `subtype == "clip"`) and
   the `Collection.isAllClips` helper decide when a row/grid renders 16:9 with
-  `DuskPosterMetrics.videoCarouselWidth`/`videoGridPreferredWidth`. Clip card
+  `CineramaPosterMetrics.videoCarouselWidth`/`videoGridPreferredWidth`. Clip card
   subtitles show the full localized upload date and compact duration via the
   clip-aware `standardPosterSubtitle`; uploads from the last week also prefix
   relative context (for example, `2 days ago · 17 Jul 2026 · 12 min`).
@@ -137,28 +141,28 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   truncated; a nil route simply omits the tile.
 - Use `AdaptivePosterGridLayout.make(...)` for responsive poster grids. Do not hand-roll
   column math in feature files.
-- Use `DuskPosterMetrics` for platform-sensitive poster widths, grid spacing,
+- Use `CineramaPosterMetrics` for platform-sensitive poster widths, grid spacing,
   horizontal padding, and detail padding. Its `titleFont` / `subtitleFont` are thin
-  forwards to `DuskFont.cardTitle` / `DuskFont.cardSubtitle`, so card text is styled
+  forwards to `CineramaFont.cardTitle` / `CineramaFont.cardSubtitle`, so card text is styled
   by the type scale, not by the metrics struct.
-- Use `DuskFont` (`Shared/DuskTypography.swift`) for **all** type. tvOS views go
-  through `DuskFont` and never use raw semantic text styles (`.headline`, `.title3`,
+- Use `CineramaFont` (`Shared/CineramaTypography.swift`) for **all** type. tvOS views go
+  through `CineramaFont` and never use raw semantic text styles (`.headline`, `.title3`,
   `.caption`, …), which resolve 2.1–2.7× larger on tvOS than on iOS. Each token takes
-  the call site's current iOS style — `DuskFont.sectionHeader(ios: .title3.bold())` —
+  the call site's current iOS style — `CineramaFont.sectionHeader(ios: .title3.bold())` —
   and returns it unchanged off tvOS, so iOS rendering never moves. tvOS-only paths use
-  `DuskFont.TV.<token>`; layout structs that store point sizes use
-  `DuskFont.TV.Size.<token>`; sites where iOS deliberately applies no font use
-  `.duskFont(tvOnly:)`. The full token table lives in `STYLE.md` §3.1.
+  `CineramaFont.TV.<token>`; layout structs that store point sizes use
+  `CineramaFont.TV.Size.<token>`; sites where iOS deliberately applies no font use
+  `.cineramaFont(tvOnly:)`. The full token table lives in `STYLE.md` §3.1.
 - Use `MediaTextFormatter` for duration, season/episode labels, counts, progress,
   media type icons, air dates, and playback version labels.
 - Use `PlexItemPresentation` helpers for standard poster subtitles, continue-watching
   labels, poster progress, and image URL selection.
-- Use `DuskAsyncImage` for Plex artwork. It integrates app image caching and can route
+- Use `CineramaAsyncImage` for Plex artwork. It integrates app image caching and can route
   Plex image requests through `PlexService` when needed.
-- Use `DetailHeroBackdrop` with `DuskHeroBackdropOverlay` for full-bleed hero artwork,
-  and always apply `duskHeroBackdropBottomFade()` to the backdrop + overlay stack.
+- Use `DetailHeroBackdrop` with `CineramaHeroBackdropOverlay` for full-bleed hero artwork,
+  and always apply `cineramaHeroBackdropBottomFade()` to the backdrop + overlay stack.
   The overlay owns the shared top and leading scrims; the bottom fade into the page
-  is platform-split: on iOS the overlay paints a `Color.duskBackground` gradient and
+  is platform-split: on iOS the overlay paints a `Color.cineramaBackground` gradient and
   cap, on tvOS the modifier instead masks the hero to fully transparent so the page
   background underneath is the only fill at the hero boundary. The modifier's style
   picks the tvOS mask curve: `.standard` (the default) for detail heroes, `.compact`
@@ -169,7 +173,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   On iOS the overlay's own scrim strength is selectable via its `style`: the iPhone home
   hero keeps the default `.standard`, the regular-width iPad home hero uses `.cinematic`
   (short top band for the status bar/toolbar, nearly clear middle, darkening and the
-  `duskBackground` fade held to the lower third), while the movie/show/season/episode detail heroes pass
+  `cineramaBackground` fade held to the lower third), while the movie/show/season/episode detail heroes pass
   `.soft` to hold the darkening and bottom fade off until the lower third so more of the
   backdrop reads through behind the title block. `.standard` and `.soft` differ on iOS
   only — on tvOS both render the long-standing full-strength vertical scrim. The one
@@ -177,7 +181,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   0.88), used **only** by the home hero (full-screen on tvOS, near-full-screen on iPad) so the artwork stays nearly
   unscrimmed above the title block; the shared leading ramp is unchanged. Do not
   repoint the detail heroes at it.
-  Never paint `Color.duskBackground` (gradient or solid) inside a hero subtree on
+  Never paint `Color.cineramaBackground` (gradient or solid) inside a hero subtree on
   tvOS: real Apple TV HDR output resolves hero-subtree fills and the plain page
   background through different color pipelines, so two stacked fills of the same
   color still meet with a visible seam and gray mismatch on hardware even though
@@ -189,14 +193,14 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   The floating iPad tab bar can sit over hero artwork, so its selected label must
   resolve against the tab bar material instead of the page's light appearance.
 - On tvOS, poster, episode, and cast artwork controls should use
-  `duskSuppressTVOSButtonChrome()` plus `duskTVOSFocusEffectShape`. Avoid SwiftUI's
+  `cineramaSuppressTVOSButtonChrome()` plus `cineramaTVOSFocusEffectShape`. Avoid SwiftUI's
   `.plain`, `.borderless`, `.glass`, and `.card` button styles directly here because
   real Apple TV hardware can draw gray/white system focus plates. When a poster card
   has labels below the artwork, keep the artwork as the actual control but apply
-  `duskTVOSFocusedScale` to the outer card so the full poster container grows with
+  `cineramaTVOSFocusedScale` to the outer card so the full poster container grows with
   a tight neutral white glow and without gaining a button background.
 - Use platform helpers in `View+Platform.swift` instead of scattering `#if os(tvOS)`:
-  `duskNavigationTitle`, title display modes, list background/separator suppression,
+  `cineramaNavigationTitle`, title display modes, list background/separator suppression,
   status-bar helpers, tvOS button chrome suppression, and tvOS focus effect shape.
 
 ## Home
@@ -516,7 +520,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 
 - `Settings › Navigation › Server Priority` opens `ServerPrioritySettingsView` on
   every platform. It answers two questions and nothing else: in which order the
-  servers rank, and which of them Dusk uses at all.
+  servers rank, and which of them Cinerama uses at all.
 - Each row shows the server name, its ownership ("Your server" / "Shared by X"),
   and its live status from `pool.state(for:)` — Local, Remote, Relay, Connecting…,
   Offline, Not authorized, Disabled. The words come from `ServerStatusText` so the
@@ -531,7 +535,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   `ServerConnectionCoordinator.refresh()` — use it after bringing a server online
   or accepting a new share.
 - Disabling the last enabled server is allowed but never silent: the screen shows
-  what it costs ("Dusk has nothing to show; downloads still play"). Do not replace
+  what it costs ("Cinerama has nothing to show; downloads still play"). Do not replace
   this with a blocking alert — the user may be deliberately going offline-only.
 - A single-server account sees a plain one-row screen: no reorder affordances, no
   talk of priority. Ordering language only appears once there are two servers.
@@ -547,12 +551,12 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 - `Settings › Navigation › Library Order` opens `LibraryOrderSettingsView` on every
   platform. It edits the order of *your* libraries across every enabled server,
   which is an
-  account-level Plex setting rather than a Dusk preference: the same order drives the
+  account-level Plex setting rather than a Cinerama preference: the same order drives the
   Plex Web sidebar and the other Plex apps signed in as this user.
 - A row carries its server name only when another library of the same type has the
   same title. The server name disambiguates; it is never decoration.
 - The screen lists **every** section, music and photo included, even
-  though Dusk cannot browse those. They occupy slots in the account's order, so
+  though Cinerama cannot browse those. They occupy slots in the account's order, so
   omitting them would silently move them when the list is written back.
 - iOS/iPadOS use native list editing (`EditButton` + `onMove`). tvOS uses a position
   menu per row (`TVSettingsMenuRow`), the same pattern as Navigation Tabs, with
@@ -569,37 +573,37 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 - The order is read and written through `PlexService`; the view model never talks to
   plex.tv itself. Entries for disabled servers, cloud providers, and servers whose
   sections failed to load are carried through untouched — never write an order for a
-  server Dusk could not read. Storage format and traps: `docs/data-and-plex.md`.
+  server Cinerama could not read. Storage format and traps: `docs/data-and-plex.md`.
 - Clips never enter the cinematic hero rotation (`HomeViewModel.heroItems()` filters
   `isClip` — frame grabs read poorly full-bleed). They stay visible in hub rows, where
   an all-clip hub (`isVideoHub`) renders as a 16:9 carousel.
 
 ## tvOS Top Shelf
 
-- The `DuskTopShelf` app extension (tvOS only, bundle id
-  `com.dusk-player.app.topshelf`) shows Continue Watching in the Top Shelf when
-  Dusk sits in the Home Screen's top row: sectioned content, 16:9 tiles, one
+- The `CineramaTopShelf` app extension (tvOS only, bundle id
+  `com.cinerama-player.app.topshelf`) shows Continue Watching in the Top Shelf when
+  Cinerama sits in the Home Screen's top row: sectioned content, 16:9 tiles, one
   "Continue Watching" section that is Home's merged list as-is (started items
   with progress and next episodes mixed, `ContinueWatchingMerge` order), at
   most 10 items. No separate "Up Next" section; the app never splits them.
 - **The extension never talks to Plex.** `TopShelfPublisher`
-  (`Dusk/Sources/TopShelf/`) is called from `HomeViewModel.publish` on every
+  (`Cinerama/Sources/TopShelf/`) is called from `HomeViewModel.publish` on every
   Continue Watching publish; it caches each tile's artwork with the app's own
   session and writes `TopShelfSnapshot` (titles, artwork file names, deep links)
-  into the App Group `group.com.dusk-player.app`, then calls
+  into the App Group `group.com.cinerama-player.app`, then calls
   `TVTopShelfContentProvider.topShelfContentDidChange()`. The extension only
   reads that snapshot (`TopShelfSnapshot.swift` is compiled into both). No
   snapshot → the static Top Shelf image.
 - `PlexService.tearDownServerSessions` clears the snapshot (sign-out, Plex Home
   switch): the shelf must never show another identity's items.
-- Deep links: `dusk://play?server=…&item=…&type=…[&clip=1]` resumes,
-  `dusk://open?…` opens the detail page on Home. `DuskApp` hands the URL to
+- Deep links: `cinerama://play?server=…&item=…&type=…[&clip=1]` resumes,
+  `cinerama://open?…` opens the detail page on Home. `CineramaApp` hands the URL to
   `TopShelfLinkRouter`; `MainTabView` acts on it once the item's server is
   connected (a cold launch delivers it first) and drops it after 30 s. Play
   re-reads the server's `viewOffset` instead of trusting the snapshot.
 - iOS is untouched: everything is `#if os(tvOS)`, the URL scheme is only in
-  `Info-tvOS.plist`, and only the tvOS app uses `Dusk-tvOS.entitlements` (App
-  Group added); iOS keeps `Dusk.entitlements`.
+  `Info-tvOS.plist`, and only the tvOS app uses `Cinerama-tvOS.entitlements` (App
+  Group added); iOS keeps `Cinerama.entitlements`.
 
 ## Libraries
 
@@ -680,7 +684,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 - Detail hero actions share one button system across all platforms (see
   `STYLE.md` §3.3). The primary uses `detailHeroNativePrimaryButtonStyle()` —
   prominent, `Color.primary`-tinted Liquid Glass for contrast (dark-on-light /
-  light-on-dark) with a `Color.duskPrimaryActionLabel` label; on Show/Season it
+  light-on-dark) with a `Color.cineramaPrimaryActionLabel` label; on Show/Season it
   reads just "Play" / "Resume" (`playButtonShortLabel`), never the target episode.
   Secondary actions (download, watched, go-to-show/season) are **icon-only**
   everywhere via `DetailHeroSecondaryIconLabel` + `detailHeroNativeSecondaryButtonStyle()`
@@ -821,7 +825,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   scope. Navigation Tabs controls the visibility and order of Movies, TV Shows,
   Videos, and Live TV; it is device-local `UserPreferences`. Library Order controls
   the order of your individual libraries across servers; it is stored on the Plex
-  account (see "Library Order"). Server Priority controls which servers Dusk uses
+  account (see "Library Order"). Server Priority controls which servers Cinerama uses
   at all and which one wins for a title that exists on several; it is device-local
   (see "Server Priority"). All three use native list editing on iOS/iPadOS and
   position menus on tvOS.
@@ -890,7 +894,7 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
   shows focus with `tvSettingsRowFocusHighlight(_:)` — a neutral background band
   driven by a per-row `@FocusState` (rows can't use the scale+glow effect because
   they sit inside a shared card). Any new tvOS settings row must carry that band, or
-  it will be invisible when focused (`.duskSuppressTVOSButtonChrome()` strips the
+  it will be invisible when focused (`.cineramaSuppressTVOSButtonChrome()` strips the
   system focus effect, leaving no indicator on its own).
 - `TVSettingsMenuRow` pushes its own option list (`TVSettingsOptionList`) through a
   plain `NavigationLink`. Do not switch it back to `Picker` with
@@ -923,11 +927,11 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 
 ## Design And Style Rules
 
-- `STYLE.md` is authoritative: native vibes, not orange. Use `Color.duskBackground`,
-  `duskSurface`, `duskTextPrimary`, and `duskTextSecondary`; `duskAccent` is brand
+- `STYLE.md` is authoritative: native vibes, not orange. Use `Color.cineramaBackground`,
+  `cineramaSurface`, `cineramaTextPrimary`, and `cineramaTextSecondary`; `cineramaAccent` is brand
   only (Supporter page, App Icon picker).
-- Root feature screens should paint `Color.duskBackground.ignoresSafeArea()`.
-- Elevated rows/cards use `Color.duskSurface` and subtle 1pt strokes.
+- Root feature screens should paint `Color.cineramaBackground.ignoresSafeArea()`.
+- Elevated rows/cards use `Color.cineramaSurface` and subtle 1pt strokes.
 - Primary action buttons use neutral contrasting Liquid Glass (`Color.primary`-tinted
   prominent glass on iOS, untinted `.glass` on tvOS). Progress, ratings, active
   states, selection, links and loading are neutral too. Do not introduce ad-hoc colors.
@@ -948,13 +952,13 @@ in Dusk. Read this with `docs/codebase-map.md`, `STYLE.md`, and `docs/data-and-p
 - Confirm whether the change belongs in a platform shell, shared primitive, view model,
   route enum, or settings preference.
 - Keep edits scoped; other agents may be working in nearby files.
-- Reuse `AppNavigationRoute` and `.duskAppNavigationDestinations()` for navigation.
+- Reuse `AppNavigationRoute` and `.cineramaAppNavigationDestinations()` for navigation.
 - Reuse shared poster/grid/carousel/state/formatting helpers before adding new UI.
 - Keep Plex API calls in view models or `PlexService`, not view bodies.
 - Preserve refresh-on-player-dismiss behavior on screens showing watch state.
 - Preserve offline fallback paths and pending sync recording on downloaded media flows.
 - Check tvOS focus and iOS compact layout when touching shared view code.
-- If adding/removing/renaming source files under `Dusk/Sources`, run `xcodegen generate`.
+- If adding/removing/renaming source files under `Cinerama/Sources`, run `xcodegen generate`.
 - After code changes, run the compile-only `xcodebuild` command from `AGENTS.md`.
 - Documentation-only changes do not require an Xcode build.
 

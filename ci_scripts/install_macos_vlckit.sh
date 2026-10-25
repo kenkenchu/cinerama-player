@@ -5,7 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRAMEWORK_DIR="${ROOT_DIR}/Frameworks/VLCKit.xcframework"
 VERSION="3.7.3-319ed2c0-79128878"
 SHA256="019afdae4e2e2d0f3ac325fac8f7ba0af25dca70b9d157df7d60db88e0be8e5d"
-STAMP="${FRAMEWORK_DIR}/dusk-macos-vlckit.sha256"
+STAMP="${FRAMEWORK_DIR}/cinerama-macos-vlckit.sha256"
 CACHE_DIR="${ROOT_DIR}/.build/macos-vlckit"
 ARCHIVE="${CACHE_DIR}/VLCKit-${VERSION}.tar.xz"
 

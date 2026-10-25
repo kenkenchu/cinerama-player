@@ -1,6 +1,6 @@
 # Native Apple TV UI
 
-The TV interface is owned by `DuskTV/Sources`. `STYLE.md` governs the Mac UI;
+The TV interface is owned by `CineramaTV/Sources`. `STYLE.md` governs the Mac UI;
 this guide governs TV layouts and remote interaction. Never adapt Mac controls
 or card geometry to satisfy the TV focus engine.
 
@@ -57,7 +57,7 @@ bake a rounded mask or a second square Mac icon inside the TV tile.
 
 Run `swift scripts/generate_tvos_icon.swift` after changing the Mac logo source.
 It packages the existing artwork into 400 × 240 (1×/2×) Home Screen and
-1280 × 768 App Store stacks under `DuskTV/Resources/Assets.xcassets/TVIcon.brandassets`.
+1280 × 768 App Store stacks under `CineramaTV/Resources/Assets.xcassets/TVIcon.brandassets`.
 The generated PNGs are committed; the unmasked review preview stays in `.build/`.
 The script does not alter Mac icon assets or require them in the TV app bundle.
 
@@ -85,7 +85,7 @@ final stopped timeline and remux cleanup complete, avoiding stale resume data.
 Playback pauses on backgrounding. Native AVKit supplies transport and seeking;
 no custom TV transport bar is shared with Mac.
 
-Caption appearance has no Dusk picker. `TVSystemCaptionStyle` translates the
+Caption appearance has no Cinerama picker. `TVSystemCaptionStyle` translates the
 Apple TV system's explicit user overrides into WebVTT style rules for font,
 relative size, text/background/window colors, opacity and edge treatment.
 Properties permitting authored content to override remain under native control.
