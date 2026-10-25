@@ -11,7 +11,9 @@ libraries without promoted content or extra service layers.
 
 Maintained targets are **Cinerama-macOS: macOS 26+ on Apple silicon** and
 **Cinerama-tvOS: tvOS 26+ on Apple TV HD (A8)**, with the user's TV running 26.6.
-`project.yml` is authoritative. The TV client is growing from user-confirmed
+`project.yml` is authoritative. tvOS 26 remains the required compatibility baseline
+for Apple TV HD; newer SDKs/runtimes must not raise the minimum requirement.
+Automated TV tests default to a local tvOS 26.x simulator. The TV client is growing from user-confirmed
 library playback and text-subtitle feasibility; it does not yet match Mac
 features. See [TV design](tvos-design.md) and [TV UI](tvos-ui.md).
 No iOS app target or App Store release is maintained.

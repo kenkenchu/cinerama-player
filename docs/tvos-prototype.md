@@ -120,7 +120,8 @@ not run.
 ## Automated Tests
 
 The `Cinerama-tvOS` scheme now includes the hosted `CineramaTVTests` target.
-With the same verified team/device values above, run `scripts/test_tvos.sh`.
+Run `scripts/test_tvos.sh` for the local tvOS 26 simulator. With the verified
+team/device variables above, the same command explicitly runs on Apple TV HD.
 The 32-test TV suite passed on this Apple TV HD; the Mac suite passed all 178
 tests. See [Automated testing](testing.md) for coverage, signing and limitations.
 Tests run through Xcode without manual visual inspection or actual media playback.

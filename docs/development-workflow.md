@@ -13,11 +13,12 @@ app alongside the maintained tvOS client for Apple TV HD. Preserve unrelated wor
 - `Frameworks/`: downloaded desktop VLC and locally built CineramaDovi; git-ignored.
 - `Native/CineramaDovi/`: pinned Rust crate, C interface, and dependency notices.
 
-Mobile targets, simulator/run helpers, Top Shelf extension, mobile VLC build
+Historical mobile targets and simulator/run helpers, Top Shelf extension, mobile VLC build
 patches, alternate icon generators, and TestFlight publishing scripts are gone.
 The archived upstream instructions do not apply to this fork. The new
 `Cinerama-tvOS` app has a separate [device workflow](tvos-prototype.md) and
-`scripts/build_tvos.sh`; it does not use desktop playback frameworks.
+`scripts/build_tvos.sh`; it does not use desktop playback frameworks. The maintained
+TV test workflow now supports a local tvOS 26 simulator; see [Automated testing](testing.md).
 
 ## Bootstrap and Build
 

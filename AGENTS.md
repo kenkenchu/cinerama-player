@@ -13,7 +13,9 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
 
 - Maintained app schemes: `Cinerama-macOS` (Apple silicon, macOS 26+) and
   `Cinerama-tvOS` (Apple TV HD/A8, tvOS 26+, user device on 26.6).
-  Feature availability differs; do not imply full TV/Mac parity.
+  tvOS 26 remains the required compatibility baseline; do not raise the deployment
+  target or require newer APIs without a tvOS 26 fallback. Feature availability
+  differs; do not imply full TV/Mac parity.
 - `project.yml` is the source of truth; XcodeGen produces `Cinerama.xcodeproj`.
 - `App/` owns app lifetime and instrument-console navigation; `Features/Player/` owns the
   native player controls; `Playback/` owns AVPlayer and desktop VLCKit engines.
@@ -109,7 +111,13 @@ nested signatures and the embedded VLC binary. Run automated tests after code
 changes with `scripts/test_macos.sh` and `scripts/test_tvos.sh`; see
 `docs/testing.md` for signing, device requirements and coverage. Run both suites
 for shared/project/cross-platform changes and the applicable suite for
-platform-specific behavior. Do not silently skip unavailable device tests.
+platform-specific behavior. TV tests default to a local tvOS simulator, so they
+also run away from the Apple TV. The default simulator must run tvOS 26.x;
+a newer installed runtime must not silently replace that compatibility baseline.
+Set `CINERAMA_TVOS_DEVICE_ID` (and team) for an
+explicit device run; do not silently skip a requested unavailable-device run.
+Simulator support is limited to the maintained TV test workflow; it does not
+authorize restoring historical mobile targets/helpers or desktop VLC on TV.
 The user has authorized automated test execution, including its required test host.
 Do not manually launch apps or perform visual inspection; the user handles visual
 and device interaction verification.
@@ -237,7 +245,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
   screenshot assets. Historical Markdown stays under `docs/upstream/`; the
   current player menus, overlay, subtitle search, and native build inputs remain.
 - Automated baseline: 178 Mac tests and 32 TV tests pass (2026-10-25), with TV
-  execution on the paired Apple TV HD. Both signed builds pass. The earlier
+  execution on the paired Apple TV HD and tvOS 26.0 arm64 simulator.
+  Runtime 26.0 (23J352) is installed locally; `scripts/test_tvos.sh` creates/reuses
+  its dedicated simulator. Runtime 27.0 is also installed but is not the default. Both signed builds pass. The earlier
   HDR/Dolby Vision assertion failures have been resolved; see `docs/testing.md`.
   `CineramaTVTests` covers TV resolver/copy-only policy, remembered tracks,
   stopped-session cleanup and native Back dismissal, plus shared library tests.

@@ -79,6 +79,19 @@ violations += [f"Mac tests include TV-only input: {path}"
 violations += [f"TV tests include unapproved input: {path}"
                for path in files("CineramaTVTests", "PBXSourcesBuildPhase")
                if not (path.startswith("CineramaTVTests/") or path in shared_tests)]
+# XcodeGen puts deployment defaults on the project; target settings may override
+# them. Guard both layers so new SDKs cannot silently drop Apple TV HD support.
+project_configs = objects[objects[data["rootObject"]]["buildConfigurationList"]]["buildConfigurations"]
+project_settings = {objects[key]["name"]: objects[key]["buildSettings"] for key in project_configs}
+for name in ("Cinerama-tvOS", "CineramaTVTests"):
+    configs = objects[targets[name]["buildConfigurationList"]]["buildConfigurations"]
+    for key in configs:
+        config = objects[key]
+        deployment = config["buildSettings"].get(
+            "TVOS_DEPLOYMENT_TARGET", project_settings[config["name"]].get("TVOS_DEPLOYMENT_TARGET")
+        )
+        if str(deployment) != "26.0":
+            violations.append(f"{name} {config['name']} must retain tvOS 26.0 deployment, found {deployment}")
 if violations:
     raise SystemExit("Platform source boundaries failed:\n" + "\n".join(violations))
 print(f"Platform boundaries verified: {len(mac)} Mac sources, {len(tv)} TV/shared sources.")

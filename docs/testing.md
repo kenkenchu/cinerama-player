@@ -9,26 +9,51 @@ behavior. Keep the separate signed-build gates in `development-workflow.md` and
 
 ## Commands
 
-Bootstrap with the signed build scripts first. Both test scripts regenerate
+Bootstrap Mac dependencies with the signed Mac build script first; TV simulator
+tests need Xcode, XcodeGen and the tvOS 26 runtime. Both test scripts regenerate
 XcodeGen, enforce platform/test source boundaries and run `xcodebuild test`.
-They require explicit signing settings and never fall back to ad hoc signing.
+Physical-device/Mac tests require explicit signing settings and never fall back
+to ad hoc signing. Simulator tests require neither signing nor a development team.
 
 ```bash
 CINERAMA_MACOS_SIGNING_IDENTITY='Apple Development: kenkenchu@gmail.com (BZ2K63HJTE)' \
   ./scripts/test_macos.sh
 
+# Local default: tvOS simulator, usable away from the Apple TV.
+./scripts/test_tvos.sh
+
+# Explicit physical-device run:
 CINERAMA_TVOS_TEAM=JCJFCBSNUG \
   CINERAMA_TVOS_DEVICE_ID=c8b3bc526b697182f0646a639aef4be26f1ca852 \
   ./scripts/test_tvos.sh
 ```
 
-The TV script uses the connected, paired Apple TV HD and automatic development
-provisioning. It installs/runs the app test host and `CineramaTVTests` bundle on
-the device. Keep it awake and reachable. Discover the build destination again
-if pairing changes; see [TV device workflow](tvos-prototype.md). No simulator
-runtime or historical mobile/simulator helper is required. Do not silently skip
-the suite if the TV is unavailable; report the execution blocker separately from
-compile results.
+Without `CINERAMA_TVOS_DEVICE_ID`, the TV script selects the newest available
+**tvOS 26.x** runtime and creates/reuses a dedicated `Cinerama TV Tests` simulator at
+1080p. It runs through CoreSimulator without opening the Simulator GUI. Set
+`CINERAMA_TVOS_SIMULATOR_ID` to select an existing simulator explicitly. On a new
+Mac, install a runtime first:
+
+```bash
+xcodebuild -downloadPlatform tvOS -buildVersion 26.0 -architectureVariant arm64
+```
+
+With `CINERAMA_TVOS_DEVICE_ID`, the same script uses the paired Apple TV HD and
+automatic development provisioning. Keep it awake and reachable; rediscover the
+build destination if pairing changes. See [TV device workflow](tvos-prototype.md).
+Do not silently skip an explicitly requested device run when the TV is absent;
+use the default simulator command for local automated work instead. Simulator
+products use `.build/tvos-simulator/DerivedData`, separate from signed device
+products in `.build/tvos/DerivedData`; never install simulator products on the TV.
+
+The compatibility baseline is tvOS 26; an installed 27.x runtime never replaces
+the required 26.x default. Newer runtime checks can be requested explicitly
+with a simulator ID, in addition to the 26.x baseline. Simulator tests verify
+logic and native lifecycle/delegate contracts; they do not emulate Apple TV HD's
+A8 performance, tvOS 26.6 media decoding or hardware audio/display behavior.
+The boundary verification script also enforces tvOS 26.0 deployment for the app
+and hosted tests in every configuration.
+Physical-device signed builds and periodic device test runs remain required.
 
 Additional Xcode options can follow the script, for example
 `-only-testing:CineramaTests/MacPlaybackWindowTests` for a focused Mac run. A
@@ -57,7 +82,7 @@ injected, unique defaults suites and remove their persisted state afterward.
 ## Current Baseline
 
 On 2026-10-25, all **178 Mac tests** and **32 TV tests** passed, with TV tests
-executed on Apple TV HD. Both signed builds and source-boundary checks passed.
+executed on both Apple TV HD and the local tvOS 26.0 (23J352) arm64 simulator. Both signed builds and source-boundary checks passed.
 Parameterized cases exercise additional input combinations within those tests.
 
 Enabling the full Mac baseline also made empty-RPU rejection deterministic
