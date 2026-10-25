@@ -15,9 +15,10 @@ servers beneath the shell and retries on profile, foreground, and network change
 The shell is a full-width destination view with a pinned bottom instrument
 console, replacing the sidebar. Home, Movies, TV Shows, Videos, Live TV, Search,
 Downloads and Settings remain available on every catalog screen. Native buttons
-use icons, monospaced labels and an underlined neutral selected state. The
-console has an opaque graphite housing with chamfered shoulders, engraved rails
-and decorative fasteners. Recessed button faces use brighter markings and a
+use icons and an underlined neutral selected state. Names and shortcuts appear
+in native hover tooltips and remain available as accessibility labels. The
+console has an opaque graphite housing with chamfered shoulders and fine rails.
+Flat icon instruments use subtle selection plates, brighter markings and a
 steady white lamp for the selected destination; the accent fill is not used.
 `ViewThatFits` drops the console wordmark first when space is tight; it keeps
 all eight destinations visible at the supported minimum window width.
@@ -25,7 +26,8 @@ The console supplies its own dark color environment in either app appearance;
 its opaque gradients also work with Reduce Transparency. Decorative etching is
 noninteractive and accessibility-hidden. `CockpitInstrumentStyle` uses native
 ButtonStyle pressed state and pointer hover for immediate feedback, without
-animation timers or changes to the established strip dimensions.
+animation timers. Instrument widths and destination order are unchanged; hiding
+the captions makes the strip shorter.
 
 Each destination retains its own `NavigationPath`. The Navigate menu supplies
 Cmd-1 through Cmd-8 in instrument order; Cmd-F still selects Search. The obsolete
@@ -271,4 +273,4 @@ The whole catalog shell, including its instruments, stays mounted but hidden
 and disabled beneath windowed playback. Detached fullscreen keeps the catalog
 window's console visible. `MacPlaybackHost` and its fullscreen/Escape handling
 are unchanged. Runtime checks should cover all eight instruments, the Navigate
-menu/shortcuts, narrow-window labels, back navigation and return from playback.
+menu/shortcuts, narrow-window instruments, back navigation and return from playback.

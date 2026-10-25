@@ -65,7 +65,8 @@ and time readouts can use monospaced digits.
 ## Screens and Interaction
 
 Navigation uses a pinned bottom instrument console of native buttons, with
-icons and visible labels for all eight destinations. Recessed graphite plates,
+icons for all eight destinations, native hover tooltips for names/shortcuts,
+and accessibility labels. Flat translucent plates,
 bright markings and a short steady white lamp identify the selected instrument
 in either appearance. Keep native
 keyboard focus, the Navigate menu shortcuts and the full-width destination
@@ -134,10 +135,11 @@ opaque. The underlying Plex Home content and TV interface are unchanged.
 
 Keep the approved strip layout, button dimensions and destination order. Give
 only the console a dark environment: opaque graphite gradients, chamfered
-housing shoulders, fine rails and small decorative fasteners. Instrument faces
-retain 16pt rounded geometry, with inset bevels, monospaced captions and a steady
-white selection lamp. Native ButtonStyle pressed state supplies a one-point
-press response; pointer hover slightly brightens the face. Do not add blinking
+housing shoulders and fine rails. Instruments use flat illuminated glyphs,
+subtle 16pt selection plates and a steady white selection lamp. Names appear
+only in native hover tooltips and accessibility labels. Native ButtonStyle
+pressed state supplies opacity feedback; pointer hover slightly brightens the
+face. Avoid recessed wells, bevels, screws and mechanical key travel. Do not add blinking
 lamps, decorative timers or invented system telemetry. All hardware decoration
 must ignore hit testing and accessibility. Native focus and button activation
 remain intact; these are cosmetic changes to the established navigation.

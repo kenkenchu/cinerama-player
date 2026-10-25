@@ -128,11 +128,6 @@ struct MainTabView: View {
                 .stroke(LinearGradient(colors: [.white.opacity(0.45), .white.opacity(0.08), .white.opacity(0.22)],
                                        startPoint: .topLeading, endPoint: .bottomTrailing), lineWidth: 1)
                 .padding(0.5)
-                .overlay {
-                    CockpitHousing()
-                        .stroke(.black.opacity(0.65), lineWidth: 1)
-                        .padding(3)
-                }
                 .overlay { CockpitPanelEtching() }
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
@@ -208,16 +203,6 @@ private struct CockpitPanelEtching: View {
                 rails.addLine(to: CGPoint(x: size.width - 32, y: y))
             }
             context.stroke(rails, with: .color(.white.opacity(0.10)), lineWidth: 0.5)
-            for x in [CGFloat(14), size.width - 14] {
-                for y in [CGFloat(14), size.height - 14] {
-                    context.fill(Path(ellipseIn: CGRect(x: x - 2.5, y: y - 2.5, width: 5, height: 5)),
-                                 with: .color(.black.opacity(0.7)))
-                    var slot = Path()
-                    slot.move(to: CGPoint(x: x - 1, y: y + 1))
-                    slot.addLine(to: CGPoint(x: x + 1, y: y - 1))
-                    context.stroke(slot, with: .color(.white.opacity(0.35)), lineWidth: 0.75)
-                }
-            }
         }
     }
 }
@@ -231,7 +216,7 @@ private struct MacNavigationInstrument: View {
 
     var body: some View {
         Button(title, action: action)
-            .buttonStyle(CockpitInstrumentStyle(title: title, symbol: symbol, isSelected: isSelected))
+            .buttonStyle(CockpitInstrumentStyle(symbol: symbol, isSelected: isSelected))
             .pointerStyle(.link)
             .help("\(title) (⌘\(shortcutNumber))")
             .accessibilityLabel(title)
@@ -239,10 +224,9 @@ private struct MacNavigationInstrument: View {
     }
 }
 
-/// ButtonStyle's pressed state provides tactile feedback without replacing
+/// ButtonStyle's pressed state provides immediate feedback without replacing
 /// native button activation, focus, keyboard shortcuts or accessibility.
 private struct CockpitInstrumentStyle: ButtonStyle {
-    let title: String
     let symbol: String
     let isSelected: Bool
     @Environment(\.isEnabled) private var isEnabled
@@ -255,10 +239,6 @@ private struct CockpitInstrumentStyle: ButtonStyle {
                 .font(.system(.title3, weight: .medium))
                 .frame(height: 22)
                 .shadow(color: .white.opacity(isSelected ? 0.35 : 0), radius: 6)
-            Text(title)
-                .font(.system(.caption, design: .monospaced, weight: isSelected ? .semibold : .regular))
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
             Capsule()
                 .fill(.white.opacity(isSelected ? 0.95 : 0.12))
                 .frame(width: 18, height: 2)
@@ -269,30 +249,16 @@ private struct CockpitInstrumentStyle: ButtonStyle {
         .frame(width: 76)
         .padding(.vertical, 10)
         .background {
-            let face = RoundedRectangle(cornerRadius: 16, style: .continuous)
-            face.fill(.black.opacity(0.75))
-            face.fill(LinearGradient(
-                colors: [Color(white: isSelected ? 0.24 : 0.13), Color(white: 0.055)],
-                startPoint: .top, endPoint: .bottom
-            ))
-            .padding(2)
-            .offset(y: configuration.isPressed ? 1 : 0)
-            face.strokeBorder(
-                LinearGradient(colors: [.white.opacity(isSelected || isHovered ? 0.45 : 0.16), .black.opacity(0.7)],
-                               startPoint: .top, endPoint: .bottom), lineWidth: 1
-            )
-            face.strokeBorder(.white.opacity(isSelected ? 0.18 : 0.04), lineWidth: 0.5)
-                .padding(3)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.white.opacity(isSelected ? 0.07 : (isHovered ? 0.035 : 0)))
         }
-        .overlay(alignment: .top) {
-            Capsule()
-                .fill(.white.opacity(isSelected ? 0.65 : 0.08))
-                .frame(width: 26, height: 1)
-                .padding(.top, 5)
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(.white.opacity(isSelected ? 0.20 : 0), lineWidth: 0.5)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
-        .offset(y: configuration.isPressed ? 1 : 0)
+        .opacity(configuration.isPressed ? 0.65 : 1)
         .brightness(isHovered && isEnabled ? 0.035 : 0)
         .opacity(isEnabled ? 1 : 0.45)
         .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
