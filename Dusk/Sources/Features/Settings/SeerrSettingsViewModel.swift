@@ -59,6 +59,6 @@ final class SeerrSettingsViewModel {
         let transportWarning = normalized?.scheme == "http"
             ? " This connection isn’t encrypted."
             : ""
-        return "Dusk will try to sign in to Seerr with your current Plex account.\(transportWarning)"
+        return "Cinerama will try to sign in to Seerr with your current Plex account.\(transportWarning)"
     }
 }

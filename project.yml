@@ -34,7 +34,8 @@ targets:
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.mac
-        PRODUCT_NAME: Dusk
+        PRODUCT_NAME: Cinerama
+        PRODUCT_MODULE_NAME: Dusk
         INFOPLIST_FILE: Dusk/Support/Info-macOS.plist
         GENERATE_INFOPLIST_FILE: false
         CODE_SIGN_ENTITLEMENTS: Dusk/Support/Dusk-macOS.entitlements
@@ -84,7 +85,8 @@ targets:
       base:
         ARCHS: arm64
         PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.tv.prototype
-        PRODUCT_NAME: DuskTV
+        PRODUCT_NAME: Cinerama
+        PRODUCT_MODULE_NAME: DuskTV
         CURRENT_PROJECT_VERSION: "4"
         ASSETCATALOG_COMPILER_APPICON_NAME: TVIcon
         INFOPLIST_FILE: DuskTV/Support/Info.plist
@@ -106,7 +108,7 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.dusk-player.mac.tests
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Dusk.app/Contents/MacOS/Dusk"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Cinerama.app/Contents/MacOS/Cinerama"
         BUNDLE_LOADER: "$(TEST_HOST)"
     dependencies:
       - target: Dusk-macOS

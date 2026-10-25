@@ -137,7 +137,7 @@ struct PlayTitleIntent: AppIntent {
 
 /// "Play <anything> in Dusk": Siri's own video intent with the spoken text.
 struct PlayInDuskIntent: PlayVideoIntent {
-    static let title: LocalizedStringResource = "Play in Dusk"
+    static let title: LocalizedStringResource = "Play in Cinerama"
     static let description = IntentDescription(
         "Finds a movie or show in your Plex libraries by name and plays it."
     )

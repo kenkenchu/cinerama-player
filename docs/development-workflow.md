@@ -33,7 +33,7 @@ xcodebuild -downloadComponent MetalToolchain
 The script installs desktop dependencies, regenerates the project, builds
 `Dusk-macOS`, and verifies the app's nested signatures. The build also checks the
 embedded VLC binary against the fetched framework. It never launches the app
-or runs tests. Output: `.build/macos/DerivedData/Build/Products/Debug/Dusk.app`.
+or runs tests. Output: `.build/macos/DerivedData/Build/Products/Debug/Cinerama.app`.
 
 The supported app is arm64 on macOS 26+. Only the desktop VLC framework and
 `macos-arm64` DuskDovi slice are needed. `DuskTests` is a native hosted test target

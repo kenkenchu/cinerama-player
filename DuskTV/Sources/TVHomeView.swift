@@ -138,7 +138,7 @@ struct TVHomeView: View {
     private var header: some View {
         HStack(spacing: 28) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Dusk").font(.title2.bold())
+                Text("Cinerama").font(.title2.bold())
                 Text(model.service.activeHomeUser?.displayName ?? "Your Plex libraries")
                     .font(.caption).foregroundStyle(.secondary)
             }

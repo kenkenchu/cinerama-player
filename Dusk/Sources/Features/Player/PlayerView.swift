@@ -178,7 +178,7 @@ private struct MacPlayerSession: View {
 
     private var playbackTitle: String {
         guard let details = playback.activeItemDetails else {
-            return source.liveTVContext.map { "\($0.channel.displayTitle) · LIVE" } ?? "Dusk"
+            return source.liveTVContext.map { "\($0.channel.displayTitle) · LIVE" } ?? "Cinerama"
         }
         if details.type == .episode {
             let numbering = MediaTextFormatter.compactSeasonEpisodeLabel(

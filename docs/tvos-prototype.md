@@ -40,7 +40,7 @@ Changes take effect on the next Play/Resume. Native AVKit also exposes received
 tracks during playback; complete persistence of in-player native-menu changes
 is not yet implemented.
 
-The display name is Dusk; its existing bundle ID is preserved so upgrades keep
+The display name is Cinerama; its existing bundle ID is preserved so upgrades keep
 the linked account. Native AVKit supplies remote transport controls. Explicit system caption
 appearance overrides are adapted into WebVTT style rules and refreshed on
 settings/foreground changes; no Dusk appearance preferences exist. The adapter
@@ -77,7 +77,7 @@ See [TV UI](tvos-ui.md) for current implementation boundaries and runtime checks
 
    ```bash
    xcrun devicectl device install app --device YOUR_DEVICECTL_ID \
-     .build/tvos/DerivedData/Build/Products/Debug-appletvos/DuskTV.app
+     .build/tvos/DerivedData/Build/Products/Debug-appletvos/Cinerama.app
    ```
 
 The script requests automatic development provisioning, verifies the signed
@@ -89,7 +89,7 @@ in Git. TV provisioning is separate from the existing Mac signing workflow.
 
 ## User End-to-End Check
 
-1. Open Dusk on Apple TV and allow Local Network access if requested.
+1. Open Cinerama on Apple TV and allow Local Network access if requested.
 2. Enter the displayed code at `plex.tv/link` on your phone/computer, then choose
    your Plex Home profile (including its PIN if protected).
 3. Confirm accessible servers' video libraries appear. An unavailable server
@@ -120,7 +120,7 @@ search, semantic track preferences, system caption adapter and revised timeline
 lifecycle passed signed Mac/TV builds and were installed for user device
 verification. The platform-boundary gate passed; Mac UI sources were untouched. The existing
 bundle identifier `com.dusk-player.tv.prototype` is retained deliberately to
-preserve the linked account and app storage; the display name is now Dusk.
+preserve the linked account and app storage; the display name is now Cinerama.
 The user subsequently confirmed library artwork and selecting videos to play.
 Home-specific hero, recommendation, menu and focus changes still need user
 verification. Neither app was launched by agents and no tests were run.

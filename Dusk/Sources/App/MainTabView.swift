@@ -98,9 +98,11 @@ struct MainTabView: View {
                         .padding(10)
                         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
                     VStack(alignment: .leading, spacing: 3) {
-                        Text("DUSK")
+                        Text("CINERAMA")
                             .font(.system(.title3, design: .rounded, weight: .bold))
-                            .tracking(5)
+                            .tracking(2)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
                     }
                     Spacer(minLength: 0)
                 }
@@ -268,7 +270,7 @@ private struct MacPlaybackHost: NSViewRepresentable {
                 backing: .buffered, defer: false, screen: mainWindow.screen
             )
             window.isReleasedWhenClosed = false
-            window.title = "Dusk Playback"
+            window.title = "Cinerama Playback"
             window.backgroundColor = .black
             window.collectionBehavior = [.fullScreenPrimary]
             window.delegate = self

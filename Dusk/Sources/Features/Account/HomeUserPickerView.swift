@@ -138,7 +138,7 @@ struct HomeUserPickerView: View {
                     .font(DuskFont.rowTitle(style: .headline))
                     .foregroundStyle(Color.duskTextPrimary)
 
-                Text("Open Dusk with this profile next time. You can change this anytime in Settings.")
+                Text("Open Cinerama with this profile next time. You can change this anytime in Settings.")
                     .font(DuskFont.caption(style: .subheadline))
                     .foregroundStyle(Color.duskTextSecondary)
                     .fixedSize(horizontal: false, vertical: true)

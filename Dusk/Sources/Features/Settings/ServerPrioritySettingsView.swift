@@ -112,14 +112,14 @@ struct ServerPrioritySettingsView: View {
     // MARK: - Copy
 
     private static let noServersMessage = "No Plex servers found on your account."
-    private static let nothingEnabledMessage = "Every server is turned off, so Dusk has nothing to show. Downloads still play. Turn a server back on to bring your libraries back."
-    private static let refreshFooterText = "Looks for servers that have come online or been shared with you since Dusk last checked."
+    private static let nothingEnabledMessage = "Every server is turned off, so Cinerama has nothing to show. Downloads still play. Turn a server back on to bring your libraries back."
+    private static let refreshFooterText = "Looks for servers that have come online or been shared with you since Cinerama last checked."
 
     private static func footerText(isSingleServer: Bool) -> String {
         guard !isSingleServer else {
-            return "Dusk uses this server for everything. Turning it off leaves Dusk with nothing to show until you turn it back on."
+            return "Cinerama uses this server for everything. Turning it off leaves Cinerama with nothing to show until you turn it back on."
         }
-        return "Dusk uses every server that is on and merges what they hold. When the same title is on more than one, the server highest in this list plays it. A server that is off is ignored completely — no libraries, no Continue Watching, no search results."
+        return "Cinerama uses every server that is on and merges what they hold. When the same title is on more than one, the server highest in this list plays it. A server that is off is ignored completely — no libraries, no Continue Watching, no search results."
     }
 }
 

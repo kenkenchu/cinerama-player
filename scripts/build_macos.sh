@@ -21,7 +21,7 @@ xcodebuild -project Dusk.xcodeproj -scheme Dusk-macOS -configuration Debug \
     CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual \
     "CODE_SIGN_IDENTITY=${DUSK_MACOS_SIGNING_IDENTITY:--}" build
 
-APP_PATH="${ROOT_DIR}/.build/macos/DerivedData/Build/Products/Debug/Dusk.app"
+APP_PATH="${ROOT_DIR}/.build/macos/DerivedData/Build/Products/Debug/Cinerama.app"
 codesign --verify --deep --strict "${APP_PATH}"
 echo "Built and locally signed: ${APP_PATH}"
-echo 'On first launch, allow Dusk in System Settings > Privacy & Security > Local Network.'
+echo 'On first launch, allow Cinerama in System Settings > Privacy & Security > Local Network.'

@@ -488,7 +488,7 @@ private extension PlexService {
     ) async throws -> (url: URL, outcome: TranscodeDecisionOutcome, streams: TranscodeStreamDecisions) {
         switch mode {
         case .manualTranscode, .spatialAudioRemux(convertsAudio: true):
-            throw PlexServiceError.decodingError("Server video and audio transcoding is disabled in Dusk. Choose a locally playable track or file.")
+            throw PlexServiceError.decodingError("Server video and audio transcoding is disabled in Cinerama. Choose a locally playable track or file.")
         default: break
         }
         let targetID = try resolveServerID(serverID)
@@ -526,7 +526,7 @@ private extension PlexService {
         // URL unless both original A/V tracks are confirmed copied. Request
         // flags alone are insufficient: Plex may otherwise choose to encode.
         guard streams.isLosslessRemux else {
-            return (baseURL, .failed("Plex could not confirm original video and audio copying. Server transcoding is disabled in Dusk."), streams)
+            return (baseURL, .failed("Plex could not confirm original video and audio copying. Server transcoding is disabled in Cinerama."), streams)
         }
 
         guard let url = buildURL(
@@ -606,7 +606,7 @@ extension PlexService {
             URLQueryItem(name: "X-Plex-Incomplete-Segments", value: "1"),
             URLQueryItem(name: "X-Plex-Features", value: "external-media,indirect-media"),
             URLQueryItem(name: "X-Plex-Language", value: "en"),
-            URLQueryItem(name: "X-Plex-Product", value: "Dusk"),
+            URLQueryItem(name: "X-Plex-Product", value: "Cinerama"),
             URLQueryItem(
                 name: "X-Plex-Version",
                 value: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
