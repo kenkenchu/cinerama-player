@@ -101,6 +101,7 @@ private struct MacPlayerSession: View {
                             }.padding().background(.regularMaterial, in: .capsule)
                         }
                         controls
+                            .pointerStyle(.link)
                             .onHover { hovering in
                                 if hovering { model.beginControlsInteractionHold() }
                                 else { model.endControlsInteractionHold() }
@@ -158,7 +159,7 @@ private struct MacPlayerSession: View {
     private var videoInteractionSurface: some View {
         Color.clear
             .contentShape(Rectangle())
-            .pointerStyle(.link)
+            .pointerStyle(.default)
             .gesture(
                 TapGesture(count: 2).exclusively(before: TapGesture(count: 1))
                     .onEnded { action in

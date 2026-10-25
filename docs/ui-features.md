@@ -199,8 +199,9 @@ with separate video/audio copy-versus-transcode decisions when Plex reports
 them. Missing server decisions are marked as unavailable. It never displays
 media URLs, tokens, or credentials. This is session UI state, not a saved setting.
 
-The video surface uses a link cursor to advertise its click action, without a
-hover tooltip covering the video. Video clicks are handled separately from controls: clicking menus, scrubbing, and toggling
+The video surface keeps the standard arrow cursor, without a hover tooltip
+covering the video. The playback control bar uses the hand cursor. Video clicks
+are handled separately from controls: clicking menus, scrubbing, and toggling
 debug info do not toggle play/pause. Double-click is exclusive of single-click.
 Player controls include native tooltips naming their keyboard shortcuts. Audio
 and subtitle selection use the native menus in `PlayerView`; the old shared
