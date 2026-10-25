@@ -15,11 +15,17 @@ servers beneath the shell and retries on profile, foreground, and network change
 The shell is a full-width destination view with a pinned bottom instrument
 console, replacing the sidebar. Home, Movies, TV Shows, Videos, Live TV, Search,
 Downloads and Settings remain available on every catalog screen. Native buttons
-use icons, labels and an underlined neutral selected state. Selection follows
-appearance-aware primary/secondary colors instead of the accent fill.
+use icons, monospaced labels and an underlined neutral selected state. The
+console has an opaque graphite housing with chamfered shoulders, engraved rails
+and decorative fasteners. Recessed button faces use brighter markings and a
+steady white lamp for the selected destination; the accent fill is not used.
 `ViewThatFits` drops the console wordmark first when space is tight; it keeps
 all eight destinations visible at the supported minimum window width.
-Reduce Transparency substitutes an opaque console surface.
+The console supplies its own dark color environment in either app appearance;
+its opaque gradients also work with Reduce Transparency. Decorative etching is
+noninteractive and accessibility-hidden. `CockpitInstrumentStyle` uses native
+ButtonStyle pressed state and pointer hover for immediate feedback, without
+animation timers or changes to the established strip dimensions.
 
 Each destination retains its own `NavigationPath`. The Navigate menu supplies
 Cmd-1 through Cmd-8 in instrument order; Cmd-F still selects Search. The obsolete

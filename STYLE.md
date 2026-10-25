@@ -37,8 +37,8 @@ SwiftUI colors. Keep these light/dark values consistent:
 (`#4A4A4E`) in dark appearance. The accent can fill native selected controls,
 so its dark variant must contrast
 with the system's light selected text; do not use near-white there. The cockpit
-console uses its own neutral primary-opacity fill and primary text, without an
-accent-colored selection.
+console uses opaque graphite faces with light neutral markings and its own
+dark color environment, without an accent-colored selection.
 New color rules require updating this document.
 
 ## Typography and Geometry
@@ -65,8 +65,9 @@ and time readouts can use monospaced digits.
 ## Screens and Interaction
 
 Navigation uses a pinned bottom instrument console of native buttons, with
-icons and visible labels for all eight destinations. A neutral plate and short
-underline identify the selected instrument in either appearance. Keep native
+icons and visible labels for all eight destinations. Recessed graphite plates,
+bright markings and a short steady white lamp identify the selected instrument
+in either appearance. Keep native
 keyboard focus, the Navigate menu shortcuts and the full-width destination
 NavigationStacks. Details remain backdrop-led without an
 extra poster in the hero. Shared primary/secondary action helpers keep Play,
@@ -128,3 +129,15 @@ its internal padding when calculating width,
 uses compact typography in smaller windows and preserves native Play/Resume and
 pager interaction. Reduce Transparency makes library bays and the hero panel
 opaque. The underlying Plex Home content and TV interface are unchanged.
+
+## Cockpit Instrument Finish
+
+Keep the approved strip layout, button dimensions and destination order. Give
+only the console a dark environment: opaque graphite gradients, chamfered
+housing shoulders, fine rails and small decorative fasteners. Instrument faces
+retain 16pt rounded geometry, with inset bevels, monospaced captions and a steady
+white selection lamp. Native ButtonStyle pressed state supplies a one-point
+press response; pointer hover slightly brightens the face. Do not add blinking
+lamps, decorative timers or invented system telemetry. All hardware decoration
+must ignore hit testing and accessibility. Native focus and button activation
+remain intact; these are cosmetic changes to the established navigation.
