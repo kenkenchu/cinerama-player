@@ -10,7 +10,7 @@ struct SignInView: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
 
             signInContent
         }

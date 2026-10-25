@@ -7,7 +7,7 @@ struct ServerPrioritySettingsView: View {
 
     var body: some View {
         content
-            .background(Color.cineramaBackground.ignoresSafeArea())
+            .background(Color.clear.ignoresSafeArea())
             .navigationTitle("Server Priority")
 
             .task {

@@ -15,7 +15,7 @@ struct SettingsContainer<Content: View>: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
             content
         }
         .sheet(isPresented: homeUserPickerPresented) {

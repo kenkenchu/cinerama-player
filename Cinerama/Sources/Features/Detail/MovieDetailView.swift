@@ -28,7 +28,7 @@ struct MovieDetailView: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
 
             if viewModel.isLoading && viewModel.details == nil {
                 FeatureLoadingView()

@@ -14,7 +14,7 @@ struct SeerrSeasonDetailView: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
             if viewModel.isLoading && viewModel.season == nil {
                 FeatureLoadingView()
             } else if let error = viewModel.error, viewModel.season == nil {

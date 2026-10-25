@@ -8,7 +8,7 @@ struct SeerrSettingsView: View {
         Group {
             settingsContent
         }
-        .background(Color.cineramaBackground.ignoresSafeArea())
+        .background(Color.clear.ignoresSafeArea())
         .navigationTitle("Seerr")
         .task {
             viewModel.load(from: seerrService)

@@ -23,7 +23,7 @@ struct DownloadsRootContent: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
 
             VStack(spacing: 16) {
                 if downloadedItems.isEmpty {
@@ -112,7 +112,7 @@ struct DownloadsRootContent: View {
     private var queueSheet: some View {
         NavigationStack {
             ZStack {
-                Color.cineramaBackground.ignoresSafeArea()
+                Color.clear.ignoresSafeArea()
 
                 VStack(spacing: 16) {
                     if downloadManager.queuedRecords.isEmpty {

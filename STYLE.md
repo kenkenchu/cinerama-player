@@ -29,7 +29,7 @@ light variants or restore the System/Light/Dark preference. Legacy saved
 
 | Token | Value | Purpose |
 | --- | --- | --- |
-| `cineramaBackground` | `#1D2D40` | Soft metallic-blue page/deck background |
+| `cineramaBackground` | `#1D2D40` | Window-glass tint and opaque accessibility fallback |
 | `cineramaSurface` | `#2D455F` | Raised metallic-blue cards, rows and bays |
 | `cineramaTextPrimary` | `#F2F2F7` | Titles and emphasized labels |
 | `cineramaTextSecondary` | `#B2C5D9` | Metadata and captions |
@@ -166,3 +166,11 @@ stacking glass effects. Native glass buttons retain system accessibility behavio
 the custom console explicitly uses an opaque surface under Reduce Transparency.
 The player transport keeps its verified compositing fill over native video;
 do not replace that fill with a backdrop-sampling effect.
+
+The main Mac window also uses a single translucent glass backdrop, owned by
+`CineramaWindowBackdrop` in `MacPlatform.swift`. A behind-window AppKit visual
+effect blurs the desktop; clear Liquid Glass adds the restrained metal-blue tint.
+The window container and catalog page backgrounds stay clear so opaque nested
+fills cannot hide it. Keep artwork scrims, raised bays and native form surfaces
+for readability. Reduce Transparency replaces the entire window backdrop with
+opaque `cineramaBackground`; playback video and letterboxing remain black.

@@ -17,3 +17,36 @@ extension Color {
     static let cineramaPrimaryActionLabel = metalBlue(0x1D2D40)
     static var cineramaPrimaryButtonTint: Color { .primary.opacity(0.7) }
 }
+
+/// One window-level backdrop; catalog screens stay clear rather than stacking
+/// opaque fills or multiple blur layers over the desktop.
+struct CineramaWindowBackdrop: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    var body: some View {
+        Group {
+            if reduceTransparency {
+                Color.cineramaBackground
+            } else {
+                CineramaDesktopMaterial()
+                    .glassEffect(.clear.tint(Color.cineramaBackground.opacity(0.28)), in: Rectangle())
+            }
+        }
+        .ignoresSafeArea()
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
+}
+
+private struct CineramaDesktopMaterial: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = .underWindowBackground
+        view.blendingMode = .behindWindow
+        view.state = .active
+        view.appearance = NSAppearance(named: .darkAqua)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}

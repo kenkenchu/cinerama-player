@@ -38,7 +38,7 @@ struct ContentView: View {
         .animation(.default, value: plexService.isAuthenticated)
         .animation(.default, value: plexService.homeBootstrapCompleted)
         .animation(.default, value: plexService.needsHomeUserSelection)
-        .background(Color.cineramaBackground.ignoresSafeArea())
+        .background(Color.clear.ignoresSafeArea())
 
         .task(id: plexService.isAuthenticated) {
             await bootstrapHomeIfNeeded()
@@ -82,7 +82,7 @@ struct ContentView: View {
 
     private var homeBootstrapView: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
 
             VStack(spacing: 18) {
                 if let homeBootstrapError {

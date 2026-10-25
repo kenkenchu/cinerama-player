@@ -38,7 +38,7 @@ struct HomeUserPickerView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color.cineramaBackground.ignoresSafeArea()
+                Color.clear.ignoresSafeArea()
 
                 if let pendingUser {
                     pinEntry(for: pendingUser)

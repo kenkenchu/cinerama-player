@@ -50,7 +50,7 @@ struct MainTabView: View {
             }
         }
         .frame(minWidth: 900, minHeight: 600)
-        .background(Color.cineramaBackground)
+        .background(Color.clear)
         .background {
             MacSearchEscapeHandler {
                 guard selection == .search, !playback.showPlayer else { return false }

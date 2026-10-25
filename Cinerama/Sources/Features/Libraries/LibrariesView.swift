@@ -46,7 +46,7 @@ struct LibrariesRootContent: View {
         if viewModel.libraries.isEmpty, !viewModel.availability.isReady {
             // Nothing to list and the cause is the servers, not this screen.
             ZStack {
-                Color.cineramaBackground.ignoresSafeArea()
+                Color.clear.ignoresSafeArea()
                 ServerAvailabilityStateView(availability: viewModel.availability)
             }
             .navigationTitle(libraryType.tabTitle)
@@ -76,7 +76,7 @@ struct LibrariesRootContent: View {
 
     private var loadingView: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
             FeatureLoadingView()
         }
         .navigationTitle(libraryType.tabTitle)
@@ -85,7 +85,7 @@ struct LibrariesRootContent: View {
 
     private func errorView(message: String) -> some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
             FeatureErrorView(message: message) {
                 Task { await viewModel.loadLibraries(force: true) }
             }
@@ -96,7 +96,7 @@ struct LibrariesRootContent: View {
 
     private var emptyView: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
             FeatureEmptyStateView(
                 systemImage: libraryType.systemImage,
                 title: "No \(libraryType.tabTitle) libraries found"
@@ -132,7 +132,7 @@ struct LibraryTypeListView: View {
             .padding(.bottom, 8)
         }
         .scrollIndicators(.hidden)
-        .background(Color.cineramaBackground.ignoresSafeArea())
+        .background(Color.clear.ignoresSafeArea())
         .navigationTitle(libraryType.tabTitle)
 
     }

@@ -21,7 +21,7 @@ struct SearchRootContent: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
 
             if let viewModel {
                 searchContent(viewModel)

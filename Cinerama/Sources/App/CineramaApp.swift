@@ -59,6 +59,8 @@ struct CineramaApp: App {
             .environment(offlinePlaybackSyncManager)
             .environment(userPreferences)
             .environment(analytics)
+            .background { CineramaWindowBackdrop() }
+            .containerBackground(.clear, for: .window)
             .preferredColorScheme(.dark)
             .task {
                 analytics.recordAppOpenedIfNeeded()

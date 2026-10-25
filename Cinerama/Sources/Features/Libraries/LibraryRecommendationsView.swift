@@ -42,7 +42,7 @@ struct LibraryRecommendationsView: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
 
             if !viewModel.hasLoadedOnce,
                viewModel.error == nil,

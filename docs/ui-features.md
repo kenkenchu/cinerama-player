@@ -312,3 +312,12 @@ prominent glass buttons; secondary detail actions use regular glass buttons.
 Home library bays use metallic-blue surfaces beneath the glass control layer.
 The player transport keeps its existing compositing fill. Compilation does not
 verify runtime contrast or appearance-switch behavior.
+
+The main window uses `CineramaWindowBackdrop` over a clear window container.
+Its single `NSVisualEffectView` samples behind the window, with a metal-blue
+clear Liquid Glass treatment. Catalog/auth/loading backgrounds are clear instead
+of stacking solid page fills; Home's static stars/grid remain over this backdrop.
+Reduce Transparency swaps in the opaque metal-blue background. Native forms,
+artwork fades and player surfaces retain their own readability/compositing fills.
+The signed Mac compile passed; desktop transparency and contrast need user visual
+verification, and agents did not launch the app or run tests.

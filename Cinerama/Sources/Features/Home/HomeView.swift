@@ -16,7 +16,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                Color.cineramaBackground.ignoresSafeArea()
+                Color.clear.ignoresSafeArea()
 
                 if let viewModel {
                     let hasHomeContent = viewModel.hasLoadedContent

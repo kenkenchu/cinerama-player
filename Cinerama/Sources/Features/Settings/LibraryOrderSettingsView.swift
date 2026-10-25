@@ -6,7 +6,7 @@ struct LibraryOrderSettingsView: View {
 
     var body: some View {
         content
-            .background(Color.cineramaBackground.ignoresSafeArea())
+            .background(Color.clear.ignoresSafeArea())
             .navigationTitle("Library Order")
 
             .task {

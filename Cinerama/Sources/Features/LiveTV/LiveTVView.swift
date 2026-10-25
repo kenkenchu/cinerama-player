@@ -29,7 +29,7 @@ struct LiveTVRootContent: View {
 
     var body: some View {
         ZStack {
-            Color.cineramaBackground.ignoresSafeArea()
+            Color.clear.ignoresSafeArea()
             if viewModel.isLoading, viewModel.lineup == nil {
                 FeatureLoadingView()
             } else if let error = viewModel.error, viewModel.lineup == nil {

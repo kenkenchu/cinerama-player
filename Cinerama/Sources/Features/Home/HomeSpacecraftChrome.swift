@@ -4,7 +4,7 @@ import SwiftUI
 /// or accessibility, and has no animation loop while Home is idle.
 struct HomeDeckBackground: View {
     var body: some View {
-        Color.cineramaBackground
+        Color.clear
             .overlay {
                 Canvas { context, size in
                     // Deterministic, sparse points rather than animated particles.
