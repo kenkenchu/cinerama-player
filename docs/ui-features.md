@@ -208,6 +208,15 @@ and subtitle selection use the native menus in `PlayerView`; the old shared
 selection sheet and standalone playback-info views have been removed. Auto-hide
 is gated by live playback/scrub/hover state, not unused sheet-presentation flags.
 
+Unmodified Space toggles playback anywhere in the focused player window while
+the pointer is inside it, independent of the focused control or hidden controls.
+`MacPlaybackSpaceHandler` intercepts the key at the AppKit window boundary and
+calls the same view-model action as Play/Pause. It consumes key repeats without
+toggling again, leaves modified shortcuts and attached sheets alone, follows
+the current window during fullscreen reparenting, and removes its monitor when
+the player is dismantled. This is Mac keyboard/pointer behavior; TV retains its
+native remote transport controls.
+
 Scrubbing previews locally and commits one seek on release. Audio and subtitle
 menus use shared selection methods. Playback stays at original quality: no
 server-conversion Quality menu is exposed. Undecodable audio choices show a

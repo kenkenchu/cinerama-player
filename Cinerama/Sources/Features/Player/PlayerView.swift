@@ -120,6 +120,11 @@ private struct MacPlayerSession: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background {
+            MacPlaybackSpaceHandler { model.togglePlayPause() }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
         .overlay(alignment: .topTrailing) {
             if showsDebugInfo {
                 debugOverlay
@@ -223,7 +228,6 @@ private struct MacPlayerSession: View {
                     .keyboardShortcut(.leftArrow, modifiers: [])
                     .help("Back 10 Seconds (←)")
                 Button(model.state == .playing ? "Pause" : "Play", systemImage: model.state == .playing ? "pause.fill" : "play.fill") { model.togglePlayPause() }
-                    .keyboardShortcut(.space, modifiers: [])
                     .help(model.state == .playing ? "Pause (Space)" : "Play (Space)")
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
@@ -420,5 +424,61 @@ private struct MacPlayerSession: View {
         model.transcodeAudioFallbackHandler = { track in Task { await playback.transcodeForUndecodableAudio(track) } }
         model.plexTrackSelectionHandler = { audio, subtitle in playback.selectPlexStreamsForPlayback(audioStreamID: audio, subtitleStreamID: subtitle) }
         model.startPlaybackIfNeeded(source: source)
+    }
+}
+
+/// Catch Space before a focused slider/button (or the mounted catalog beneath
+/// the player) consumes it. Resolve the current window after fullscreen reparenting.
+private struct MacPlaybackSpaceHandler: NSViewRepresentable {
+    let togglePlayback: () -> Void
+
+    func makeCoordinator() -> Coordinator { Coordinator(togglePlayback: togglePlayback) }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.attach(to: view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.togglePlayback = togglePlayback
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.removeMonitor()
+    }
+
+    @MainActor
+    final class Coordinator {
+        var togglePlayback: () -> Void
+        private weak var view: NSView?
+        private var monitor: Any?
+
+        init(togglePlayback: @escaping () -> Void) {
+            self.togglePlayback = togglePlayback
+        }
+
+        func attach(to view: NSView) {
+            self.view = view
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                let handled = MainActor.assumeIsolated {
+                    guard let self, event.keyCode == 49,
+                          event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                          let window = self.view?.window,
+                          event.window === window, window.isKeyWindow,
+                          window.attachedSheet == nil,
+                          window.frame.contains(NSEvent.mouseLocation) else { return false }
+                    // Holding Space must not repeatedly alternate play and pause.
+                    if !event.isARepeat { self.togglePlayback() }
+                    return true
+                }
+                return handled ? nil : event
+            }
+        }
+
+        func removeMonitor() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
     }
 }
