@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct HomeCinematicHeroLayout {
@@ -87,6 +88,7 @@ struct HomeCinematicHero: View {
     var secondaryAction: ((PlexItem, HomeCinematicHeroCallbacks) -> AnyView)? = nil
     var detailsAction: ((PlexItem) -> Void)? = nil
 
+    @State private var isHeroVisible = false
     @State private var currentHeroIndex = Self.initialHeroIndex
     @State private var heroRotationRevision = 0
     @State private var isHeroRotationPaused = false
@@ -176,6 +178,19 @@ struct HomeCinematicHero: View {
         .frame(maxWidth: .infinity)
         .clipped()
         .contentShape(Rectangle())
+        .background {
+            HomeHeroArrowKeys { showsPrevious in
+                guard isHeroVisible, items.count > 1, !playback.showPlayer,
+                      scenePhase == .active, !isHeroDragging,
+                      heroDragTargetIndex == nil else { return false }
+                if showsPrevious { showPreviousHero() }
+                else { showNextHero() }
+                return true
+            }
+            .allowsHitTesting(false)
+        }
+        .onAppear { isHeroVisible = true }
+        .onDisappear { isHeroVisible = false }
         .onChange(of: heroItemIDs) { _, ids in
             guard !ids.isEmpty else {
                 resetHeroSelection(restartRotation: false)
@@ -1032,4 +1047,59 @@ private struct PendingHeroTransition {
 private enum HeroSlideRole {
     case outgoing
     case incoming
+}
+
+/// The hero responds to unmodified arrows under the pointer without taking
+/// keyboard focus from native controls or installing global keyboard shortcuts.
+private struct HomeHeroArrowKeys: NSViewRepresentable {
+    let navigate: (Bool) -> Bool
+
+    func makeCoordinator() -> Coordinator { Coordinator(navigate: navigate) }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.attach(to: view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.navigate = navigate
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.removeMonitor()
+    }
+
+    @MainActor
+    final class Coordinator {
+        var navigate: (Bool) -> Bool
+        private weak var view: NSView?
+        private var monitor: Any?
+
+        init(navigate: @escaping (Bool) -> Bool) { self.navigate = navigate }
+
+        func attach(to view: NSView) {
+            self.view = view
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                let handled = MainActor.assumeIsolated {
+                    guard let self, event.keyCode == 123 || event.keyCode == 124,
+                          event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                          let view = self.view, !view.isHiddenOrHasHiddenAncestor,
+                          let window = view.window, event.window === window,
+                          window.isKeyWindow, window.attachedSheet == nil,
+                          !(window.firstResponder is NSTextView),
+                          !(window.firstResponder is NSTextField) else { return false }
+                    let point = view.convert(window.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+                    guard view.visibleRect.contains(point) else { return false }
+                    return self.navigate(event.keyCode == 123)
+                }
+                return handled ? nil : event
+            }
+        }
+
+        func removeMonitor() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+        }
+    }
 }

@@ -285,3 +285,12 @@ and disabled beneath windowed playback. Detached fullscreen keeps the catalog
 window's console visible. `MacPlaybackHost` and its fullscreen/Escape handling
 are unchanged. Runtime checks should cover all eight instruments, the Navigate
 menu/shortcuts, narrow-window instruments, back navigation and return from playback.
+
+While the pointer is inside the visible Home hero, unmodified Left/Right arrows
+select the previous/next featured item through the same transition and rotation
+reset as the existing hero actions, including wraparound. `HomeHeroArrowKeys`
+checks its hosting window and clipped visible bounds rather than moving keyboard
+focus. It passes keys through outside the hero, while editing text, while a sheet
+is attached, during a drag, off Home or during playback. The local event monitor
+is removed with its view. Runtime verification should include hover over both
+artwork and the information panel, scroll-off, text entry, and player seeking.
