@@ -115,6 +115,26 @@ targets:
     dependencies:
       - target: Cinerama-macOS
 
+  CineramaTVTests:
+    type: bundle.unit-test
+    platform: tvOS
+    sources:
+      - path: CineramaTVTests
+      - path: CineramaTests/HomeHubArrangementTests.swift
+      - path: CineramaTests/LibraryUnwatchedFilterTests.swift
+      - path: CineramaTests/PlexMediaPartDecodingTests.swift
+    settings:
+      base:
+        ARCHS: arm64
+        PRODUCT_BUNDLE_IDENTIFIER: com.cinerama-player.tv.tests
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: "$(CINERAMA_TVOS_TEAM)"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Cinerama.app/Cinerama"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        TARGETED_DEVICE_FAMILY: "3"
+    dependencies:
+      - target: Cinerama-tvOS
+
 schemes:
   Cinerama-macOS:
     build:
@@ -135,5 +155,9 @@ schemes:
         Cinerama-tvOS: all
     run:
       config: Debug
+    test:
+      config: Debug
+      targets:
+        - CineramaTVTests
     archive:
       config: Release

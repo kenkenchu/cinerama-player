@@ -36,8 +36,8 @@ final class TVPlaybackCoordinator {
     private var startupTask: Task<Void, Never>?
     private var timeoutTask: Task<Void, Never>?
     private var endObserver: NSObjectProtocol?
-    private var started = false
-    private var stopped = false
+    private(set) var started = false
+    private(set) var stopped = false
     private var remuxAttempted = false
     private var readyItem: AVPlayerItem?
     private var canReport = false
@@ -52,7 +52,7 @@ final class TVPlaybackCoordinator {
     }
 
     func start() {
-        guard !started else { return }
+        guard !started, !stopped else { return }
         started = true
         transportObservation = player.observe(\.timeControlStatus, options: [.new]) { [weak self] _, _ in
             Task { @MainActor [weak self] in
@@ -106,16 +106,8 @@ final class TVPlaybackCoordinator {
                     await service.stopTranscodeSession(transcodeSessionID: id, serverID: details.serverID)
                     return
                 }
-                guard case .transcodeAvailable = result.outcome, result.streams.isLosslessRemux else {
-                    throw TVPlaybackFailure.unsupported("Plex could not offer a copy-only HLS stream for this file. Server video/audio conversion is disabled. Try another HD title or version.")
-                }
-                if choice.subtitle != nil {
-                    guard result.streams.subtitleLocation == "segments-subs",
-                          result.streams.subtitleDecision != "burn",
-                          result.streams.subtitleDecision != "ignore" else {
-                        throw TVPlaybackFailure.unsupported("Plex did not provide the selected subtitle as a separate text track. Video/audio conversion and subtitle burning are disabled. Try another text subtitle or Off.")
-                    }
-                }
+                try Self.validateRemux(outcome: result.outcome, streams: result.streams,
+                                       hasSubtitle: choice.subtitle != nil)
                 url = result.url
                 route = "Direct Stream · Video copy · Audio copy"
             } else {
@@ -176,6 +168,21 @@ final class TVPlaybackCoordinator {
             if let id = transcodeID {
                 transcodeID = nil
                 await service.stopTranscodeSession(transcodeSessionID: id, serverID: details.serverID)
+            }
+        }
+    }
+
+    static func validateRemux(outcome: PlexService.TranscodeDecisionOutcome,
+                              streams: PlexService.TranscodeStreamDecisions,
+                              hasSubtitle: Bool) throws {
+        guard case .transcodeAvailable = outcome, streams.isLosslessRemux else {
+            throw TVPlaybackFailure.unsupported("Plex could not offer a copy-only HLS stream for this file. Server video/audio conversion is disabled. Try another HD title or version.")
+        }
+        if hasSubtitle {
+            guard streams.subtitleLocation == "segments-subs",
+                  streams.subtitleDecision != "burn",
+                  streams.subtitleDecision != "ignore" else {
+                throw TVPlaybackFailure.unsupported("Plex did not provide the selected subtitle as a separate text track. Video/audio conversion and subtitle burning are disabled. Try another text subtitle or Off.")
             }
         }
     }

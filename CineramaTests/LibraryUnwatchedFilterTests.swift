@@ -1,6 +1,10 @@
 import Foundation
 import Testing
+#if os(tvOS)
+@testable import CineramaTV
+#else
 @testable import Cinerama
+#endif
 
 /// The library grid's Unwatched filter: the Plex parameter per library type,
 /// how it combines with collection and genre filters, and the per-library

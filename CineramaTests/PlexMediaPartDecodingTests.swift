@@ -1,6 +1,10 @@
 import Foundation
 import Testing
+#if os(tvOS)
+@testable import CineramaTV
+#else
 @testable import Cinerama
+#endif
 
 @Suite("Plex media part decoding")
 struct PlexMediaPartDecodingTests {

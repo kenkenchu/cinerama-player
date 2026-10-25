@@ -36,7 +36,8 @@ CineramaTV/Sources/     TV app/auth gate, tab shell, artwork, Home/search, libra
                     TVStreamResolver, TVPlaybackCoordinator, scoped track preferences,
                     native AVKit host and system-caption adapter
 Native/CineramaDovi/     Mac Rust Dolby Vision conversion crate and C header
-CineramaTests/          Retained shared model/service tests hosted by the Mac app
+CineramaTests/          Mac/shared unit tests, playback and native window attachment regressions
+CineramaTVTests/        TV resolver, copy-only policy, track preferences, playback lifecycle/delegate tests
 ```
 
 ## App Lifetime and Navigation
@@ -129,3 +130,11 @@ TV Home presentation and direct hero playback live in `TVHomeView`,
 The existing Mac Home view/layout code remains platform-owned. Shared genre
 models, library identity hashing and watched-action availability were extracted
 from Mac files without changing their definitions.
+
+## Automated Test Targets
+
+Both maintained schemes include hosted unit tests. TV compiles its own test
+tree and three explicitly shared test files against `CineramaTV`; conditional
+module imports exist only in those test files. The platform-boundary gate also
+checks test membership. See [Automated testing](testing.md) for commands and
+coverage; manual visual inspection remains user-owned.

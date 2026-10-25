@@ -38,15 +38,10 @@ or runs tests. Output: `.build/macos/DerivedData/Build/Products/Debug/Cinerama.a
 The supported app is arm64 on macOS 26+. Only the desktop VLC framework and
 `macos-arm64` CineramaDovi slice are needed. `CineramaTests` is a native hosted test target
 for retained model/service tests. Automated tests are now part of the routine
-agent gate after code changes. Run the Mac scheme's test action with the same
-Apple Development identity and derived-data directory as the signed build:
-
-```bash
-xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Debug \
-  -destination 'platform=macOS,arch=arm64' -derivedDataPath .build/macos/DerivedData \
-  CODE_SIGNING_ALLOWED=YES CODE_SIGN_STYLE=Manual \
-  "CODE_SIGN_IDENTITY=${CINERAMA_MACOS_SIGNING_IDENTITY}" test
-```
+agent gate after code changes. Run `scripts/test_macos.sh` with the same Apple
+Development identity as the signed build; TV has `scripts/test_tvos.sh` for the
+paired device. See [Automated testing](testing.md) for both commands, test scope,
+source boundaries and execution requirements.
 
 The hosted test process is authorized for automated verification. Manual app
 launches and visual inspection are left to the user. A passing test suite does

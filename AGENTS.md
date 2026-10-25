@@ -104,8 +104,12 @@ steps in `docs/development-workflow.md`. Never commit private keys or certificat
 
 After code changes, complete this signed, compile-only Mac build before
 finishing. TV, shared-source and project changes also require the signed
-`scripts/build_tvos.sh` build (see `docs/tvos-prototype.md`). The Mac build verifies nested signatures and the embedded VLC binary. Run automated tests after code changes, using the Mac scheme's hosted unit-test
-suite for applicable shared/Mac logic and any platform-specific automated checks.
+`scripts/build_tvos.sh` build (see `docs/tvos-prototype.md`). The Mac build verifies
+nested signatures and the embedded VLC binary. Run automated tests after code
+changes with `scripts/test_macos.sh` and `scripts/test_tvos.sh`; see
+`docs/testing.md` for signing, device requirements and coverage. Run both suites
+for shared/project/cross-platform changes and the applicable suite for
+platform-specific behavior. Do not silently skip unavailable device tests.
 The user has authorized automated test execution, including its required test host.
 Do not manually launch apps or perform visual inspection; the user handles visual
 and device interaction verification.
@@ -232,9 +236,11 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
   diagnostics contract, Mac-only forwarding wrappers, and upstream website/mobile
   screenshot assets. Historical Markdown stays under `docs/upstream/`; the
   current player menus, overlay, subtitle search, and native build inputs remain.
-- Latest window-sequence changes passed both signed builds and 18 focused
-  automated tests. The full Mac suite ran 177 tests with four assertion failures
-  in three existing HDR/Dolby Vision test areas; see `docs/ui-features.md`.
+- Automated baseline: 178 Mac tests and 32 TV tests pass (2026-10-25), with TV
+  execution on the paired Apple TV HD. Both signed builds pass. The earlier
+  HDR/Dolby Vision assertion failures have been resolved; see `docs/testing.md`.
+  `CineramaTVTests` covers TV resolver/copy-only policy, remembered tracks,
+  stopped-session cleanup and native Back dismissal, plus shared library tests.
   Automated hosted tests are authorized; manual/visual verification is user-owned.
   Basic user-confirmed playback is not HDR/Atmos fidelity, offline, or
   comprehensive subtitle runtime verification.

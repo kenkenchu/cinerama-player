@@ -45,16 +45,16 @@ enum TVTrackPreferences {
         return "tv.track.v1." + data.base64EncodedString()
     }
 
-    static func remember(_ stream: PlexStream?, kind: String, details: PlexMediaDetails, profile: String?) {
+    static func remember(_ stream: PlexStream?, kind: String, details: PlexMediaDetails, profile: String?, defaults: UserDefaults = .standard) {
         guard let key = key(details: details, profile: profile, kind: kind),
               let data = try? JSONEncoder().encode(Track(stream)) else { return }
-        UserDefaults.standard.set(data, forKey: key)
+        defaults.set(data, forKey: key)
     }
 
     /// Outer optional distinguishes no preference from an explicit Off choice.
-    static func selection(kind: String, streams: [PlexStream], details: PlexMediaDetails, profile: String?) -> Int?? {
+    static func selection(kind: String, streams: [PlexStream], details: PlexMediaDetails, profile: String?, defaults: UserDefaults = .standard) -> Int?? {
         guard let key = key(details: details, profile: profile, kind: kind),
-              let data = UserDefaults.standard.data(forKey: key),
+              let data = defaults.data(forKey: key),
               let preference = try? JSONDecoder().decode(Track.self, from: data) else { return nil }
         return .some(preference.matching(streams)?.id)
     }

@@ -66,6 +66,19 @@ violations += [f"TV includes Mac UI/engine input: {path}" for path in tv
 violations += [f"TV includes Mac resources: {path}" for path in tv_resources if path.startswith("Cinerama/")]
 violations += [f"TV links desktop dependency: {path}" for path in files("Cinerama-tvOS", "PBXFrameworksBuildPhase")
                if Path(path).name in {"VLCKit.xcframework", "CineramaDovi.xcframework"}]
+shared_tests = {
+    "CineramaTests/HomeHubArrangementTests.swift",
+    "CineramaTests/LibraryUnwatchedFilterTests.swift",
+    "CineramaTests/PlexMediaPartDecodingTests.swift",
+}
+violations += [f"App compiles test input: {path}" for path in mac | tv
+               if path.startswith(("CineramaTests/", "CineramaTVTests/"))]
+violations += [f"Mac tests include TV-only input: {path}"
+               for path in files("CineramaTests", "PBXSourcesBuildPhase")
+               if path.startswith(("CineramaTV/", "CineramaTVTests/"))]
+violations += [f"TV tests include unapproved input: {path}"
+               for path in files("CineramaTVTests", "PBXSourcesBuildPhase")
+               if not (path.startswith("CineramaTVTests/") or path in shared_tests)]
 if violations:
     raise SystemExit("Platform source boundaries failed:\n" + "\n".join(violations))
 print(f"Platform boundaries verified: {len(mac)} Mac sources, {len(tv)} TV/shared sources.")

@@ -360,9 +360,9 @@ fresh state after dismissal/Resume. AppKit attachment tests additionally verify
 host identity and layout through reparenting, inline-container replacement, and
 retired-host teardown after a new presentation. The focused run passed all 18
 tests across the two window suites and playback recovery suite. Both signed
-builds passed. The full suite also exposes existing failures in Dolby Vision
-playlist dimensions, empty-RPU error classification, and 10-bit H.264 engine
-expectations; those unrelated production paths are unchanged by this fix.
+builds passed. The later cross-platform testing checkpoint resolved the earlier
+Dolby Vision/10-bit H.264 assertion failures; all 178 Mac tests now pass.
+See [Automated testing](testing.md) for the current Mac/TV coverage baseline.
 These checks do not prove rendered video.
 The user should retry fullscreen → Escape → windowed playback, then close and
 Resume, for both playing and paused sessions; visual inspection is user-owned.

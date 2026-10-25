@@ -117,6 +117,14 @@ above. The installed bundle is `com.cinerama-player.tv`. This checkpoint verifie
 the signed build and installation only; the app was not launched and tests were
 not run.
 
+## Automated Tests
+
+The `Cinerama-tvOS` scheme now includes the hosted `CineramaTVTests` target.
+With the same verified team/device values above, run `scripts/test_tvos.sh`.
+The 32-test TV suite passed on this Apple TV HD; the Mac suite passed all 178
+tests. See [Automated testing](testing.md) for coverage, signing and limitations.
+Tests run through Xcode without manual visual inspection or actual media playback.
+
 ## User End-to-End Check
 
 1. Open Cinerama on Apple TV and allow Local Network access if requested.

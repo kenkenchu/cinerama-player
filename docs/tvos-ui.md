@@ -127,6 +127,13 @@ Never expose media/artwork URLs, tokens or credentials in these diagnostics.
 
 ## Verification
 
+`CineramaTVTests` runs against the actual TV module on the paired Apple TV HD.
+Resolver/copy-only policies, semantic track persistence, terminal playback
+cleanup, native Back delegation and selected shared library/data contracts have
+automated coverage. See [Automated testing](testing.md) for signed commands and
+the current passing baseline. This does not validate focus traversal or captions
+visually.
+
 Run both signed builds and the generated-project platform-boundary check.
 The build scripts run this structural check automatically after XcodeGen.
 Install the signed TV build on Apple TV HD for user verification. Agents run automated tests; manual app launches and visual inspection are

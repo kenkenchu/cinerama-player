@@ -158,7 +158,7 @@ struct DolbyVision7PlaylistTests {
         #expect(target.convertedFromProfile == 7)
         #expect(target.supplementalCodecString == "dvh1.08.06/db1p")
         #expect(target.displayName == "Dolby Vision 8.1 (from profile 7)")
-        #expect(target.lumaPictureSize == 3840 * 2160)
+        #expect(target.lumaPictureSize == 8_294_400.0)
         #expect(target.bitrateKbps == 20_000)
     }
 

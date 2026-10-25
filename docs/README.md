@@ -8,6 +8,7 @@ then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
 | --- | --- |
 | [Product and scope](product-and-scope.md) | Supported Mac/TV hardware, feature scope, privacy, licensing |
 | [Codebase map](codebase-map.md) | Source ownership and extension points |
+| [Automated testing](testing.md) | Mac/TV test targets, signed commands, coverage and limitations |
 | [Development workflow](development-workflow.md) | Mac bootstrap, signing, verification, and independent development |
 | [Icon design](icon-design.md) | Cinerama West Coast master, native packaging and generation prompt |
 | [UI features](ui-features.md) | Instrument console, native player, reusable UI, and settings |

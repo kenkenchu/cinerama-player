@@ -118,7 +118,6 @@ struct VideoEnhancementSubtitleTests {
     }
 
     @Test(arguments: [
-        #","bitDepth":10"#,
         #","colorTrc":"smpte2084""#,
         #","bitDepth":8,"colorTrc":"arib-std-b67""#,
         #","bitDepth":8,"profile":"HDR10+""#,
@@ -137,6 +136,15 @@ struct VideoEnhancementSubtitleTests {
         for mode: VideoEnhancementMode in [.automatic, .enabled] {
             let decision = directDecision(media, mode: mode, subtitleID: 3)
             #expect(decision.engine == .avPlayer)
+            #expect(!decision.usesEnhancedSubtitleRenderer)
+        }
+    }
+
+    @Test func tenBitH264RequiresVLCRegardlessOfEnhancementMode() throws {
+        let media = try engineSelectionMedia(videoFields: #","bitDepth":10"#)
+        for mode: VideoEnhancementMode in [.disabled, .automatic, .enabled] {
+            let decision = directDecision(media, mode: mode, subtitleID: 3)
+            #expect(decision.engine == .vlcKit)
             #expect(!decision.usesEnhancedSubtitleRenderer)
         }
     }

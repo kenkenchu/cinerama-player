@@ -10,6 +10,9 @@ enum DoviBridge {
     /// profile 8.1 (dovi_tool mode 2). Returns the converted NAL with its
     /// header, the source profile and the source enhancement-layer type.
     static func convertRPUNAL(_ nal: Data) throws -> (Data, Int, DolbyVisionELType) {
+        // Empty Data may expose a non-null base pointer; classify it consistently
+        // before crossing the C ABI rather than depending on that pointer value.
+        guard !nal.isEmpty else { throw DolbyVision7ConversionError.invalidArgument }
         var capacity = nal.count + 1024
         while true {
             var output = Data(count: capacity)
