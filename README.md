@@ -1,8 +1,10 @@
 # Cinerama for Mac and Apple TV
 
-Formerly Dusk Player. Native **macOS and tvOS Plex clients**, maintained in
-[kenkenchu/dusk-player-mac](https://github.com/kenkenchu/dusk-player-mac), forked
-from [marvinvr/dusk-player](https://github.com/marvinvr/dusk-player).
+Cinerama is an independently developed **macOS and tvOS Plex client** with a
+cinematic spacecraft-inspired Mac interface, maintained in
+[kenkenchu/dusk-player-mac](https://github.com/kenkenchu/dusk-player-mac).
+It follows its own product, design and engineering direction; ongoing upstream
+synchronization is not part of the development workflow.
 
 This repository targets the user's **Apple silicon Mac on macOS 26+** and
 **Apple TV HD (A8) on tvOS 26+**, currently running tvOS 26.6. The platforms share
@@ -32,7 +34,7 @@ continuous play, downloads/offline sync, Live TV channel browsing/playback,
 optional Seerr requests, native window/fullscreen and keyboard/pointer controls,
 and supported Metal/HDR/Dolby Vision paths. These Mac capabilities remain intact.
 TV Live TV, VLC and continuous play are later milestones. There is no App Store
-release or iOS target for this fork.
+release or iOS target for this project.
 
 ## Build and Install
 
@@ -61,7 +63,7 @@ xcrun devicectl device install app --device YOUR_DEVICECTL_ID \
   .build/tvos/DerivedData/Build/Products/Debug-appletvos/Cinerama.app
 ```
 
-Open **Dusk** on the TV, permit Local Network access and link at `plex.tv/link`.
+Open **Cinerama** on the TV, permit Local Network access and link at `plex.tv/link`.
 See [TV device workflow](docs/tvos-prototype.md) for provisioning and verification.
 Build scripts never launch either app or run tests.
 
@@ -72,18 +74,29 @@ See [documentation](docs/README.md), [workflow](docs/development-workflow.md),
 `project.yml` is authoritative; XcodeGen generates the project. Both build
 scripts enforce UI/dependency separation with
 `scripts/verify_platform_boundaries.py`. Preserve Mac signing, input and layout
-when changing shared logic. Report fork issues in
+when changing shared logic. Report Cinerama issues in
 [this repository](https://github.com/kenkenchu/dusk-player-mac/issues).
+
+## Origins and Acknowledgments
+
+Cinerama began as a fork of [Dusk Player](https://github.com/marvinvr/dusk-player),
+created by [Marvin von Rappard](https://github.com/marvinvr), and builds on the
+work of its contributors. Thank you for the original Plex client and the
+foundation that made Cinerama possible.
+
+Cinerama is now developed independently. The original Git history, copyright
+notice and license are preserved; the original project is credited here as its
+origin, not tracked as an ongoing upstream dependency.
 
 ## License
 
-Dusk is released under the [MIT License](LICENSE). Upstream attribution and
-license notices are preserved.
+Cinerama retains the [MIT License](LICENSE), including the original copyright
+notice. Third-party license notices are also preserved.
 
 Mac playback uses desktop [VLCKit](https://code.videolan.org/videolan/VLCKit),
 licensed under LGPL v2.1 and linked dynamically. Dolby Vision profile 7 conversion
 uses quietvoid's MIT-licensed `dolby_vision` crate and its MIT-compatible
 dependencies, linked statically. Notices ship in
 [Dusk/Resources/ThirdPartyNotices.txt](Dusk/Resources/ThirdPartyNotices.txt).
-TV currently uses system frameworks only. Dusk is not affiliated with or
+TV currently uses system frameworks only. Cinerama is not affiliated with or
 certified by Plex or Dolby Laboratories.

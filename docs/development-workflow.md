@@ -146,26 +146,25 @@ The unsigned product is only a compiler check. Rebuild with the signing script
 before handing an app to the user. Do not launch the app or run tests unless
 explicitly requested. Docs-only edits need link/reference and diff checks.
 
-## Maintaining the Fork
+## Independent Cinerama Development
 
-`origin` is `git@github.com:kenkenchu/dusk-player-mac.git`; `upstream` is
-`git@github.com:marvinvr/dusk-player.git`. New fork work is committed and pushed
-to `origin` on the current branch, normally `main`.
+`origin` is `git@github.com:kenkenchu/dusk-player-mac.git`, the sole development
+remote. Work on `main` unless the user requests a separate branch, and commit
+and push completed changes after the required verification.
 
-Start with a clean tree, then review and merge upstream changes deliberately:
+Cinerama originated from `marvinvr/dusk-player` and follows its own roadmap.
+There is no routine upstream fetch/merge workflow. Do not add an upstream remote
+or synchronize with the original project unless the user explicitly requests
+it. Existing Git ancestry is retained for provenance and rollback; independent
+development does not require rewriting history. Credit belongs in README's
+Origins and Acknowledgments, and original copyright/license notices stay intact.
+Local Git remotes and GitHub's hosted fork-network relationship are separate;
+changing the local workflow does not detach the hosted repository from a fork
+network.
 
-```bash
-git fetch upstream
-git merge upstream/main
-./scripts/build_macos.sh
-git push origin main
-```
-
-Resolve shared Swift/project conflicts while preserving the Mac-only scope;
-do not restore removed mobile targets or deployment workflows. Do not force-push
-shared `main` or push fork-specific work to `upstream`. Inspect the complete diff
-before publishing, keep unrelated work out, and never commit frameworks, local
-builds, auth tokens, signing credentials, or machine-specific files.
+Start with a clean tree and inspect the complete diff before publishing. Keep
+unrelated work out and never force-push shared `main`. Never commit frameworks,
+local builds, auth tokens, signing credentials or machine-specific files.
 
 ## Two-Platform Build Gate
 

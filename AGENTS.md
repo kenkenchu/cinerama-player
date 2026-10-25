@@ -1,7 +1,9 @@
-# Dusk Player — macOS and tvOS Agent Instructions
+# Cinerama — macOS and tvOS Agent Instructions
 
-This fork, `kenkenchu/dusk-player-mac`, maintains native **macOS and tvOS** Plex
-clients for the user’s Apple silicon Mac and Apple TV HD.
+Cinerama, maintained in `kenkenchu/dusk-player-mac`, is an independent native
+**macOS and tvOS** Plex client for the user's Apple silicon Mac and Apple TV HD.
+It originated from `marvinvr/dusk-player`, credited in README.md, but no longer
+tracks or routinely synchronizes with that project.
 Read this file before planning, editing, committing, or pushing. Read
 `AGENTS.local.md` immediately afterward if it exists. Then read
 `docs/product-and-scope.md`, `docs/codebase-map.md`, and the relevant topic guide
@@ -19,7 +21,7 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   fullscreen, and Local Network permission handling.
 - Historical mobile targets, simulator helpers, TV extensions, and mobile VLC
   frameworks were removed. Maintaining tvOS does not authorize restoring
-  those components when merging upstream updates.
+  those components in future development.
 - `docs/upstream/` contains historical platform references, not active workflow
   requirements. Do not apply archived mobile verification or publishing steps.
 
@@ -212,11 +214,13 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for DuskDovi.
   whenever explicitly requested. This is the user's standing preference.
 - Check `git status --short` before editing and finishing. Preserve unrelated
   changes; do not revert, stage, or publish another contributor's work.
-- `origin` is `kenkenchu/dusk-player-mac`; `upstream` is `marvinvr/dusk-player`.
-  Commit and push fork work to `origin` on the current branch unless directed
-  otherwise. Never force-push shared `main` or push fork changes to `upstream`.
-- Review incoming upstream changes, resolve conflicts deliberately, regenerate
-  the project, and verify the Mac build before pushing a merge.
+- `origin` is `kenkenchu/dusk-player-mac`, the sole development remote. Work on
+  `main` unless the user requests a separate branch. Commit and push completed
+  work to `origin`; never force-push shared `main`.
+- Cinerama follows its own direction. Do not add an upstream remote, fetch or
+  merge the original project's changes, or restore upstream-sync workflows
+  unless the user explicitly requests it. Preserve the original Git history,
+  README credit and license/copyright notices.
 - Keep focused docs operational: responsibilities, flow, invariants, extension
   points, traps, and verification. Update matching docs with meaningful changes.
 - Docs-only changes need link/reference and diff checks, not a build. If docs

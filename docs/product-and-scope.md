@@ -3,7 +3,9 @@
 ## Product Shape
 
 Cinerama (formerly Dusk Player) is a native macOS/tvOS Plex client maintained in
-`kenkenchu/dusk-player-mac`, forked from `marvinvr/dusk-player`. It is a
+`kenkenchu/dusk-player-mac`. It originated from `marvinvr/dusk-player` and is now
+developed independently without routine upstream synchronization. Original
+credits and license notices are preserved. It is a
 two-platform project for people who want focused access to their own Plex
 libraries without promoted content or extra service layers.
 

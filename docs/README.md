@@ -1,4 +1,4 @@
-# Dusk Player Documentation
+# Cinerama Documentation
 
 These are the active guides for the maintained **macOS and tvOS** clients. Read `AGENTS.md` first,
 then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
@@ -8,9 +8,9 @@ then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
 | --- | --- |
 | [Product and scope](product-and-scope.md) | Supported Mac/TV hardware, feature scope, privacy, licensing |
 | [Codebase map](codebase-map.md) | Source ownership and extension points |
-| [Development workflow](development-workflow.md) | Mac bootstrap, signing, verification, and fork updates |
+| [Development workflow](development-workflow.md) | Mac bootstrap, signing, verification, and independent development |
 | [Icon design](icon-design.md) | Cinerama West Coast master, native packaging and generation prompt |
-| [UI features](ui-features.md) | Sidebar, native player, reusable UI, and settings |
+| [UI features](ui-features.md) | Instrument console, native player, reusable UI, and settings |
 | [tvOS design](tvos-design.md) | TV target boundaries, Mac UI protection, initial HD scope and verification |
 | [tvOS UI](tvos-ui.md) | Native TV shell, artwork, tracks, captions, playback lifecycle and focus |
 | [tvOS Home](tvos-home.md) | Mac library Home feature mapping, shared data ownership, remote hero and actions |
