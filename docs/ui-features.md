@@ -38,7 +38,10 @@ Show/Hide Sidebar command is removed. Shared `AppNavigationRoute` values carry
 server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
 feature's stack. Switching destinations dismisses the active player; selecting
 the current instrument preserves its pushed route. Entering Search remembers
-the previous destination; Escape restores it and its saved path, including while
+the previous destination. The toolbar magnifying glass posts the same Search
+command as Cmd-F instead of pushing an independent Search route, so the toolbar,
+instrument and menu all share that return destination. Escape restores it and
+its saved path, including while
 the native search field owns focus. Repeated Search selection does not overwrite
 the return destination. The catalog-window Escape monitor ignores modified keys,
 other windows, attached sheets and active playback, leaving player dismissal and

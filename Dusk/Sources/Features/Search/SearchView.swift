@@ -64,7 +64,9 @@ struct SearchRootContent: View {
 
 struct SearchToolbarLink: View {
     var body: some View {
-        NavigationLink(value: AppNavigationRoute.search) {
+        Button {
+            NotificationCenter.default.post(name: .duskShowSearch, object: nil)
+        } label: {
             Image(systemName: "magnifyingglass")
                 .symbolRenderingMode(.monochrome)
                 .foregroundStyle(Color.primary)
