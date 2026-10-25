@@ -297,7 +297,15 @@ private struct MacPlayerSession: View {
         // a backdrop material can sample a different AppKit surface underneath.
         .background {
             RoundedRectangle(cornerRadius: 28)
-                .fill(.black.opacity(reduceTransparency ? 1 : 0.45))
+                .fill(.black.opacity(reduceTransparency ? 1 : 0.60))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 28)
+                        .strokeBorder(
+                            LinearGradient(colors: [.white.opacity(0.32), .white.opacity(0.05), .white.opacity(0.14)],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing),
+                            lineWidth: 0.75
+                        )
+                }
         }
         .foregroundStyle(.white)
         .environment(\.colorScheme, .dark)

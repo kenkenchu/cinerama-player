@@ -67,6 +67,7 @@ struct HomeCinematicHeroCallbacks {
 }
 
 struct HomeCinematicHero: View {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
     @Environment(\.displayScale) private var displayScale
     @Environment(\.scenePhase) private var scenePhase
@@ -341,7 +342,19 @@ struct HomeCinematicHero: View {
                 DuskHeroBackdropOverlay(style: layout.backdropOverlayStyle)
             }
 
-            VStack(alignment: heroContentHorizontalAlignment, spacing: 16) {
+            VStack(alignment: heroContentHorizontalAlignment, spacing: 20) {
+                HStack(spacing: 10) {
+                    Image(systemName: "play.rectangle.on.rectangle")
+                    Text(item.posterProgress == nil ? "FEATURED IN YOUR LIBRARY" : "CONTINUE WATCHING")
+                        .tracking(2)
+                }
+                .font(.system(.caption2, design: .monospaced, weight: .medium))
+                .foregroundStyle(.white.opacity(0.85))
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(.black.opacity(0.35), in: Capsule())
+                .overlay(Capsule().strokeBorder(.white.opacity(0.2), lineWidth: 0.75))
+
                 VStack(alignment: heroContentHorizontalAlignment, spacing: heroTitleBlockSpacing(for: item)) {
                     heroTitle(for: item, contentWidth: contentWidth)
 
@@ -378,6 +391,21 @@ struct HomeCinematicHero: View {
                     .padding(.top, layout.actionsTopPadding)
                     .padding(.bottom, layout.actionsBottomPadding)
             }
+            .padding(24)
+            .background {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(.black.opacity(reduceTransparency ? 1 : 0.38))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 28, style: .continuous)
+                            .strokeBorder(
+                                LinearGradient(colors: [.white.opacity(0.3), .white.opacity(0.03)],
+                                               startPoint: .topLeading, endPoint: .bottomTrailing),
+                                lineWidth: 0.75
+                            )
+                    }
+            }
+            .environment(\.colorScheme, .dark)
+            .frame(maxWidth: contentWidth + 48, alignment: .leading)
             .padding(.leading, contentLeadingInset + layout.contentHorizontalPadding)
             .padding(.trailing, contentTrailingInset + layout.contentHorizontalPadding)
             .padding(.bottom, reservesPagerSpace ? layout.contentBottomPaddingWithPager : layout.contentBottomPaddingWithoutPager)
@@ -433,11 +461,10 @@ struct HomeCinematicHero: View {
 
     private func heroTitleFallback(for item: PlexItem) -> some View {
         // When a show/movie has no title-logo artwork, the title renders as text.
-        // Force it white (rather than `Color.primary`) so it always reads against
-        // the dark hero backdrop, even in Light mode. Only this fallback title is
-        // affected — episode title, metadata, and summary keep `Color.primary`.
+        // Keep the title white against the dark panel. The panel also supplies
+        // a dark environment for episode title, metadata, summary and actions.
         Text(viewModel.displayTitle(for: item))
-            .font(.system(size: layout.titleFontSize, weight: .heavy, design: .rounded))
+            .font(.system(size: layout.titleFontSize, weight: .bold, design: .default))
             .foregroundStyle(Color.white)
             .lineLimit(3)
             .minimumScaleFactor(0.7)

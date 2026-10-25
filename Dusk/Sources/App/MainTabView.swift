@@ -78,11 +78,40 @@ struct MainTabView: View {
     /// NavigationStack root that may have a pushed detail destination.
     private var navigationShell: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            List(MacDestination.allCases, selection: $selection) { item in
-                Label(item.rawValue, systemImage: item.symbol).tag(item)
+            List(selection: $selection) {
+                Section("Discover") {
+                    ForEach([MacDestination.home, .movies, .shows, .videos, .liveTV]) { item in
+                        sidebarRow(item)
+                    }
+                }
+                Section("Workspace") {
+                    ForEach([MacDestination.search, .downloads, .settings]) { item in
+                        sidebarRow(item)
+                    }
+                }
             }
-            .navigationTitle("Dusk")
-            .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 260)
+            .listStyle(.sidebar)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack(spacing: 12) {
+                    Image(systemName: "circle.hexagongrid.fill")
+                        .font(.system(size: 25, weight: .ultraLight))
+                        .padding(10)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("DUSK")
+                            .font(.system(.title3, design: .rounded, weight: .bold))
+                            .tracking(5)
+                        Text("YOUR PRIVATE CINEMA")
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .padding(18)
+                .accessibilityElement(children: .combine)
+            }
+            .navigationTitle("")
+            .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 290)
         } detail: {
             if let libraries, let liveTV {
                 destination(selection ?? .home, libraries: libraries, liveTV: liveTV)
@@ -90,6 +119,18 @@ struct MainTabView: View {
                 ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    }
+
+    private func sidebarRow(_ item: MacDestination) -> some View {
+        Label {
+            Text(item.rawValue)
+                .font(.system(.body, weight: selection == item ? .semibold : .regular))
+        } icon: {
+            Image(systemName: item.symbol)
+                .symbolVariant(selection == item ? .fill : .none)
+        }
+        .padding(.vertical, 7)
+        .tag(item)
     }
 
     private func path(_ item: MacDestination) -> Binding<NavigationPath> {

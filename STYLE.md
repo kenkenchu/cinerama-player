@@ -82,3 +82,14 @@ window-resize inspection when the user authorizes a runtime check; a compiler
 check does not prove layout or contrast. Default agent verification does not
 launch the app. Historical styling is archived in `docs/upstream/STYLE.md` and
 is not the source of truth for this fork.
+
+## Futuristic Mac branch
+
+The `codex/futuristic-mac-ui` experiment keeps the neutral palette and native
+navigation, with a more architectural presentation: a typographic Dusk sidebar
+masthead, Discover/Workspace groups, ruled shelf headings, illuminated artwork
+edges, and a framed cinematic hero information panel. Hero copy always uses a
+dark environment over its black panel for contrast in either app appearance.
+Reduce Transparency makes that panel opaque. Artwork hover adds brightness and
+shadow without changing card geometry; Reduce Motion disables its animation.
+The player retains its native compositing fill with a fine neutral edge.
