@@ -25,6 +25,7 @@ struct MainTabView: View {
     @Environment(PlaybackCoordinator.self) private var playback
     @State private var playbackIsDetached = false
     @State private var selection: MacDestination = .home
+    @State private var destinationBeforeSearch: MacDestination = .home
     @State private var hoveredInstrument: MacDestination?
     @State private var paths: [MacDestination: NavigationPath] = [:]
     @State private var libraries: LibrariesViewModel?
@@ -49,6 +50,14 @@ struct MainTabView: View {
         }
         .frame(minWidth: 900, minHeight: 600)
         .background(Color.duskBackground)
+        .background {
+            MacSearchEscapeHandler {
+                guard selection == .search, !playback.showPlayer else { return false }
+                selection = destinationBeforeSearch
+                hoveredInstrument = nil
+                return true
+            }
+        }
         .task(id: plex.serverContentRevision) {
             if libraries == nil { libraries = LibrariesViewModel(plexService: plex) }
             if liveTV == nil { liveTV = LiveTVViewModel(plexService: plex) }
@@ -68,7 +77,10 @@ struct MainTabView: View {
                 playback.onPlayerDismissed()
             }
         }
-        .onChange(of: selection) { _, _ in
+        .onChange(of: selection) { previous, current in
+            if current == .search, previous != .search {
+                destinationBeforeSearch = previous
+            }
             if playback.showPlayer { playback.showPlayer = false }
         }
         .onReceive(NotificationCenter.default.publisher(for: .duskShowSearch)) { _ in
@@ -202,6 +214,57 @@ struct MainTabView: View {
         case .downloads: DownloadsView(path: path(.downloads))
         case .liveTV: LiveTVView(viewModel: liveTV, path: path(.liveTV))
         case .settings: SettingsView(path: path(.settings))
+        }
+    }
+}
+
+/// Handle Escape at the catalog window boundary so the search field's native
+/// cancel handling cannot consume it before navigation gets a chance.
+private struct MacSearchEscapeHandler: NSViewRepresentable {
+    let handleEscape: () -> Bool
+
+    func makeCoordinator() -> Coordinator { Coordinator(handleEscape: handleEscape) }
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        context.coordinator.attach(to: view)
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        context.coordinator.handleEscape = handleEscape
+    }
+
+    static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {
+        coordinator.removeMonitor()
+    }
+
+    @MainActor
+    final class Coordinator {
+        var handleEscape: () -> Bool
+        private weak var view: NSView?
+        private var monitor: Any?
+
+        init(handleEscape: @escaping () -> Bool) { self.handleEscape = handleEscape }
+
+        func attach(to view: NSView) {
+            self.view = view
+            monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+                let handled = MainActor.assumeIsolated {
+                    guard let self, event.keyCode == 53,
+                          event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                          let window = self.view?.window,
+                          event.window === window, window.isKeyWindow,
+                          window.attachedSheet == nil else { return false }
+                    return self.handleEscape()
+                }
+                return handled ? nil : event
+            }
+        }
+
+        func removeMonitor() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
         }
     }
 }

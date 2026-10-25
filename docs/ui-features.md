@@ -37,7 +37,12 @@ Cmd-1 through Cmd-8 in instrument order; Cmd-F still selects Search. The obsolet
 Show/Hide Sidebar command is removed. Shared `AppNavigationRoute` values carry
 server-scoped identities. Attach `duskAppNavigationDestinations()` inside each
 feature's stack. Switching destinations dismisses the active player; selecting
-the current instrument preserves its pushed route.
+the current instrument preserves its pushed route. Entering Search remembers
+the previous destination; Escape restores it and its saved path, including while
+the native search field owns focus. Repeated Search selection does not overwrite
+the return destination. The catalog-window Escape monitor ignores modified keys,
+other windows, attached sheets and active playback, leaving player dismissal and
+sheet cancellation to their existing owners.
 
 Availability is per server. Connecting or failing servers do not block Downloads
 or replace working content. Retry goes through the connection coordinator.
