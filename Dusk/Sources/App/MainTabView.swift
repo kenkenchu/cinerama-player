@@ -101,9 +101,6 @@ struct MainTabView: View {
                         Text("DUSK")
                             .font(.system(.title3, design: .rounded, weight: .bold))
                             .tracking(5)
-                        Text("YOUR PRIVATE CINEMA")
-                            .font(.system(.caption2, design: .monospaced))
-                            .foregroundStyle(.secondary)
                     }
                     Spacer(minLength: 0)
                 }
