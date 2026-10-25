@@ -187,8 +187,10 @@ struct TVMediaView: View {
             }
             if (details.viewOffset ?? 0) > 0 {
                 Button("Resume · \(choice.label)") { play(details: details, choice: choice, resume: true) }
+                    .modifier(TVDeckActionStyle(prominent: true))
             }
             Button("Play from Start · \(choice.label)") { play(details: details, choice: choice, resume: false) }
+                .modifier(TVDeckActionStyle())
         } else {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Version \(index + 1) · \(media.videoResolution ?? "Unknown resolution") · \(media.videoCodec ?? "Unknown codec")")

@@ -18,7 +18,6 @@ struct TVHomeHero: View {
     @State private var logo = TVArtworkModel()
     @FocusState private var focusedAction: Action?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.scenePhase) private var scenePhase
 
     private enum Action: Hashable { case play, details, previous, next }
@@ -75,7 +74,7 @@ struct TVHomeHero: View {
                                     Text(home.heroPrimaryActionTitle(for: item))
                                 }.frame(width: 380)
                             }
-                            .buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+                            .modifier(TVDeckActionStyle(prominent: true))
                             .focused($focusedAction, equals: .play)
                             .overlay {
                                 if let progress = home.progress(for: item) {
@@ -91,20 +90,14 @@ struct TVHomeHero: View {
                                 TVHomeItemActions(item: item, home: home, navigate: navigate, canRemove: true)
                             }
                             Button("Details", systemImage: "info.circle") { details(item) }
+                                .modifier(TVDeckActionStyle())
                                 .focused($focusedAction, equals: .details)
                         }.padding(.top, 8)
                         if items.count > 1 { pager }
                     }
                     .frame(width: 750, alignment: .leading)
                     .padding(36)
-                    .background {
-                        RoundedRectangle(cornerRadius: 28)
-                            .fill(.black.opacity(reduceTransparency ? 1 : 0.76))
-                            .overlay {
-                                RoundedRectangle(cornerRadius: 28)
-                                    .strokeBorder(.white.opacity(0.18), lineWidth: 1)
-                            }
-                    }
+                    .modifier(TVDeckInformationPanel())
                     .environment(\.colorScheme, .dark)
                     .padding(48)
                 }
@@ -144,6 +137,7 @@ struct TVHomeHero: View {
     private var pager: some View {
         HStack(spacing: 20) {
             Button { advance(-1) } label: { Image(systemName: "chevron.left") }
+                .modifier(TVDeckActionStyle())
                 .focused($focusedAction, equals: .previous).accessibilityLabel("Previous title")
             let start = min(max(index - 4, 0), max(items.count - 9, 0))
             ForEach(start..<min(start + 9, items.count), id: \.self) { position in
@@ -153,6 +147,7 @@ struct TVHomeHero: View {
             }
             Text("\(index + 1) / \(items.count)").font(.caption2.monospacedDigit())
             Button { advance(1) } label: { Image(systemName: "chevron.right") }
+                .modifier(TVDeckActionStyle())
                 .focused($focusedAction, equals: .next).accessibilityLabel("Next title")
         }
     }

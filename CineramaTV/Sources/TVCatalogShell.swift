@@ -175,6 +175,10 @@ struct TVSettingsView: View {
                 Text("Compatible HD SDR video plays directly or through copy-only remuxing. Server video/audio re-encoding is disabled.")
                 Text("Caption appearance comes from Apple TV Settings → Accessibility → Subtitles and Captioning → Style.")
             }
+            Section("Appearance") {
+                LabeledContent("Theme", value: "Cinematic Metal Blue")
+                Text("Liquid Glass controls over a metal-blue screening deck. Appearance stays consistent with either system theme.")
+            }
             Section("About") {
                 LabeledContent("Device", value: "Apple TV HD · tvOS 26+")
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")

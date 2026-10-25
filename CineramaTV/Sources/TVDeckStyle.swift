@@ -1,9 +1,17 @@
 import SwiftUI
 
+/// Keep these values aligned with MacPlatform.swift; platform rendering stays separate.
+enum TVDeckPalette {
+    static let background = Color(red: 29.0 / 255, green: 45.0 / 255, blue: 64.0 / 255)
+    static let surface = Color(red: 45.0 / 255, green: 69.0 / 255, blue: 95.0 / 255)
+    static let secondary = Color(red: 178.0 / 255, green: 197.0 / 255, blue: 217.0 / 255)
+}
+
 /// TV-owned screening-deck styling. Static decoration keeps A8 rendering bounded.
 struct TVDeckBackground: View {
     var body: some View {
-        Color(red: 0.035, green: 0.039, blue: 0.059)
+        LinearGradient(colors: [TVDeckPalette.surface, TVDeckPalette.background, TVDeckPalette.background],
+                       startPoint: .topLeading, endPoint: .bottomTrailing)
             .overlay {
                 Canvas { context, size in
                     for index in 0..<42 {
@@ -39,7 +47,7 @@ struct TVDeckBay: ViewModifier {
             .padding(.vertical, 28)
             .background {
                 RoundedRectangle(cornerRadius: 28)
-                    .fill(Color(white: reduceTransparency ? 0.09 : 0.12).opacity(reduceTransparency ? 1 : 0.7))
+                    .fill(TVDeckPalette.surface.opacity(reduceTransparency ? 1 : 0.7))
                     .overlay {
                         RoundedRectangle(cornerRadius: 28)
                             .strokeBorder(.white.opacity(0.12), lineWidth: 1)
@@ -78,5 +86,42 @@ struct TVViewportEdge: View {
                 }
             }
             .allowsHitTesting(false).accessibilityHidden(true)
+    }
+}
+
+/// Native button styles preserve tvOS focus/activation, including accessibility.
+struct TVDeckActionStyle: ViewModifier {
+    var prominent = false
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if reduceTransparency {
+            if prominent {
+                content.buttonStyle(.borderedProminent).buttonBorderShape(.capsule)
+            } else {
+                content.buttonStyle(.bordered).buttonBorderShape(.capsule)
+            }
+        } else if prominent {
+            content.buttonStyle(.glassProminent).buttonBorderShape(.capsule)
+        } else {
+            content.buttonStyle(.glass).buttonBorderShape(.capsule)
+        }
+    }
+}
+
+/// Translucency samples the title artwork on TV, rather than a Mac desktop.
+struct TVDeckInformationPanel: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    func body(content: Content) -> some View {
+        content
+            .background {
+                if reduceTransparency {
+                    RoundedRectangle(cornerRadius: 28).fill(TVDeckPalette.background)
+                }
+            }
+            .glassEffect(reduceTransparency ? .identity : .regular.tint(TVDeckPalette.background.opacity(0.65)),
+                         in: RoundedRectangle(cornerRadius: 28))
     }
 }

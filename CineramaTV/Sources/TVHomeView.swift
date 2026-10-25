@@ -150,9 +150,10 @@ struct TVHomeView: View {
                 .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
             if model.busy { ProgressView() }
             Button(action: onSearch) { Label("Search", systemImage: "magnifyingglass") }
+                .modifier(TVDeckActionStyle())
             Button { Task { await model.refresh() } } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
-            }.disabled(model.busy)
+            }.modifier(TVDeckActionStyle()).disabled(model.busy)
         }.padding(.horizontal, 60).padding(.top, 35)
     }
 
@@ -161,7 +162,9 @@ struct TVHomeView: View {
             HStack {
                 Text(title).font(.title2.bold())
                 TVDeckRule().padding(.horizontal, 20)
-                if let showAll { NavigationLink("Show All", value: showAll) }
+                if let showAll {
+                    NavigationLink("Show All", value: showAll).modifier(TVDeckActionStyle())
+                }
             }.padding(.horizontal, 60)
             ScrollView(.horizontal) {
                 LazyHStack(alignment: .top, spacing: 38) {

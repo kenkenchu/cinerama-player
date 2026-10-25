@@ -57,6 +57,14 @@ appearance, no app-wide color tint. Sunset Coral is
 reserved for the logo/icon. Follow its typography, spacing, and geometry rules.
 TV interaction/layout rules live separately in `docs/tvos-ui.md`.
 
+Visual changes apply to both macOS and tvOS by default. Carry the same palette,
+materials and cinematic design language to both in the same checkpoint, adapting
+for each platform's supported APIs, hardware and native input. Keep UI source
+ownership separate; do not port Mac window transparency or pointer interaction
+to fullscreen TV. Document platform-specific equivalents or unsupported effects,
+and complete both signed builds for cross-platform visual updates. A user request
+explicitly limited to one platform overrides this default.
+
 ## tvOS Target — Mac UI Protection
 
 - Both platforms are maintained in this repository. Start with TV library

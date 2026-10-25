@@ -5,7 +5,11 @@ struct CineramaTVApp: App {
     @State private var model = TVAppModel()
 
     var body: some Scene {
-        WindowGroup { TVRootView(model: model).preferredColorScheme(.dark) }
+        WindowGroup {
+            TVRootView(model: model)
+                .background { TVDeckBackground().ignoresSafeArea() }
+                .preferredColorScheme(.dark)
+        }
     }
 }
 

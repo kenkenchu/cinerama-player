@@ -8,6 +8,11 @@ feel at home
 with a resizable window, keyboard and pointer input, standard menus,
 and native fullscreen.
 
+Visual updates must also be adopted on tvOS by default, using its own native
+controls, focus behavior and supported rendering. Match the Cinematic Metal Blue
+palette and Liquid Glass language, with platform-appropriate geometry. See
+`docs/tvos-ui.md` for the TV implementation and fullscreen equivalents.
+
 1. Use system `List`, `Form`, `Toggle`, `Picker`, `Slider`, menus, toolbars and
    navigation. Use materials and Liquid Glass as supplied by macOS.
 2. Keep the palette neutral. Show selection and progress through system

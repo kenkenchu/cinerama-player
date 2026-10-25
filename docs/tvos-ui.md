@@ -28,7 +28,8 @@ connection status and playback/caption information.
 ## Artwork, Layout and Focus
 
 Use native SwiftUI tabs, navigation, forms, buttons and card focus effects.
-The initial TV appearance is dark and neutral, without a custom global tint.
+The TV appearance is fixed Cinematic Metal Blue, independent of system theme,
+without a custom global control tint.
 Sunset Coral remains a logo/icon color. Use system typography, generous gaps
 and readable titles; avoid Mac pointer/hover rules and fixed window assumptions.
 
@@ -49,11 +50,11 @@ verification requirement, not a compiler guarantee.
 
 ## Screening Deck Presentation
 
-`TVDeckStyle.swift` owns the TV adaptation of the Mac screening deck: a dark
-neutral star/grid background, ruled headings, graphite library bays, and panoramic
+`TVDeckStyle.swift` owns the TV adaptation of the Mac screening deck: a metal-blue
+gradient and static star/grid background, ruled headings, metal-blue library bays, and panoramic
 viewport edges with illuminated corner brackets. Home puts its Screening Deck
-header and actual featured count above the framed hero. The hero has a dark
-information panel, system typography, native Play/Resume, Details and pager
+header and actual featured count above the framed hero. The hero has a native Liquid Glass
+information panel, system typography, native glass Play/Resume, Details and pager
 buttons. Artwork cards have fine neutral edges and retain native card focus.
 Details use a wide backdrop/title/summary viewport instead of an extra poster.
 Search, library grids and Show All use the same background and shelf treatment;
@@ -63,7 +64,8 @@ Keep native top tabs and persistent navigation stacks on TV. The Mac's bottom
 pointer-driven instrument console is not the TV navigation control. Decoration
 is static, noninteractive and hidden from accessibility; no continuous drawing
 loop, decorative telemetry or additional artwork request is introduced. Reduce
-Transparency makes hero panels and shelf bays opaque. Existing Reduce Motion
+Transparency makes hero panels and shelf bays opaque and uses bordered action
+buttons. Existing Reduce Motion
 handling continues to disable hero transitions and rotation.
 
 The 2026-10-25 styling checkpoint passed signed Mac and TV builds and the platform
@@ -132,3 +134,25 @@ launch apps or run tests unless explicitly requested. Verify Home/library
 browsing, search, focus/Back, paging, direct/remux playback, audio/subtitles,
 remembered Off across episodes/profiles, system captions, progress/resume and
 completion. Mac visuals/input need their own authorized runtime check.
+
+## Cross-Platform Theme Updates
+
+Visual changes apply to both platforms by default, through separate UI
+implementations. `TVDeckPalette` mirrors the Mac background `#1D2D40`, surface
+`#2D455F` and secondary text `#B2C5D9` tokens. Update both palettes together.
+`TVDeckActionStyle` uses native `.glass`/`.glassProminent` buttons, preserving
+remote focus, activation and accessibility. Home Search/Refresh/Show All, hero
+actions/pagers and detail playback actions use these styles. Native TV tabs,
+forms and AVKit controls retain platform ownership; media cards retain `.card`.
+
+TV uses fullscreen metal-blue architecture and glass over title artwork in place
+of Mac desktop/window translucency. Do not add AppKit window effects or backdrop
+blur to every shelf/card on Apple TV HD. `TVDeckInformationPanel` owns the single
+hero glass panel; Reduce Transparency uses an opaque blue fill. The app root
+also supplies the metal-blue background for linking/profile screens. No new
+artwork requests, animation loops or playback changes are introduced.
+
+The metal-blue/Liquid Glass update passed both signed builds and platform-boundary
+checks. It requires a fresh user visual/focus check; the earlier appearance
+approval applies to the preceding screening-deck version. Agents did not launch
+either app or run tests.
