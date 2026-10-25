@@ -88,6 +88,35 @@ or no profile, complete pairing/registration and rerun the signed build. Do not
 fall back to ad hoc signing. No private keys, profiles or build products belong
 in Git. TV provisioning is separate from the existing Mac signing workflow.
 
+## Verified Workstation and Device (2026-10-25)
+
+The signed build and installation succeeded with:
+
+- Development team: `JCJFCBSNUG` (certificate subject `OU`).
+- Signing identity: `Apple Development: kenkenchu@gmail.com (BZ2K63HJTE)`.
+  `BZ2K63HJTE` is the identity suffix, **not** the development team ID; using it
+  as `CINERAMA_TVOS_TEAM` fails provisioning.
+- Connected device: `Apple TV 4th`, Apple TV HD (`AppleTV5,3`).
+- Xcode destination and devicectl installation ID (both verified):
+  `c8b3bc526b697182f0646a639aef4be26f1ca852`.
+
+From the repository root, build and install with:
+
+```bash
+CINERAMA_TVOS_TEAM=JCJFCBSNUG \
+  CINERAMA_TVOS_DEVICE_ID=c8b3bc526b697182f0646a639aef4be26f1ca852 \
+  ./scripts/build_tvos.sh
+xcrun devicectl device install app \
+  --device c8b3bc526b697182f0646a639aef4be26f1ca852 \
+  .build/tvos/DerivedData/Build/Products/Debug-appletvos/Cinerama.app
+```
+
+Confirm the device is connected with `xcrun devicectl list devices` before
+installing. If pairing or identifiers change, rediscover both IDs as described
+above. The installed bundle is `com.cinerama-player.tv`. This checkpoint verified
+the signed build and installation only; the app was not launched and tests were
+not run.
+
 ## User End-to-End Check
 
 1. Open Cinerama on Apple TV and allow Local Network access if requested.

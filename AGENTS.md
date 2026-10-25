@@ -119,6 +119,9 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 - TV target: `CineramaTV/Sources`, scheme `Cinerama-tvOS`. See
   `docs/tvos-prototype.md` for signing, pairing, install and user verification.
+  Its Verified Workstation and Device section records the working build/install
+  commands and device ID (2026-10-25). Use `CINERAMA_TVOS_TEAM=JCJFCBSNUG`;
+  the signing identity suffix `BZ2K63HJTE` is not the team ID.
   `TVStreamResolver` and `TVPlaybackCoordinator` are TV-owned implementations;
   the Mac playback contract is not yet platform-neutral. Keep current
   limitations explicit rather than treating TV as full feature parity.
