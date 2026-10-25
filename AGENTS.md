@@ -208,6 +208,10 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 - Pointer feedback on media cards/episode rows belongs only on artwork; the Home
   hero Play/Resume button also has a hand cursor. Video click toggles play/pause,
   double-click toggles fullscreen, and video hover has no tooltip.
+  The user confirmed the Mac video keeps the arrow cursor while the control bar
+  uses the hand cursor, and Space toggles playback anywhere in the focused player
+  window with the pointer inside (2026-10-25). Preserve the window-level Space
+  handler independently of control focus and visibility.
 - Subtitle choice persists per Plex profile/server/movie or TV series, including
   Off. Appearance comes only from macOS Captions preferences, with a VLC adapter;
   there is no app subtitle-size setting. The menu marks the active selection.

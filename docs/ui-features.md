@@ -217,6 +217,11 @@ the current window during fullscreen reparenting, and removes its monitor when
 the player is dismantled. This is Mac keyboard/pointer behavior; TV retains its
 native remote transport controls.
 
+On 2026-10-25, the user confirmed both Mac playback changes work: the arrow
+cursor over video with the hand cursor on the control bar, and Space toggling
+play/pause across the focused playback window with the pointer inside. Agents
+did not launch the app or run tests.
+
 Scrubbing previews locally and commits one seek on release. Audio and subtitle
 menus use shared selection methods. Playback stays at original quality: no
 server-conversion Quality menu is exposed. Undecodable audio choices show a
