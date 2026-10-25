@@ -34,10 +34,9 @@ struct HomeCinematicHeroLayout {
     var summaryLineSpacing: CGFloat = 4
 
     static let desktop = HomeCinematicHeroLayout(
-        heroHeightFactor: 1,
-        heroHeightRange: 560 ... 1200,
-        maxHeightToWidthRatio: 1,
-        maxContentWidth: 680,
+        heroHeightFactor: 0.90,
+        heroHeightRange: 600 ... 900,
+        maxContentWidth: 480,
         contentHorizontalPadding: 32,
         contentTopPadding: 64,
         contentBottomPaddingWithPager: 64,
@@ -46,7 +45,7 @@ struct HomeCinematicHeroLayout {
         pagerHorizontalPadding: 32,
         pagerBottomPadding: 32,
         pagerMaxVisibleItems: 9,
-        titleFontSize: 54,
+        titleFontSize: 48,
         titleLogoMaxWidth: 520,
         titleLogoMaxHeight: 136,
         backdropOverlayStyle: .cinematic,
@@ -54,7 +53,7 @@ struct HomeCinematicHeroLayout {
         titleBlockSpacingOther: 12,
         episodeTitleFont: .title2.weight(.semibold),
         metadataFont: .callout.weight(.medium),
-        summaryLineLimit: 3
+        summaryLineLimit: 2
     )
 
 }
@@ -125,7 +124,7 @@ struct HomeCinematicHero: View {
         let backdropHeight = Int(heroHeight.rounded(.up))
         let safeContentWidth = max(heroWidth - contentLeadingInset - contentTrailingInset, 0)
         let contentWidth = min(
-            max(safeContentWidth - (layout.contentHorizontalPadding * 2), 0),
+            max(safeContentWidth - (layout.contentHorizontalPadding * 2) - 48, 0),
             layout.maxContentWidth
         )
         let titleLogoWidth = Int(min(contentWidth, layout.titleLogoMaxWidth).rounded(.up))
@@ -154,6 +153,24 @@ struct HomeCinematicHero: View {
                     .padding(.trailing, contentTrailingInset + layout.pagerHorizontalPadding)
                     .padding(.bottom, layout.pagerBottomPadding)
             }
+        }
+        .overlay(alignment: .top) {
+            HStack(spacing: 12) {
+                Image(systemName: "viewfinder")
+                Text("CINEMA VIEWPORT")
+                    .tracking(2)
+                Spacer(minLength: 0)
+                Text(String(format: "%02d / %02d", resolvedIndex + 1, items.count))
+                    .monospacedDigit()
+            }
+            .font(.system(.caption2, design: .monospaced, weight: .medium))
+            .foregroundStyle(.white.opacity(0.82))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 16)
+            .background(LinearGradient(colors: [.black.opacity(0.65), .clear],
+                                       startPoint: .top, endPoint: .bottom))
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
         }
         .frame(height: heroHeight)
         .frame(maxWidth: .infinity)
@@ -342,7 +359,7 @@ struct HomeCinematicHero: View {
                 DuskHeroBackdropOverlay(style: layout.backdropOverlayStyle)
             }
 
-            VStack(alignment: heroContentHorizontalAlignment, spacing: 20) {
+            VStack(alignment: heroContentHorizontalAlignment, spacing: heroHeight < 620 ? 12 : 20) {
                 HStack(spacing: 10) {
                     Image(systemName: "play.rectangle.on.rectangle")
                     Text(item.posterProgress == nil ? "FEATURED IN YOUR LIBRARY" : "CONTINUE WATCHING")
@@ -466,7 +483,7 @@ struct HomeCinematicHero: View {
         Text(viewModel.displayTitle(for: item))
             .font(.system(size: layout.titleFontSize, weight: .bold, design: .default))
             .foregroundStyle(Color.white)
-            .lineLimit(3)
+            .lineLimit(2)
             .minimumScaleFactor(0.7)
             .shadow(color: .black.opacity(0.24), radius: 10, y: 4)
             .multilineTextAlignment(heroTextAlignment)

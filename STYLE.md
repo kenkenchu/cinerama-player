@@ -90,7 +90,7 @@ is not the source of truth for this fork.
 ## Futuristic Mac Presentation
 
 The Mac interface keeps the neutral palette and native
-navigation, with a more architectural presentation: a typographic Dusk sidebar
+navigation, with a more architectural presentation: a typographic Cinerama sidebar
 masthead, Discover/Workspace groups, ruled shelf headings, illuminated artwork
 edges, and a framed cinematic hero information panel. Hero copy always uses a
 dark environment over its black panel for contrast in either app appearance.
@@ -105,3 +105,19 @@ Pacific teal/blue over midnight blue. These colors belong to the icon and
 in-app brand artwork only; controls retain the neutral palette. Native Icon
 Composer and TV layers supply platform-specific presentation. See
 [icon design](docs/icon-design.md) for assets, regeneration and the final prompt.
+
+## Home Screening Deck
+
+Home evokes a spacecraft cinema through static architecture: sparse neutral star
+points, a fine perspective grid, a Screening deck header and a rounded panoramic
+viewport with illuminated corner brackets. Library shelves sit in separate
+28pt system-material bays. All decoration is noninteractive and hidden from
+accessibility; no decorative animation loop or invented equipment status is used.
+The header count and viewport index reflect the actual featured items.
+
+The viewport stays dark; the surrounding deck follows light/dark appearance.
+The native toolbar remains visible and the sidebar keeps its confirmed charcoal
+selection. The hero panel reserves its internal padding when calculating width,
+uses compact typography in smaller windows and preserves native Play/Resume and
+pager interaction. Reduce Transparency makes library bays and the hero panel
+opaque. The underlying Plex Home content and TV interface are unchanged.

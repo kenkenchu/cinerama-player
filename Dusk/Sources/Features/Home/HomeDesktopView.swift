@@ -17,7 +17,9 @@ struct HomeDesktopView: View {
     let play: (PlexItem) -> Void
 
     var body: some View {
-        applyNavigationChrome(to: content, showsHero: showsCinematicHero)
+        content
+            .navigationTitle("Home")
+            .toolbarBackground(.visible, for: .windowToolbar)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     SearchToolbarLink()
@@ -30,14 +32,16 @@ struct HomeDesktopView: View {
             let heroItems = viewModel.heroItems()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 0) {
+                VStack(alignment: .leading, spacing: 24) {
+                    HomeDeckHeader(featuredCount: heroItems.count)
+
                     if !heroItems.isEmpty {
                         HomeCinematicHero(
                             items: heroItems,
                             viewModel: viewModel,
-                            containerSize: geometry.size,
-                            topInset: geometry.safeAreaInsets.top,
-                            layout: heroLayout,
+                            containerSize: CGSize(width: max(0, geometry.size.width - 40), height: geometry.size.height),
+                            topInset: 0,
+                            layout: heroLayout(for: geometry.size),
                             autoRotates: true,
                             supportsDragNavigation: true,
                             selectionResetRevision: heroSelectionResetRevision,
@@ -96,14 +100,16 @@ struct HomeDesktopView: View {
                                 path.append(AppNavigationRoute.destination(for: item))
                             }
                         )
+                        .modifier(HomeViewportFrame())
                     }
 
-                    LazyVStack(alignment: .leading, spacing: 32) {
+                    LazyVStack(alignment: .leading, spacing: 24) {
                         ServerOutageNote(offlineServerNames: offlineServerNames)
                             .padding(.horizontal, 20)
 
-                        if showsLiveTV {
+                        if showsLiveTV, let lineup = liveTVViewModel.lineup, !lineup.channels.isEmpty {
                             LiveTVHomeShelf(viewModel: liveTVViewModel, play: playLiveTV)
+                                .modifier(HomeLibraryBay())
                         }
 
                         ForEach(viewModel.hubs) { hub in
@@ -114,17 +120,14 @@ struct HomeDesktopView: View {
                             personalizedSection(shelf)
                         }
                     }
-                    .padding(.top, heroItems.isEmpty ? 0 : 24)
                 }
-                .padding(.top, heroItems.isEmpty ? 16 : -geometry.safeAreaInsets.top)
-                .padding(.bottom, 24)
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
+                .padding(.bottom, 32)
             }
             .scrollIndicators(.hidden)
         }
-        .safeAreaInset(edge: .bottom) {
-            Color.clear
-                .frame(height: 88)
-        }
+        .background { HomeDeckBackground().ignoresSafeArea() }
         .task(id: showsLiveTV) {
             guard showsLiveTV else { return }
             await liveTVViewModel.load(force: true)
@@ -165,6 +168,7 @@ struct HomeDesktopView: View {
                     }
                 )
             }
+            .modifier(HomeLibraryBay())
         }
     }
 
@@ -193,31 +197,23 @@ struct HomeDesktopView: View {
                     }
                 )
             }
+            .modifier(HomeLibraryBay())
         }
     }
 
-    @ViewBuilder
-    private func applyNavigationChrome<Content: View>(to content: Content, showsHero: Bool) -> some View {
-        if showsHero {
-            content
-                .navigationTitle("")
-
-                .toolbarColorScheme(.dark, for: .windowToolbar)
-                .toolbarBackground(.hidden, for: .windowToolbar)
-        } else {
-            content
-                .navigationTitle("Home")
-
-                .toolbarBackground(.visible, for: .windowToolbar)
+    private func heroLayout(for size: CGSize) -> HomeCinematicHeroLayout {
+        var layout = HomeCinematicHeroLayout.desktop
+        if size.width < 800 || size.height < 800 {
+            layout.titleFontSize = 36
+            layout.episodeTitleFont = .title3.weight(.semibold)
+            layout.summaryLineLimit = 1
+            layout.contentHorizontalPadding = 24
+            layout.contentTopPadding = 52
+            layout.contentBottomPaddingWithPager = 52
+            layout.titleBlockSpacingMovie = 10
+            layout.titleBlockSpacingOther = 8
         }
-    }
-
-    private var heroLayout: HomeCinematicHeroLayout {
-        .desktop
-    }
-
-    private var showsCinematicHero: Bool {
-        !viewModel.heroItems().isEmpty
+        return layout
     }
 
     private func heroDetailsLabel(for item: PlexItem) -> String {

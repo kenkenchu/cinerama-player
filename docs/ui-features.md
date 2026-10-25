@@ -61,7 +61,9 @@ clamped to the native button bounds before outer layout sizing. The native
 button and fill both use a capsule shape to avoid mismatched corner backgrounds.
 The neutral overlay preserves pointer/context-menu
 actions and exposes percent watched to accessibility; fresh Play buttons have no
-fill. The hero responds to window dimensions and uses `HomeCinematicHeroLayout.desktop`.
+fill. The hero responds to window dimensions and uses `HomeCinematicHeroLayout.desktop`
+with compact typography for smaller windows. Its panel padding is deducted from
+the available title width to keep content inside the viewport.
 
 `HomeViewModel` merges server payloads and uses `HomeFirstPaintGate` to avoid
 rearranging the hero as late servers answer. Preserve the first-paint deadline,
@@ -230,3 +232,22 @@ hover illumination. The player transport gains the same neutral edge treatment.
 No TV views or playback/data decisions change. Signed compilation is the agent
 verification gate; light/dark, resized-window and input inspection remain user
 runtime verification.
+
+## Home Spacecraft Cinema
+
+`HomeDesktopView` composes a Screening deck header, inset hero viewport and
+material library bays above the static `HomeDeckBackground`. The Mac-only
+`HomeSpacecraftChrome.swift` owns the background, header, viewport brackets and
+bay modifier; it has no timers, Plex requests, focus handling or hit targets.
+Decorative layers are accessibility-hidden and do not intercept artwork clicks,
+hero drags, context menus or scrolling. Featured counts and the viewport index
+come from existing hero data; no connection/codec/quality state is fabricated.
+
+The hero retains its rotation/pager, Play/Resume progress and actions. It uses a
+rounded 28pt viewport with a fine frame; Home's toolbar is visible in the current
+appearance. Library bays wrap nonempty Plex/personalized shelves and populated
+Live TV only. Reduce Transparency substitutes opaque surfaces. The prior empty
+88pt bottom inset is removed; normal bottom content padding remains. Loading,
+error and outage routes remain owned by `HomeView`. TV does not compile any of
+these Mac view types. Verify light/dark, narrow windows, long titles, hero drag,
+pager, Show All and return from playback when runtime inspection is authorized.
