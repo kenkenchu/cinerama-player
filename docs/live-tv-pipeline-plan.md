@@ -6,13 +6,15 @@
 - Scope: production-quality HD SDR MPEG-2 Live TV on Mac, using the new FFmpeg
   pipeline; CPU and Metal IDCT remain comparable. Existing AVPlayer/VLC routes
   remain available. This is not a plan to replace library playback or tvOS.
-- User correction: **DVR is not required**. No buffer seeking, recording, skip
-  controls or Go Live implementation. Pause/resume is in scope; long pauses must
+- User corrections: **DVR and Live TV captions/subtitles are not required**.
+  No caption extraction/rendering/selection or caption-style work in this plan.
+  No buffer seeking, recording, skip controls or Go Live implementation. Pause/resume is in scope; long pauses must
   not grow memory without bound or become an implicit recording feature.
 - Current milestone: M2 audio tracks and PCM layout implementation; automated
   checks passed, hardware/output-device validation remains pending.
-- Next action: M3 captions. Keep unsupported caption controls disabled until a
-  tested timed-caption path exists. M1/M2 user checks remain pending. No DVR.
+- Next action: M4 live recovery and lifecycle, including audio device recovery.
+  M3 is removed at the user's request. M1/M2 user checks remain pending. No DVR
+  or caption work.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
 
@@ -44,17 +46,17 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | M0 — Plan and baseline | Resumable plan, exclusions, previous evidence | Linked from docs index; clean diff and links | Complete |
 | M1 — Picture and audio baseline | Proper progressive output from interlaced sources; field order/cadence; stable timestamped PCM; buffer/underrun diagnostics | Generated progressive/TFF/BFF fixtures; CPU/Metal fidelity and cadence checks; safe pause/resume; user picture/audio sync check | Implemented; user verification pending |
 | M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Tracks/layout implemented; device recovery/verification pending |
-| M3 — Captions and subtitles | Broadcast caption/subtitle extraction, selection and Off, synchronized display following macOS caption preferences | Reproducible caption fixtures, timing/selection tests; user style/readability checks; explicitly document unsupported formats | Planned |
+| M3 — Captions and subtitles | Removed at the user's request | No Live TV caption implementation or acceptance gate | Out of scope |
 | M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Planned |
 | M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Planned |
 | M6 — Metal efficiency | Reduce synchronous submission/waits and copies without violating reference/field dependencies; retain CPU oracle | Fidelity/conformance-oriented fixtures, benchmark without validation plus live CPU/energy measurements; no default change without evidence | Planned |
 | M7 — Production acceptance | Resolve remaining supported-MPEG-2 gaps, simplify experimental controls, operational docs and dependency/relink artifacts | Full required builds/tests, explicit user picture/audio/caption/input acceptance; rollback to standard route retained | Planned |
 
-DVR is excluded from all milestones. Seek/skip/Go Live stay disabled for this
+DVR and Live TV captions/subtitles are excluded from all milestones. Seek/skip/Go Live stay disabled for this
 pipeline. Other exclusions: library codec/container parity, HDR/Dolby Vision,
 Atmos restoration, downloading, recording/scheduling, tvOS Live TV, and adding
-EPG requirements. Supported subtitles and multichannel PCM are not a promise of
-unimplemented library-engine parity.
+EPG requirements. Multichannel PCM is not a promise of unimplemented library-engine parity.
+Library subtitle support remains on the existing standard playback routes.
 
 ## Existing architecture and evidence
 
@@ -158,4 +160,11 @@ M1's signed TV build and 32-test tvOS 26 baseline are unchanged.
 User checks pending: both language selections, switch gap and synchronization,
 physical surround layout, headphones/default-output changes, plus M1 checks.
 Commit: this M2 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
-Next: M3 timed captions, with existing limitations explicit until tested.
+Next (superseded by user scope correction below): M4 live recovery and lifecycle.
+
+### Scope correction — 2026-10-25: Live TV captions removed
+
+User explicitly stated Live TV does not need captions. M3 is out of scope, not
+an unfinished parity requirement. No caption code or dependency was added.
+Skip directly to M4. Live TV caption/seek controls should not advertise these
+excluded capabilities. Existing library subtitle behavior remains unchanged.
