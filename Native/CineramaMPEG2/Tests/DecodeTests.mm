@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <AudioToolbox/AudioToolbox.h>
 #include <cstring>
+#include <thread>
+#include <chrono>
 struct Frame { std::vector<uint8_t> pixels; CMTime pts; };
 struct Result { std::vector<Frame> frames; int audio=0; uint64_t blocks=0; double elapsed=0,gpu=0; };
 static void require(bool value,const char *message) { if(!value) { fprintf(stderr,"FAIL: %s\n",message); exit(1); } }
@@ -53,6 +55,22 @@ static Result decode(const char *path,bool metal,int expectedChannels) {
 }
 int main(int argc,char **argv) {
     @autoreleasepool {
+        if(argc==3 && strcmp(argv[1],"--cancel")==0) {
+            CM2Decoder *d=cm2_create(0); int result=0; double start=CFAbsoluteTimeGetCurrent();
+            std::thread worker([&] { result=cm2_open(d,argv[2]); });
+            std::this_thread::sleep_for(std::chrono::milliseconds(200)); cm2_cancel(d); worker.join();
+            require(result<0 && CFAbsoluteTimeGetCurrent()-start<2,"cancel interrupts in-flight network IO");
+            cm2_close(d); puts("In-flight IO cancellation passed"); return 0;
+        }
+        if(argc==3 && strcmp(argv[1],"--failure")==0) {
+            CM2Decoder *d=cm2_create(0); bool failed=cm2_open(d,argv[2])<0;
+            for(int n=0;!failed && n<1000;n++) {
+                int kind; CMSampleBufferRef sample=cm2_next(d,&kind);
+                if(sample) CFRelease(sample); else { failed=kind<0; break; }
+            }
+            require(failed && cm2_retryable(d),"recoverable network/format failure classification");
+            cm2_close(d); puts("Recoverable input failure classification passed"); return 0;
+        }
         require(argc>=2 && argc<=4,"fixture argument");
         size_t expectedFrames=argc>=3?atoi(argv[2]):90;
         int channels=argc==4?atoi(argv[3]):2;

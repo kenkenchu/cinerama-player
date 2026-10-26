@@ -22,6 +22,10 @@ enum ExperimentalMPEG2Mode: String, CaseIterable, Identifiable {
     }
 }
 
+private struct MPEG2ReadFailure: Error {
+    let error: PlaybackError
+    let recoverable: Bool
+}
 private final class MPEG2NativeSession: @unchecked Sendable {
     let decoder: OpaquePointer
     init(metal: Bool) throws {
@@ -35,7 +39,7 @@ private final class MPEG2NativeSession: @unchecked Sendable {
     func open(_ url: URL) throws {
         guard cm2_open(decoder, url.absoluteString) == 0 else { throw failure }
     }
-    var failure: PlaybackError { .unknown(String(cString: cm2_error(decoder))) }
+    var failure: MPEG2ReadFailure { .init(error: .unknown(String(cString: cm2_error(decoder))), recoverable: cm2_retryable(decoder) != 0) }
     func audioTracks() -> [AudioTrack] {
         (0..<cm2_audio_track_count(decoder)).map { position in
             let language = String(cString: cm2_audio_track_language(decoder, position))
@@ -91,6 +95,8 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     private(set) var buffers = LivePlaybackBufferState()
     private(set) var outputAudioChannels = 0
     private(set) var outputAudioRate = 0.0
+    private(set) var recovery = LiveStreamRecoveryPolicy()
+    private(set) var timestampResets = 0
     @ObservationIgnored private let surface = MPEG2VideoSurface()
     @ObservationIgnored private let audio = AVSampleBufferAudioRenderer()
     @ObservationIgnored private let synchronizer = AVSampleBufferRenderSynchronizer()
@@ -104,6 +110,14 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     @ObservationIgnored private var clockStarted = false
     @ObservationIgnored private var flushID = UUID()
     @ObservationIgnored private var outputReady = true
+    @ObservationIgnored private var pendingRestart = false
+    @ObservationIgnored private var elapsedBeforeRecovery = 0.0
+    @ObservationIgnored private var pauseBegan: TimeInterval?
+    @ObservationIgnored private var lastProgress = 0.0
+    @ObservationIgnored private var lastVideoPTS: TimeInterval?
+    @ObservationIgnored private var lastAudioPTS: TimeInterval?
+    @ObservationIgnored private var preferredAudio: AudioTrack?
+    @ObservationIgnored nonisolated(unsafe) private var outputObservers: [NSObjectProtocol] = []
 
     init(mode: ExperimentalMPEG2Mode) {
         self.mode = mode
@@ -112,8 +126,14 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         synchronizer.addRenderer(surface.display.sampleBufferRenderer)
         synchronizer.addRenderer(audio)
         coordinator = AVDelegatingPlaybackCoordinator(playbackControlDelegate: self)
+        for name in [Notification.Name.AVSampleBufferAudioRendererWasFlushedAutomatically,
+                     Notification.Name.AVSampleBufferAudioRendererOutputConfigurationDidChange] {
+            outputObservers.append(NotificationCenter.default.addObserver(forName: name, object: audio, queue: .main) { [weak self] _ in
+                Task { @MainActor [weak self] in self?.requestRecovery() }
+            })
+        }
     }
-    deinit { worker?.cancel(); session?.cancel(); timer?.invalidate() }
+    deinit { worker?.cancel(); session?.cancel(); timer?.invalidate(); outputObservers.forEach { NotificationCenter.default.removeObserver($0) } }
 
     func load(source: PlaybackSource) {
         stop()
@@ -121,28 +141,41 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         state = .loading; isBuffering = true; error = nil
         desiredRate = source.shouldAutoPlay ? 1 : 0
         let mode = mode
+        lastProgress = ProcessInfo.processInfo.systemUptime
         worker = Task.detached(priority: .userInitiated) { [weak self] in
-            do {
-                let session = try MPEG2NativeSession(metal: mode == .metal)
-                guard let self, await self.attach(session, id: id) else { return }
-                try session.open(source.url)
-                let tracks = session.audioTracks()
-                let selected = Int(cm2_selected_audio(session.decoder))
-                await self.setAudioTracks(tracks, selected: selected, id: id)
-                while !Task.isCancelled, let decoded = try session.next() {
-                    while !Task.isCancelled {
+            while !Task.isCancelled {
+                do {
+                    let session = try MPEG2NativeSession(metal: mode == .metal)
+                    guard let self, await self.attach(session, id: id) else { return }
+                    try session.open(source.url)
+                    let tracks = session.audioTracks()
+                    let selected = Int(cm2_selected_audio(session.decoder))
+                    await self.setAudioTracks(tracks, selected: selected, id: id)
+                    while !Task.isCancelled, let decoded = try session.next() {
                         guard await self.isCurrent(id) else { return }
-                        if await self.ready(decoded) { break }
-                        try await Task.sleep(for: .milliseconds(5))
+                        await self.prepareTimestamp(decoded)
+                        let waitBegan = ProcessInfo.processInfo.systemUptime
+                        while !Task.isCancelled {
+                            guard await self.isCurrent(id) else { return }
+                            if await self.restartNeeded(waitBegan: waitBegan) {
+                                throw MPEG2ReadFailure(error: .unknown("Live output needs rebuffering."), recoverable: true)
+                            }
+                            if await self.ready(decoded) { break }
+                            try await Task.sleep(for: .milliseconds(5))
+                        }
+                        try Task.checkCancellation()
+                        await self.enqueue(decoded, id: id)
                     }
                     try Task.checkCancellation()
-                    await self.enqueue(decoded, id: id)
+                    throw MPEG2ReadFailure(error: .unknown("The Live TV stream ended."), recoverable: true)
+                } catch is CancellationError { return }
+                catch {
+                    guard let self else { return }
+                    let native = error as? MPEG2ReadFailure
+                    let safe = native?.error ?? error as? PlaybackError ?? .unknown("Experimental MPEG-2 playback failed.")
+                    guard let delay = await self.prepareRecovery(error: safe, recoverable: native?.recoverable ?? false, id: id) else { return }
+                    do { try await Task.sleep(for: .seconds(delay)) } catch { return }
                 }
-                await self.finished(id: id)
-            } catch is CancellationError {
-                // Retirement is deliberate and cannot update a newer session.
-            } catch {
-                await self?.failed(error as? PlaybackError ?? .unknown("Experimental MPEG-2 playback failed."), id: id)
             }
         }
         timer = Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { [weak self] _ in
@@ -158,7 +191,58 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     private func setAudioTracks(_ tracks: [AudioTrack], selected: Int, id: UUID) {
         guard generation == id else { return }
         availableAudioTracks = tracks; selectedAudioTrackID = selected >= 0 ? selected : nil
+        if let preferredAudio, let match = tracks.first(where: {
+            $0.isDecodable && $0.languageCode == preferredAudio.languageCode && $0.codec == preferredAudio.codec && $0.channels == preferredAudio.channels
+        }), match.id != selectedAudioTrackID {
+            selectedAudioTrackID = match.id
+            if let session { cm2_request_audio(session.decoder, Int32(match.id)) }
+        }
         buffers.expectsAudio = selected >= 0
+    }
+    private func restartNeeded(waitBegan: TimeInterval) -> Bool {
+        pendingRestart || (desiredRate > 0 && ProcessInfo.processInfo.systemUptime - waitBegan > 8)
+    }
+    private func prepareTimestamp(_ decoded: MPEG2DecodedSample) {
+        guard clockStarted else { return }
+        let next = CMTimeGetSeconds(CMSampleBufferGetPresentationTimeStamp(decoded.sample))
+        let previous = decoded.kind == 1 ? lastVideoPTS : lastAudioPTS
+        if LiveStreamRecoveryPolicy.isTimestampDiscontinuity(previous: previous, next: next) {
+            timestampResets += 1
+            resetOutputForRecovery()
+        }
+    }
+    private func requestRecovery() {
+        guard worker != nil, state != .stopped, state != .error, !pendingRestart else { return }
+        pendingRestart = true; session?.cancel()
+    }
+    private func prepareRecovery(error: PlaybackError, recoverable: Bool, id: UUID) -> TimeInterval? {
+        guard generation == id else { return nil }
+        guard let delay = recovery.nextDelay(recoverable: recoverable || pendingRestart, now: ProcessInfo.processInfo.systemUptime) else {
+            failed(error, id: id); return nil
+        }
+        session?.cancel(); session = nil; pendingRestart = false
+        resetOutputForRecovery()
+        lastProgress = ProcessInfo.processInfo.systemUptime
+        isBuffering = desiredRate > 0; state = desiredRate == 0 ? .paused : .loading
+        return delay
+    }
+    private func flushOutput() {
+        synchronizer.rate = 0
+        let flush = UUID(); flushID = flush; outputReady = false
+        surface.display.sampleBufferRenderer.flush(removingDisplayedImage: true) { [weak self] in
+            Task { @MainActor [weak self] in
+                guard let self, self.flushID == flush else { return }
+                self.outputReady = true
+            }
+        }
+        audio.flush()
+    }
+    private func resetOutputForRecovery() {
+        elapsedBeforeRecovery = currentTime
+        flushOutput()
+        let expectsAudio = buffers.expectsAudio
+        buffers = LivePlaybackBufferState(); buffers.expectsAudio = expectsAudio
+        origin = nil; clockStarted = false; lastAudioPTS = nil; lastVideoPTS = nil
     }
     private func ready(_ decoded: MPEG2DecodedSample) -> Bool {
         if decoded.kind == 2 && decoded.audioTrackID != selectedAudioTrackID { return true }
@@ -173,6 +257,9 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         guard generation == id else { return }
         if decoded.kind == 2 && decoded.audioTrackID != selectedAudioTrackID { return }
         let pts = CMSampleBufferGetPresentationTimeStamp(decoded.sample)
+        lastProgress = ProcessInfo.processInfo.systemUptime
+        recovery.markHealthy(now: lastProgress)
+        if decoded.kind == 1 { lastVideoPTS = CMTimeGetSeconds(pts) } else { lastAudioPTS = CMTimeGetSeconds(pts) }
         if origin == nil || (!clockStarted && CMTimeCompare(pts, origin!) < 0) {
             origin = pts
             synchronizer.setRate(0, time: pts)
@@ -206,47 +293,48 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     private func updateClock() {
         if let origin {
             buffers.observe(time: CMTimeGetSeconds(synchronizer.currentTime()), running: clockStarted && desiredRate > 0)
-            currentTime = max(0, CMTimeGetSeconds(CMTimeSubtract(synchronizer.currentTime(), origin)))
+            currentTime = elapsedBeforeRecovery + max(0, CMTimeGetSeconds(CMTimeSubtract(synchronizer.currentTime(), origin)))
         }
         if surface.display.sampleBufferRenderer.status == .failed || audio.status == .failed {
-            failed(.unknown("Experimental audio/video output failed. Select Standard playback and retune."), id: generation)
+            requestRecovery()
         }
+        if desiredRate > 0 && ProcessInfo.processInfo.systemUptime - lastProgress > 8 { requestRecovery() }
     }
     private func failed(_ error: PlaybackError, id: UUID) {
         guard generation == id else { return }
         worker?.cancel(); session?.cancel()
         synchronizer.rate = 0; isBuffering = false; self.error = error; state = .error
     }
-    private func finished(id: UUID) {
-        guard generation == id else { return }
-        failed(.unknown("The experimental Live TV stream ended. Select Standard playback and retune."), id: id)
-    }
     func stop() {
         generation = UUID(); worker?.cancel(); session?.cancel(); worker = nil; session = nil
         timer?.invalidate(); timer = nil
-        synchronizer.rate = 0
-        let flush = UUID(); flushID = flush; outputReady = false
-        surface.display.sampleBufferRenderer.flush(removingDisplayedImage: true) { [weak self] in
-            Task { @MainActor [weak self] in
-                guard let self, self.flushID == flush else { return }
-                self.outputReady = true
-            }
-        }
-        audio.flush()
+        flushOutput()
         origin = nil; clockStarted = false; buffers = LivePlaybackBufferState()
+        elapsedBeforeRecovery = 0; pendingRestart = false; pauseBegan = nil
+        lastAudioPTS = nil; lastVideoPTS = nil; preferredAudio = nil
+        recovery = LiveStreamRecoveryPolicy(); timestampResets = 0
         currentTime = 0; gpuBlocks = 0; gpuSeconds = 0
         availableAudioTracks = []; selectedAudioTrackID = nil; outputAudioChannels = 0; outputAudioRate = 0
         isBuffering = false; state = .stopped
     }
-    func play() { desiredRate = 1; if clockStarted { synchronizer.rate = 1; state = .playing } else { startClockIfReady() } }
-    func pause() { desiredRate = 0; synchronizer.rate = 0; state = .paused }
+    func play() {
+        guard worker != nil, state != .stopped, state != .error else { return }
+        if LiveStreamRecoveryPolicy.shouldRefreshAfterPause(began: pauseBegan, now: ProcessInfo.processInfo.systemUptime) { requestRecovery() }
+        pauseBegan = nil; desiredRate = 1
+        if clockStarted && !pendingRestart { synchronizer.rate = 1; state = .playing } else { startClockIfReady() }
+    }
+    func pause() {
+        guard worker != nil, state != .stopped, state != .error else { return }
+        if desiredRate > 0 { pauseBegan = ProcessInfo.processInfo.systemUptime }
+        desiredRate = 0; synchronizer.rate = 0; state = .paused
+    }
     func setPlaybackRate(_ rate: Float) { desiredRate = rate; if clockStarted { synchronizer.rate = rate } }
     func seek(to position: TimeInterval) {
         // The experimental renderer has no DVR seek mapping. Do not pretend that
         // a seek changed the stream or restart a second Plex tuner session.
     }
-    func recoverFromStall() { play() }
-    func handleReturnToForeground() { surface.needsLayout = true }
+    func recoverFromStall() { requestRecovery() }
+    func handleReturnToForeground() { surface.needsLayout = true; if desiredRate > 0 { requestRecovery() } }
     func configureVideoEnhancement(_ request: VideoEnhancementRequest) {}
     func configureCoordinatedPlayback(itemIdentifier: String?) {}
     func selectSubtitleTrack(_ track: SubtitleTrack?) {}
@@ -254,6 +342,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         guard let session, track.isDecodable,
               availableAudioTracks.contains(where: { $0.id == track.id && $0.isDecodable }),
               selectedAudioTrackID != track.id else { return }
+        preferredAudio = track
         selectedAudioTrackID = track.id
         audio.flush(); buffers.resetAudio()
         cm2_request_audio(session.decoder, Int32(track.id))
@@ -265,6 +354,8 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
          ("GPU reconstructed blocks", String(gpuBlocks)),
          ("GPU reconstruction time", String(format: "%.3f s", gpuSeconds)),
          ("Prediction / parsing", "CPU"),
+         ("Stream reconnects", String(recovery.totalAttempts)),
+         ("Timestamp resets", String(timestampResets)),
          ("Audio", "\(outputAudioChannels) ch PCM · \(Int(outputAudioRate)) Hz"),
          ("Video processing", "BWDIF field-rate deinterlacing; progressive passthrough"),
          ("Audio queued", String(format: "%.3f s", buffers.audioDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),

@@ -24,3 +24,27 @@ struct LivePlaybackBufferState {
         wasAudioStarved = starved
     }
 }
+
+/// Bounded reconnects. A few decoded packets must not erase a repeated failure;
+/// only 30 seconds of stable progress replenishes the consecutive retry budget.
+struct LiveStreamRecoveryPolicy {
+    private(set) var consecutiveAttempts = 0
+    private(set) var totalAttempts = 0
+    private var lastFailure: TimeInterval?
+    mutating func markHealthy(now: TimeInterval) {
+        if let lastFailure, now - lastFailure >= 30 { consecutiveAttempts = 0; self.lastFailure = nil }
+    }
+    mutating func nextDelay(recoverable: Bool, now: TimeInterval) -> TimeInterval? {
+        guard recoverable, consecutiveAttempts < 3 else { return nil }
+        let delay = 0.5 * pow(2, Double(consecutiveAttempts))
+        consecutiveAttempts += 1; totalAttempts += 1; lastFailure = now
+        return delay
+    }
+    static func isTimestampDiscontinuity(previous: TimeInterval?, next: TimeInterval) -> Bool {
+        guard let previous else { return false }
+        return next < previous - 0.5 || next > previous + 2
+    }
+    static func shouldRefreshAfterPause(began: TimeInterval?, now: TimeInterval) -> Bool {
+        began.map { now - $0 >= 15 } ?? false
+    }
+}

@@ -25,6 +25,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, *args):
         pass
     def do_GET(self):
+        path = urlparse(self.path).path
+        if path == "/slow":
+            time.sleep(3)
+            return
+        if path == "/unavailable":
+            self.send_error(503)
+            return
         if parse_qs(urlparse(self.path).query).get("X-Plex-Token") != ["fixture-test"]:
             self.send_error(403)
             return
@@ -47,6 +54,8 @@ thread = threading.Thread(target=server.serve_forever, daemon=True)
 thread.start()
 try:
     subprocess.run([sys.argv[2], f"http://127.0.0.1:{server.server_port}/hls.m3u8?X-Plex-Token=fixture-test"], check=True, timeout=30)
+    subprocess.run([sys.argv[2], "--failure", f"http://127.0.0.1:{server.server_port}/unavailable"], check=True, timeout=15)
+    subprocess.run([sys.argv[2], "--cancel", f"http://127.0.0.1:{server.server_port}/slow"], check=True, timeout=5)
 finally:
     server.shutdown()
     server.server_close()

@@ -30,6 +30,7 @@ struct CM2Decoder {
     std::atomic<uint64_t> blocks{0};
     std::atomic<double> gpuTime{0};
     char error[192] = {};
+    bool retryable = false;
     AVFormatContext *format = nullptr;
     NSString *authToken = nil;
     NSString *sourceHost = nil;
@@ -59,7 +60,7 @@ struct CM2Decoder {
     std::vector<Target> targets;
 };
 static thread_local CM2Decoder *active = nullptr;
-static void fail(CM2Decoder *d, const char *message) { snprintf(d->error,sizeof(d->error),"%s",message); }
+static void fail(CM2Decoder *d, const char *message, bool retryable=false) { snprintf(d->error,sizeof(d->error),"%s",message); d->retryable=retryable; }
 static int interrupt(void *opaque) { return ((CM2Decoder *)opaque)->cancelled.load() ? 1 : 0; }
 
 // Plex segment URLs may omit the top-level token. Carry it only to the same
@@ -199,7 +200,7 @@ int cm2_open(CM2Decoder *d,const char *url) {
     av_dict_set(&options,"protocol_whitelist","file,http,https,tcp,tls,crypto",0);
     av_dict_set(&options,"live_start_index","-3",0);
     int result=avformat_open_input(&d->format,url,nullptr,&options); av_dict_free(&options);
-    if(result<0 || avformat_find_stream_info(d->format,nullptr)<0) { fail(d,"Could not open the experimental MPEG-2 stream"); return -1; }
+    if(result<0 || avformat_find_stream_info(d->format,nullptr)<0) { fail(d,"Could not open the experimental MPEG-2 stream",true); return -1; }
     d->videoIndex=av_find_best_stream(d->format,AVMEDIA_TYPE_VIDEO,-1,-1,nullptr,0);
     const AVCodec *audioCodec=nullptr;
     d->audioIndex=av_find_best_stream(d->format,AVMEDIA_TYPE_AUDIO,-1,-1,&audioCodec,0);
@@ -258,7 +259,7 @@ static AudioChannelLabel audioLabel(enum AVChannel channel) {
 static bool prepareVideoFilter(CM2Decoder *d, AVFrame *frame) {
     if (d->filters) {
         if (d->filterWidth!=frame->width || d->filterHeight!=frame->height || d->filterFormat!=frame->format) {
-            fail(d,"Video format changed; retune the channel"); return false;
+            fail(d,"Video format changed; retune the channel",true); return false;
         }
         return true;
     }
@@ -398,7 +399,7 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
                 av_frame_unref(d->frame);
                 return *sample?kind:-1;
             }
-            if(result!=AVERROR(EAGAIN) && result!=AVERROR_EOF) { fail(d,"MPEG-2/audio decode failed"); return -1; }
+            if(result!=AVERROR(EAGAIN) && result!=AVERROR_EOF) { fail(d,"MPEG-2/audio decode failed",true); return -1; }
             d->pending=nullptr;
         }
         if(d->draining) {
@@ -411,7 +412,7 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
         }
         int result=av_read_frame(d->format,d->packet);
         if(result<0) {
-            if(result!=AVERROR_EOF) { fail(d,"Live stream read failed"); return -1; }
+            if(result!=AVERROR_EOF) { fail(d,"Live stream read failed",true); return -1; }
             d->draining=true;
             avcodec_send_packet(d->video,nullptr); d->pending=d->video; d->pendingKind=1;
             continue;
@@ -422,7 +423,7 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
         if(context) {
             result=avcodec_send_packet(context,d->packet);
             cinerama_mpeg2_idct_flush(d);
-            if(result<0) { av_packet_unref(d->packet); fail(d,"Compressed packet decode failed"); return -1; }
+            if(result<0) { av_packet_unref(d->packet); fail(d,"Compressed packet decode failed",true); return -1; }
             d->pending=context; d->pendingKind=kind;
         }
         av_packet_unref(d->packet);
@@ -468,3 +469,5 @@ int cm2_audio_track_supported(CM2Decoder *d,int i) {
 }
 int cm2_selected_audio(CM2Decoder *d) { return d->audioIndex; }
 void cm2_request_audio(CM2Decoder *d,int id) { d->requestedAudio.store(id); }
+
+int cm2_retryable(CM2Decoder *d) { return d->retryable; }

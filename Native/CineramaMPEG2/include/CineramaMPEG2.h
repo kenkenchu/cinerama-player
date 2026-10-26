@@ -26,6 +26,7 @@ int cm2_selected_audio(CM2Decoder *);
 void cm2_request_audio(CM2Decoder *,int stream_id);
 uint64_t cm2_gpu_blocks(CM2Decoder *);
 double cm2_gpu_seconds(CM2Decoder *);
+int cm2_retryable(CM2Decoder *);
 const char *cm2_error(CM2Decoder *);
 #ifdef __cplusplus
 }

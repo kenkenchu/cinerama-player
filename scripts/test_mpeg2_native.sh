@@ -24,3 +24,11 @@ for spec in progressive interlaced bottom-first surround tracks chroma422 hd-int
     MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" "$fixture" "$expected" "$channels"
 done
 MTL_DEBUG_LAYER=1 python3 Native/CineramaMPEG2/Tests/LiveHLSTest.py "$CACHE/fixtures" "$CACHE/decode-tests"
+
+python3 - "$CACHE/fixtures" <<'PYFIXTURE'
+from pathlib import Path
+import sys
+root=Path(sys.argv[1])
+(root/'format-change.ts').write_bytes((root/'progressive.ts').read_bytes()+(root/'hd-interlaced.ts').read_bytes())
+PYFIXTURE
+MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" --failure "$CACHE/fixtures/format-change.ts"

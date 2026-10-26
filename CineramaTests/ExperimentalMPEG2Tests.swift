@@ -26,6 +26,7 @@ import Testing
             #expect(engine.seekableTimeRange == nil)
             #expect(engine.availableAudioTracks.isEmpty && engine.availableSubtitleTracks.isEmpty)
             engine.stop(); engine.stop()
+            engine.play(); engine.pause(); engine.recoverFromStall()
             #expect(engine.state == .stopped)
             #expect(engine.currentTime == 0 && engine.gpuBlocks == 0)
         }
@@ -62,5 +63,31 @@ struct LivePlaybackBufferTests {
         state.resetAudio()
         #expect(state.audioEnd == nil)
         #expect(!state.canStart(at: 5))
+    }
+}
+
+@Suite("Live recovery policy")
+struct LiveRecoveryTests {
+    @Test func retriesAreBoundedAndOnlySustainedProgressRestoresBudget() {
+        var policy = LiveStreamRecoveryPolicy()
+        #expect(policy.nextDelay(recoverable: false, now: 0) == nil)
+        #expect(policy.nextDelay(recoverable: true, now: 1) == 0.5)
+        policy.markHealthy(now: 2)
+        #expect(policy.nextDelay(recoverable: true, now: 3) == 1)
+        #expect(policy.nextDelay(recoverable: true, now: 4) == 2)
+        #expect(policy.nextDelay(recoverable: true, now: 5) == nil)
+        policy.markHealthy(now: 33)
+        #expect(policy.nextDelay(recoverable: true, now: 33) == nil)
+        policy.markHealthy(now: 34)
+        #expect(policy.nextDelay(recoverable: true, now: 35) == 0.5)
+        #expect(policy.totalAttempts == 4)
+    }
+    @Test func timestampJumpsAndLongPauseHaveExplicitThresholds() {
+        #expect(!LiveStreamRecoveryPolicy.isTimestampDiscontinuity(previous: nil, next: 500))
+        #expect(!LiveStreamRecoveryPolicy.isTimestampDiscontinuity(previous: 10, next: 10.017))
+        #expect(LiveStreamRecoveryPolicy.isTimestampDiscontinuity(previous: 10, next: 0))
+        #expect(LiveStreamRecoveryPolicy.isTimestampDiscontinuity(previous: 10, next: 30))
+        #expect(!LiveStreamRecoveryPolicy.shouldRefreshAfterPause(began: 100, now: 114))
+        #expect(LiveStreamRecoveryPolicy.shouldRefreshAfterPause(began: 100, now: 115))
     }
 }

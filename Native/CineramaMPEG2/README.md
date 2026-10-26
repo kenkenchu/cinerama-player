@@ -26,7 +26,9 @@ Audio tracks can be selected; PCM preserves supported source layouts and rates. 
 scope; seek/skip/Go Live stay disabled. BWDIF converts interlaced frames to
 progressive field-rate output with automatic TFF/BFF parity; progressive frames
 pass through at their original cadence. Deinterlacing runs on CPU in both modes.
-Network/codec/Metal failures show an error; choose Standard playback and retune.
+Retryable network/input failures reconnect to the existing session with a
+three-attempt budget; permanent errors stay visible. Choose Standard playback
+and retune if recovery fails.
 There is no silent CPU fallback that could invalidate an A/B test.
 
 ## Decoder boundary
@@ -56,7 +58,8 @@ There is no silent CPU fallback that could invalidate an A/B test.
 - `AVSampleBufferRenderSynchronizer` paces video and audio on one media clock.
   The worker waits for renderer readiness and limits decode-ahead to 600 ms.
   Startup waits for at least 200 ms of audio and 100 ms of video (video alone
-  for audio-free input). Pause stops that clock and naturally bounds buffering.
+  for audio-free input). Pause stops that clock and naturally bounds buffering. After a pause of at
+  least 15 seconds, resume reconnects to the current live stream. No DVR is kept.
   Cmd-I shows queue depth and observed audio starvation transitions; these are
   media-time observations, not hardware underrun counts. Generation checks
   discard retired-session callbacks. Stop cancels network IO and flushes output.
@@ -134,10 +137,33 @@ language preference/metadata matching. Selection is an atomic request consumed
 on the decoder worker, which replaces only the audio context and converter.
 The UI flushes old PCM and rejects stale samples tagged with the retired stream
 ID. Video and the common clock stay running. Brief switch gaps and default-output
-device changes still need user verification; renderer-failure recovery is M4.
+device changes still need user verification. M4 listens for automatic output
+flush/configuration changes and requests bounded recovery.
 The system audio renderer follows its default output; decoded channel count in
 Cmd-I is not proof of physical multichannel speaker output.
 
 Native fixtures additionally cover 5.1 AC3 and a two-language AC3/AAC stream.
 Checks assert PCM channel descriptions and sample rate, switch from 5.1/48 kHz to
-stereo/44.1 kHz and back, and reject non-audio stream IDs. Captions remain disabled.
+stereo/44.1 kHz and back, and reject non-audio stream IDs. Live TV captions and DVR are explicitly out of scope.
+
+## Recovery checkpoint (M4)
+
+The worker retries recoverable opens/reads, corrupt-packet decode failures and
+resolution changes using the same session URL and decoder mode. Delays are 0.5,
+1 and 2 seconds; 30 seconds of decoded progress resets the consecutive budget.
+Native error strings stay safe and credential-free. Permanent unsupported-format
+and Metal errors do not silently fall back to CPU. Renderer automatic flush and
+configuration notifications request the same serialized reconnect path.
+
+The output clock reanchors across timestamp discontinuities and reconnects while
+elapsed session time and the selected audio signature are retained. Rendering and
+decode-ahead waits have an eight-second running-playback watchdog. Explicit stop
+cancels the worker/input and invalidates callbacks. No background recording is
+created; long-pause resume refreshes the existing live session.
+
+Verification includes HTTP 503 classification, cancellation during a blocked HTTP
+open, resolution-change classification and deterministic retry/clock-policy tests.
+These are not substitutes for real-channel interruption, output-device, wake,
+rapid retune and audio/video synchronization checks. Sustained validation is M5.
+See the [plan](../../docs/live-tv-pipeline-plan.md); implementation is paused at
+the user's request after this checkpoint.

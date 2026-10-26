@@ -118,3 +118,11 @@ M1 pipeline checkpoint: field-rate deinterlacing now adds a BFF fixture and chec
 timing. Buffer startup/starvation state adds two hosted tests (182 Mac total).
 See [the resumable plan](live-tv-pipeline-plan.md) for evidence and pending user
 checks; DVR is excluded.
+
+M4 pipeline checkpoint: 184 Mac tests pass. Native fault cases classify HTTP 503
+and resolution changes as recoverable and cancel an in-flight blocked HTTP open
+within two seconds. Hosted policy tests bound retries and check timestamp and
+long-pause thresholds. Full render-loop recovery, output devices, wake and
+long-duration memory/energy remain user/runtime validation gates; see the
+[paused milestone plan](live-tv-pipeline-plan.md). No DVR or caption work is in
+scope. Mac-only changes retain the last signed TV/32-test baseline.

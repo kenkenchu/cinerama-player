@@ -16,3 +16,4 @@ _cm2_audio_track_codec
 _cm2_audio_track_supported
 _cm2_selected_audio
 _cm2_request_audio
+_cm2_retryable

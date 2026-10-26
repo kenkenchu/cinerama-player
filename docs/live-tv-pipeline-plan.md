@@ -8,13 +8,17 @@
   remain available. This is not a plan to replace library playback or tvOS.
 - User corrections: **DVR and Live TV captions/subtitles are not required**.
   No caption extraction/rendering/selection or caption-style work in this plan.
-  No buffer seeking, recording, skip controls or Go Live implementation. Pause/resume is in scope; long pauses must
-  not grow memory without bound or become an implicit recording feature.
-- Current milestone: M2 audio tracks and PCM layout implementation; automated
-  checks passed, hardware/output-device validation remains pending.
-- Next action: M4 live recovery and lifecycle, including audio device recovery.
-  M3 is removed at the user's request. M1/M2 user checks remain pending. No DVR
-  or caption work.
+  No buffer seeking, recording, skip controls or Go Live implementation.
+  Pause/resume is in scope; long pauses must not grow memory without bound or
+  become an implicit recording feature.
+- Work status: **paused at the user's request after the M4 implementation
+  checkpoint**. M1, M2 and M4 have automated verification; user runtime gates
+  remain pending. Do not resume implementation until the user requests it.
+- Latest completed code checkpoint: M4 bounded recovery and lifecycle (P4 below).
+  M2 code is `e315432`; caption scope correction is `40178e4`.
+- Next action on resume: review P4 limitations and user feedback, then M5
+  sustained validation/diagnostics. M6 Metal optimization and M7 production
+  acceptance remain planned. M3 is excluded. No DVR or caption work.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
 
@@ -47,10 +51,10 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | M1 — Picture and audio baseline | Proper progressive output from interlaced sources; field order/cadence; stable timestamped PCM; buffer/underrun diagnostics | Generated progressive/TFF/BFF fixtures; CPU/Metal fidelity and cadence checks; safe pause/resume; user picture/audio sync check | Implemented; user verification pending |
 | M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Tracks/layout implemented; device recovery/verification pending |
 | M3 — Captions and subtitles | Removed at the user's request | No Live TV caption implementation or acceptance gate | Out of scope |
-| M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Planned |
+| M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Implementation checkpoint complete; runtime gates pending |
 | M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Planned |
 | M6 — Metal efficiency | Reduce synchronous submission/waits and copies without violating reference/field dependencies; retain CPU oracle | Fidelity/conformance-oriented fixtures, benchmark without validation plus live CPU/energy measurements; no default change without evidence | Planned |
-| M7 — Production acceptance | Resolve remaining supported-MPEG-2 gaps, simplify experimental controls, operational docs and dependency/relink artifacts | Full required builds/tests, explicit user picture/audio/caption/input acceptance; rollback to standard route retained | Planned |
+| M7 — Production acceptance | Resolve remaining supported-MPEG-2 gaps, simplify experimental controls, operational docs and dependency/relink artifacts | Full required builds/tests, explicit user picture/audio/input acceptance; rollback to standard route retained | Planned |
 
 DVR and Live TV captions/subtitles are excluded from all milestones. Seek/skip/Go Live stay disabled for this
 pipeline. Other exclusions: library codec/container parity, HDR/Dolby Vision,
@@ -168,3 +172,54 @@ User explicitly stated Live TV does not need captions. M3 is out of scope, not
 an unfinished parity requirement. No caption code or dependency was added.
 Skip directly to M4. Live TV caption/seek controls should not advertise these
 excluded capabilities. Existing library subtitle behavior remains unchanged.
+
+### P4 — 2026-10-25: M4 implementation checkpoint; pause requested
+
+Implemented bounded recovery in the existing engine worker. Retryable network,
+packet-decode and video-format failures reopen the same authorized session URL
+in the same CPU/Metal mode; no Plex retune/start/encoding request or silent CPU
+fallback is added. Consecutive delays are 0.5, 1 and 2 seconds, then a safe visible
+error. Thirty seconds of decoded progress replenishes the budget; a few packets
+do not. Unavailable codecs and Metal failures remain explicit permanent errors.
+
+Renderer automatic-flush/output-configuration notifications request the same
+serialized recovery. Audio selection is restored by language/codec/channel
+signature, old output is flushed, startup buffers refill, and the common clock
+reanchors while elapsed session time is retained. Timestamp steps backward over
+0.5 seconds or forward over 2 seconds flush/reanchor the output; starvation or
+renderer backpressure exceeding eight seconds requests bounded reconnect.
+Generation and flush IDs discard retired-session callbacks. Stopped engines
+cannot be restarted by Play/Pause/recovery callbacks.
+
+Pause keeps buffers bounded. Resuming after 15 seconds or more requests a fresh
+read of the live session rather than retaining a DVR window. Foreground recovery
+uses the coordinator's existing scene-active callback; no separate app launch or
+manual device interaction was performed. Diagnostics expose reconnect and
+timestamp-reset counts. GPU counters describe the current native decoder context
+and may reset on reconnect.
+
+Verification: signed Mac build passed; **184 Mac tests** passed. Nine native
+stream cases and new fault checks passed with Metal validation: HTTP 503 is
+classified recoverable, cancellation interrupts an in-flight blocked HTTP open
+within two seconds, and concatenated streams changing resolution fail with a
+recoverable classification. Policy tests cover the three-attempt limit, sustained
+progress reset, discontinuity thresholds, long-pause threshold and non-resurrection
+after stop. Existing field cadence, PCM layout/rate, audio switching, HLS token
+propagation and CPU/Metal fidelity checks still pass. No project/shared/TV source
+changes in M4; M1's signed TV build and 32 tvOS 26 tests remain the TV baseline.
+
+Remaining acceptance/risk: native tests exercise failure signals and cancellation;
+they do not prove the full render-loop recovery on a real Plex channel. User
+verification is still required for repeated retunes, real network interruption,
+short/long pauses, sleep/wake, output-device changes and synchronization. The
+renderer may not recover from every terminal output failure; bounded retries
+then show an error and retain Standard playback as the manual escape route.
+Resolution changes recover by reopening at the live stream rather than seamlessly
+continuing the old decoder. Corrupt-packet handling relies on FFmpeg and bounded
+reconnects; exhaustive damaged-broadcast coverage and sustained memory/energy
+validation belong to M5. No caption or DVR work is pending.
+
+Commit: this M4 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
+**Paused here at the user's explicit request.** On resume, read this file and
+AGENTS instructions, inspect Git status, incorporate user runtime feedback, then
+start M5. Do not silently promote the experiment or enable Metal by default.

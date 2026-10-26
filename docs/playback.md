@@ -264,11 +264,14 @@ cancellable input. Cmd-I exposes the actual path and GPU block count.
 
 Experimental audio supports track selection and preserves supported source PCM
 channel layouts/sample rates; default device output and physical surround need
-user verification. Captions remain unavailable. DVR is out of scope. BWDIF supplies progressive output at field cadence for
+user verification. Live TV captions and DVR are explicitly out of scope. BWDIF supplies progressive output at field cadence for
 interlaced video; progressive input retains its cadence. Startup waits for
 audio/video buffer coverage, and Cmd-I exposes queue starvation observations. Unsupported controls are
-disabled. Errors remain explicit, with Standard playback available on retune.
-No automatic fallback masks an A/B result. See the
+disabled. Retryable input/output interruptions reconnect to the same session URL and
+mode with a three-attempt budget. Timestamp jumps reanchor the output clock;
+long-pause resume refreshes the live session. Permanent errors remain explicit,
+with Standard playback available on retune. No automatic CPU fallback masks an
+A/B result. See the
 [native experiment README](../Native/CineramaMPEG2/README.md) for architecture,
 run commands, real-stream tests and performance results. The Metal path is
 currently slower than CPU on generated HD fixtures; CPU/energy savings have not
