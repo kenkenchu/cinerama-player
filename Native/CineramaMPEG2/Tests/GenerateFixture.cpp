@@ -13,7 +13,8 @@ extern "C" void cinerama_mpeg2_idct_configure(void *,AVCodecContext *) { abort()
 extern "C" void cinerama_mpeg2_idct_flush(void *) { abort(); }
 static void check(int r) { if(r<0) { char e[128]; av_strerror(r,e,sizeof(e)); fprintf(stderr,"Fixture error: %s\n",e); exit(1); } }
 int main(int argc,char **argv) {
-    if(argc!=5) return 2;
+    if(argc!=5 && argc!=6) return 2;
+    int audioMode=argc==6?atoi(argv[5]):0;
     const char *path=argv[1]; int interlaced=atoi(argv[2]), chroma422=atoi(argv[3]), hd=atoi(argv[4]);
     AVFormatContext *mux=nullptr;
     check(avformat_alloc_output_context2(&mux,nullptr,strstr(path,".m3u8")?"hls":"mpegts",path));
@@ -29,10 +30,20 @@ int main(int argc,char **argv) {
     check(avcodec_parameters_from_context(vs->codecpar,v));
     AVCodecContext *a=avcodec_alloc_context3(avcodec_find_encoder(AV_CODEC_ID_AC3));
     a->sample_fmt=AV_SAMPLE_FMT_FLTP; a->sample_rate=48000; a->time_base={1,48000}; a->bit_rate=192000;
-    a->ch_layout=AV_CHANNEL_LAYOUT_STEREO;
+    a->ch_layout=audioMode?AVChannelLayout(AV_CHANNEL_LAYOUT_5POINT1):AVChannelLayout(AV_CHANNEL_LAYOUT_STEREO);
     check(avcodec_open2(a,a->codec,nullptr));
     AVStream *as=avformat_new_stream(mux,nullptr); as->time_base=a->time_base;
     check(avcodec_parameters_from_context(as->codecpar,a));
+    av_dict_set(&as->metadata,"language","eng",0);
+    AVCodecContext *a2=nullptr; AVStream *as2=nullptr;
+    if(audioMode==2) {
+        a2=avcodec_alloc_context3(avcodec_find_encoder(AV_CODEC_ID_AAC));
+        a2->sample_fmt=AV_SAMPLE_FMT_FLTP; a2->sample_rate=44100; a2->time_base={1,44100};
+        a2->bit_rate=128000; a2->ch_layout=AV_CHANNEL_LAYOUT_STEREO;
+        check(avcodec_open2(a2,a2->codec,nullptr));
+        as2=avformat_new_stream(mux,nullptr); as2->time_base=a2->time_base;
+        check(avcodec_parameters_from_context(as2->codecpar,a2)); av_dict_set(&as2->metadata,"language","spa",0);
+    }
     if(!(mux->oformat->flags&AVFMT_NOFILE)) check(avio_open(&mux->pb,path,AVIO_FLAG_WRITE));
     AVDictionary *options=nullptr;
     av_dict_set(&options,"hls_time","1",0); av_dict_set(&options,"hls_list_size","0",0);
@@ -51,7 +62,12 @@ int main(int argc,char **argv) {
     check(av_frame_get_buffer(vf,32));
     AVFrame *af=av_frame_alloc(); af->nb_samples=a->frame_size; af->sample_rate=48000; af->format=a->sample_fmt;
     check(av_channel_layout_copy(&af->ch_layout,&a->ch_layout)); check(av_frame_get_buffer(af,0));
-    int64_t audioPTS=0;
+    AVFrame *af2=nullptr;
+    if(a2) {
+        af2=av_frame_alloc(); af2->nb_samples=a2->frame_size; af2->sample_rate=44100; af2->format=a2->sample_fmt;
+        check(av_channel_layout_copy(&af2->ch_layout,&a2->ch_layout)); check(av_frame_get_buffer(af2,0));
+    }
+    int64_t audioPTS=0, audioPTS2=0;
     for(int n=0;n<90;n++) {
         check(av_frame_make_writable(vf)); vf->pts=n;
         if(interlaced) vf->flags=AV_FRAME_FLAG_INTERLACED|(interlaced==2?0:AV_FRAME_FLAG_TOP_FIELD_FIRST);
@@ -68,13 +84,19 @@ int main(int argc,char **argv) {
         encode(v,vs,vf);
         while(audioPTS<((n+1)*48000/30)) {
             check(av_frame_make_writable(af)); af->pts=audioPTS;
-            for(int ch=0;ch<2;ch++) for(int i=0;i<af->nb_samples;i++)
+            for(int ch=0;ch<a->ch_layout.nb_channels;ch++) for(int i=0;i<af->nb_samples;i++)
                 ((float *)af->extended_data[ch])[i]=float(0.1*sin(2*M_PI*(440+ch*110)*(audioPTS+i)/48000));
             encode(a,as,af); audioPTS+=af->nb_samples;
         }
+        while(a2 && audioPTS2<((n+1)*44100/30)) {
+            check(av_frame_make_writable(af2)); af2->pts=audioPTS2;
+            for(int ch=0;ch<2;ch++) for(int i=0;i<af2->nb_samples;i++)
+                ((float *)af2->extended_data[ch])[i]=float(0.1*sin(2*M_PI*(660+ch*110)*(audioPTS2+i)/44100));
+            encode(a2,as2,af2); audioPTS2+=af2->nb_samples;
+        }
     }
-    encode(v,vs,nullptr); encode(a,as,nullptr); check(av_write_trailer(mux));
-    av_frame_free(&vf); av_frame_free(&af); avcodec_free_context(&v); avcodec_free_context(&a);
+    encode(v,vs,nullptr); encode(a,as,nullptr); if(a2) encode(a2,as2,nullptr); check(av_write_trailer(mux));
+    av_frame_free(&vf); av_frame_free(&af); av_frame_free(&af2); avcodec_free_context(&a2); avcodec_free_context(&v); avcodec_free_context(&a);
     if(!(mux->oformat->flags&AVFMT_NOFILE)) avio_closep(&mux->pb);
     avformat_free_context(mux);
 }

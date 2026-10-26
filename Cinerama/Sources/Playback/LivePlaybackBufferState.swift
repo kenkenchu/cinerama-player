@@ -10,6 +10,7 @@ struct LivePlaybackBufferState {
     private(set) var audioStarvations = 0
     private var wasAudioStarved = false
 
+    mutating func resetAudio() { audioEnd = nil; wasAudioStarved = false }
     mutating func enqueueAudio(end: TimeInterval) { audioEnd = max(audioEnd ?? end, end) }
     mutating func enqueueVideo(end: TimeInterval) { videoEnd = max(videoEnd ?? end, end) }
     func audioDepth(at time: TimeInterval) -> TimeInterval { max(0, (audioEnd ?? time) - time) }

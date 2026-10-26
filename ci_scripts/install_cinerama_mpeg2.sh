@@ -28,7 +28,7 @@ if [ ! -f "$PREFIX/lib/libavcodec.a" ] || [ ! -f "$PREFIX/ffmpeg.sha256" ] || [ 
        --disable-shared --enable-static --enable-pic --disable-autodetect --disable-gpl --disable-nonfree \
        --disable-doc --disable-programs --disable-avdevice --enable-avfilter \
        --disable-everything --enable-filter=bwdif,buffer,buffersink --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
-       --enable-encoder=mpeg2video,ac3 --enable-muxer=mpegts,hls --enable-decoder=mpeg2video,ac3,eac3,aac,mp2 --enable-parser=mpegvideo,ac3,aac,mpegaudio \
+       --enable-encoder=mpeg2video,ac3,aac --enable-muxer=mpegts,hls --enable-decoder=mpeg2video,ac3,eac3,aac,mp2 --enable-parser=mpegvideo,ac3,aac,mpegaudio \
        --enable-demuxer=hls,mpegts,mpegvideo,mov --enable-protocol=file,http,https,tcp,tls,crypto \
        --enable-securetransport
      make -j "$(sysctl -n hw.logicalcpu)"

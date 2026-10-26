@@ -102,6 +102,8 @@ protocol PlaybackEngine: AnyObject {
     var seekableTimeRange: ClosedRange<TimeInterval>? { get }
     var supportsSeeking: Bool { get }
     var supportsTrackSelection: Bool { get }
+    var supportsAudioTrackSelection: Bool { get }
+    var supportsSubtitleTrackSelection: Bool { get }
     var isBuffering: Bool { get }
     var error: PlaybackError? { get }
     var videoEnhancementStatus: VideoEnhancementStatus { get }
@@ -192,6 +194,8 @@ protocol PlaybackEngine: AnyObject {
 extension PlaybackEngine {
     var supportsSeeking: Bool { true }
     var supportsTrackSelection: Bool { true }
+    var supportsAudioTrackSelection: Bool { supportsTrackSelection }
+    var supportsSubtitleTrackSelection: Bool { supportsTrackSelection }
     var renderingDiagnostics: [(String, String)] { [] }
 
     var seekableTimeRange: ClosedRange<TimeInterval>? {

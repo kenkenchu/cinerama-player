@@ -21,8 +21,8 @@ show zero. Both modes use the same demux, audio conversion, rendering and clocks
 Compare CPU load after startup has settled. Total app load and energy matter
 more than GPU execution time alone.
 
-Experimental limits are visible in Settings: default audio track downmixed to
-stereo; no captions, track switching or spatial audio. DVR is explicitly out of
+Experimental limits are visible in Settings: no captions or spatial audio.
+Audio tracks can be selected; PCM preserves supported source layouts and rates. DVR is explicitly out of
 scope; seek/skip/Go Live stay disabled. BWDIF converts interlaced frames to
 progressive field-rate output with automatic TFF/BFF parity; progressive frames
 pass through at their original cadence. Deinterlacing runs on CPU in both modes.
@@ -50,8 +50,9 @@ There is no silent CPU fallback that could invalidate an A/B test.
 - A bounded row batch (8192 blocks) and input dimension limits bound native GPU
   staging. Output is converted to video-range NV12 and retained CMSampleBuffers.
   A bounded FFmpeg BWDIF filter precedes NV12 conversion.
-  AC3/EAC3/AAC/MP2 audio is decoded locally and resampled to 48 kHz stereo float
-  PCM. Unsupported codecs fail rather than requesting Plex conversion.
+  AC3/EAC3/AAC/MP2 audio is decoded locally to interleaved float PCM at the
+  source rate, preserving supported mono through 7.1 layouts with explicit
+  Core Audio channel labels. Unknown layouts fail explicitly. Unsupported codecs fail rather than requesting Plex conversion.
 - `AVSampleBufferRenderSynchronizer` paces video and audio on one media clock.
   The worker waits for renderer readiness and limits decode-ahead to 600 ms.
   Startup waits for at least 200 ms of audio and 100 ms of video (video alone
@@ -124,3 +125,19 @@ A distributable build must accompany the corresponding FFmpeg source and
 relinkable bridge object, as applicable to LGPL section 6; the repository alone
 is not a prepackaged binary distribution kit. The existing app license and
 original-project notices remain unchanged.
+
+## Audio tracks checkpoint (M2)
+
+The native demuxer enumerates audio stream IDs, languages, codecs and channel
+counts. The Mac player exposes supported selections and retains its existing
+language preference/metadata matching. Selection is an atomic request consumed
+on the decoder worker, which replaces only the audio context and converter.
+The UI flushes old PCM and rejects stale samples tagged with the retired stream
+ID. Video and the common clock stay running. Brief switch gaps and default-output
+device changes still need user verification; renderer-failure recovery is M4.
+The system audio renderer follows its default output; decoded channel count in
+Cmd-I is not proof of physical multichannel speaker output.
+
+Native fixtures additionally cover 5.1 AC3 and a two-language AC3/AAC stream.
+Checks assert PCM channel descriptions and sample rate, switch from 5.1/48 kHz to
+stereo/44.1 kHz and back, and reject non-audio stream IDs. Captions remain disabled.

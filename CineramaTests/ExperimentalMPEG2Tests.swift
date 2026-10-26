@@ -20,6 +20,8 @@ import Testing
             let engine = ExperimentalMPEG2Engine(mode: mode)
             #expect(!engine.supportsSeeking)
             #expect(!engine.supportsTrackSelection)
+            #expect(engine.supportsAudioTrackSelection)
+            #expect(!engine.supportsSubtitleTrackSelection)
             #expect(!engine.supportsExternalSubtitles)
             #expect(engine.seekableTimeRange == nil)
             #expect(engine.availableAudioTracks.isEmpty && engine.availableSubtitleTracks.isEmpty)
@@ -57,5 +59,8 @@ struct LivePlaybackBufferTests {
         state.observe(time: 5, running: true)
         #expect(state.audioStarvations == 2)
         #expect(state.audioDepth(at: 5) == 0)
+        state.resetAudio()
+        #expect(state.audioEnd == nil)
+        #expect(!state.canStart(at: 5))
     }
 }

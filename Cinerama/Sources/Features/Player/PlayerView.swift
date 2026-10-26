@@ -247,7 +247,7 @@ private struct MacPlayerSession: View {
                     }
                 }
                 .help("Choose an audio track")
-                .disabled(!model.engine.supportsTrackSelection)
+                .disabled(!model.engine.supportsAudioTrackSelection)
                 Menu("Subtitles", systemImage: "captions.bubble") {
                     Picker("Subtitle track", selection: Binding<Int?>(
                         get: { model.selectedSubtitleTrackID },
@@ -269,7 +269,7 @@ private struct MacPlayerSession: View {
                     .labelsHidden()
                 }
                 .help("Choose a subtitle track")
-                .disabled(!model.engine.supportsTrackSelection)
+                .disabled(!model.engine.supportsSubtitleTrackSelection)
                 if let info = playback.debugInfo, info.canSelectPlaybackQuality {
                     Menu("Quality", systemImage: "slider.horizontal.3") {
                         ForEach(info.availableQualityPresets) { preset in

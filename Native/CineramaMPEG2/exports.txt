@@ -8,3 +8,11 @@ _cm2_gpu_seconds
 _cm2_error
 _cm2_next
 _cm2_has_audio
+_cm2_audio_track_count
+_cm2_audio_track_id
+_cm2_audio_track_channels
+_cm2_audio_track_language
+_cm2_audio_track_codec
+_cm2_audio_track_supported
+_cm2_selected_audio
+_cm2_request_audio

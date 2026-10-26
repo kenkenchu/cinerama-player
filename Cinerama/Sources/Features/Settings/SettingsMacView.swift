@@ -46,7 +46,7 @@ struct SettingsMacView: View {
                 }
                 Text("Applies when you retune an MPEG-2 channel. Compare Experimental CPU and Experimental Metal using the same channel. Metal performs inverse DCT; parsing and motion prediction use the CPU.")
                     .foregroundStyle(.secondary)
-                Text("Experimental modes use the default audio track in stereo, with no captions or track switching. Live playback only; DVR is not supported. Select Standard playback to restore the normal player. Forced player overrides and AirPlay take priority.")
+                Text("Experimental modes support audio-track selection and multichannel PCM. Captions are not available yet. Live playback only; DVR is not supported. Select Standard playback to restore the normal player. Forced player overrides and AirPlay take priority.")
                     .foregroundStyle(.secondary)
             }
             Section("Library") {

@@ -262,8 +262,9 @@ with GPU work. Parsing and frame/field motion compensation remain CPU work.
 Native audio/video sample renderers share one clock, bounded decode-ahead and
 cancellable input. Cmd-I exposes the actual path and GPU block count.
 
-Experimental limits: stereo/default audio, no captions or track selection. DVR
-is out of scope. BWDIF supplies progressive output at field cadence for
+Experimental audio supports track selection and preserves supported source PCM
+channel layouts/sample rates; default device output and physical surround need
+user verification. Captions remain unavailable. DVR is out of scope. BWDIF supplies progressive output at field cadence for
 interlaced video; progressive input retains its cadence. Startup waits for
 audio/video buffer coverage, and Cmd-I exposes queue starvation observations. Unsupported controls are
 disabled. Errors remain explicit, with Standard playback available on retune.

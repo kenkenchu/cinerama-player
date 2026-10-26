@@ -44,6 +44,9 @@ struct CM2Decoder {
     bool filterEOF = false;
     int filterWidth = 0, filterHeight = 0, filterFormat = -1;
     SwrContext *swr = nullptr;
+    AVChannelLayout outputLayout = {};
+    int outputRate = 0, inputAudioFormat = -1;
+    std::atomic<int> requestedAudio{-1};
     SwsContext *sws = nullptr;
     int videoIndex = -1, audioIndex = -1;
     AVCodecContext *pending = nullptr;
@@ -198,7 +201,12 @@ int cm2_open(CM2Decoder *d,const char *url) {
     int result=avformat_open_input(&d->format,url,nullptr,&options); av_dict_free(&options);
     if(result<0 || avformat_find_stream_info(d->format,nullptr)<0) { fail(d,"Could not open the experimental MPEG-2 stream"); return -1; }
     d->videoIndex=av_find_best_stream(d->format,AVMEDIA_TYPE_VIDEO,-1,-1,nullptr,0);
-    d->audioIndex=av_find_best_stream(d->format,AVMEDIA_TYPE_AUDIO,-1,-1,nullptr,0);
+    const AVCodec *audioCodec=nullptr;
+    d->audioIndex=av_find_best_stream(d->format,AVMEDIA_TYPE_AUDIO,-1,-1,&audioCodec,0);
+    if(d->audioIndex<0) for(unsigned i=0;i<d->format->nb_streams;i++)
+        if(d->format->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO) {
+            fail(d,"No locally supported audio track; choose Standard playback"); return -1;
+        }
     if(d->videoIndex<0 || d->format->streams[d->videoIndex]->codecpar->codec_id!=AV_CODEC_ID_MPEG2VIDEO) {
         fail(d,"Experimental decoder requires MPEG-2 video"); return -1;
     }
@@ -217,6 +225,35 @@ int cm2_open(CM2Decoder *d,const char *url) {
         if(avcodec_open2(context,codec,nullptr)<0) { fail(d,"Could not initialize the experimental decoder"); return -1; }
     }
     return 0;
+}
+static bool switchAudio(CM2Decoder *d,int index) {
+    if(index<0 || index>=(int)d->format->nb_streams || d->format->streams[index]->codecpar->codec_type!=AVMEDIA_TYPE_AUDIO) {
+        fail(d,"Invalid audio selection"); return false;
+    }
+    AVCodecParameters *params=d->format->streams[index]->codecpar;
+    const AVCodec *codec=avcodec_find_decoder(params->codec_id);
+    AVCodecContext *next=codec?avcodec_alloc_context3(codec):nullptr;
+    if(!next) { fail(d,"Selected audio codec is unavailable; choose Standard playback"); return false; }
+    avcodec_parameters_to_context(next,params); next->thread_count=1; next->thread_type=0;
+    if(avcodec_open2(next,codec,nullptr)<0) { avcodec_free_context(&next); fail(d,"Selected audio decoder could not open"); return false; }
+    if(d->pending==d->audio) d->pending=nullptr;
+    avcodec_free_context(&d->audio); swr_free(&d->swr); av_channel_layout_uninit(&d->outputLayout);
+    d->outputRate=0; d->inputAudioFormat=-1; d->audio=next; d->audioIndex=index;
+    return true;
+}
+static AudioChannelLabel audioLabel(enum AVChannel channel) {
+    switch(channel) {
+        case AV_CHAN_FRONT_LEFT: return kAudioChannelLabel_Left;
+        case AV_CHAN_FRONT_RIGHT: return kAudioChannelLabel_Right;
+        case AV_CHAN_FRONT_CENTER: return kAudioChannelLabel_Center;
+        case AV_CHAN_LOW_FREQUENCY: return kAudioChannelLabel_LFEScreen;
+        case AV_CHAN_BACK_LEFT: return kAudioChannelLabel_LeftSurround;
+        case AV_CHAN_BACK_RIGHT: return kAudioChannelLabel_RightSurround;
+        case AV_CHAN_SIDE_LEFT: return kAudioChannelLabel_LeftSurroundDirect;
+        case AV_CHAN_SIDE_RIGHT: return kAudioChannelLabel_RightSurroundDirect;
+        case AV_CHAN_BACK_CENTER: return kAudioChannelLabel_CenterSurround;
+        default: return kAudioChannelLabel_Unknown;
+    }
 }
 static bool prepareVideoFilter(CM2Decoder *d, AVFrame *frame) {
     if (d->filters) {
@@ -283,26 +320,42 @@ static CMSampleBufferRef videoSample(CM2Decoder *d, AVFrame *f, CMTime pts) {
     return sample;
 }
 static CMSampleBufferRef audioSample(CM2Decoder *d,AVFrame *f,CMTime pts) {
-    if(!d->swr) {
-        AVChannelLayout stereo=AV_CHANNEL_LAYOUT_STEREO;
-        if(swr_alloc_set_opts2(&d->swr,&stereo,AV_SAMPLE_FMT_FLT,48000,&f->ch_layout,(AVSampleFormat)f->format,f->sample_rate,0,nullptr)<0 || swr_init(d->swr)<0) {
+    const int channels=f->ch_layout.nb_channels, rate=f->sample_rate;
+    if(channels<1 || channels>8 || rate<8000 || rate>192000) { fail(d,"Unsupported audio channel count or rate"); return nullptr; }
+    const size_t layoutSize=offsetof(AudioChannelLayout,mChannelDescriptions)+channels*sizeof(AudioChannelDescription);
+    std::vector<uint8_t> layoutBytes(layoutSize,0);
+    AudioChannelLayout *layout=(AudioChannelLayout *)layoutBytes.data();
+    layout->mChannelLayoutTag=kAudioChannelLayoutTag_UseChannelDescriptions;
+    layout->mNumberChannelDescriptions=channels;
+    for(int i=0;i<channels;i++) {
+        AudioChannelLabel label=audioLabel(av_channel_layout_channel_from_index(&f->ch_layout,i));
+        if(label==kAudioChannelLabel_Unknown) { fail(d,"Unsupported audio channel layout"); return nullptr; }
+        layout->mChannelDescriptions[i].mChannelLabel=label;
+    }
+    if(!d->swr || d->outputRate!=rate || d->inputAudioFormat!=f->format || av_channel_layout_compare(&d->outputLayout,&f->ch_layout)!=0) {
+        swr_free(&d->swr); av_channel_layout_uninit(&d->outputLayout);
+        if(av_channel_layout_copy(&d->outputLayout,&f->ch_layout)<0 ||
+           swr_alloc_set_opts2(&d->swr,&f->ch_layout,AV_SAMPLE_FMT_FLT,rate,&f->ch_layout,(AVSampleFormat)f->format,rate,0,nullptr)<0 || swr_init(d->swr)<0) {
             fail(d,"Audio conversion unavailable"); return nullptr;
         }
+        d->outputRate=rate; d->inputAudioFormat=f->format;
     }
     int count=swr_get_out_samples(d->swr,f->nb_samples);
-    std::vector<float> samples(count*2);
+    std::vector<float> samples(count*channels);
     uint8_t *output=(uint8_t *)samples.data();
     count=swr_convert(d->swr,&output,count,(const uint8_t **)f->extended_data,f->nb_samples);
     if(count<=0) { fail(d,"Audio conversion failed"); return nullptr; }
-    AudioStreamBasicDescription asbd={48000,kAudioFormatLinearPCM,kAudioFormatFlagIsFloat|kAudioFormatFlagIsPacked,8,1,8,2,32,0};
+    const int bytesPerSample=channels*int(sizeof(float));
+    AudioStreamBasicDescription asbd={(double)rate,kAudioFormatLinearPCM,kAudioFormatFlagIsFloat|kAudioFormatFlagIsPacked,
+        (UInt32)bytesPerSample,1,(UInt32)bytesPerSample,(UInt32)channels,32,0};
     CMAudioFormatDescriptionRef format=nullptr;
-    CMAudioFormatDescriptionCreate(nullptr,&asbd,0,nullptr,0,nullptr,nullptr,&format);
+    CMAudioFormatDescriptionCreate(nullptr,&asbd,layoutSize,layout,0,nullptr,nullptr,&format);
     CMBlockBufferRef block=nullptr;
-    size_t length=count*8;
+    size_t length=count*bytesPerSample;
     CMBlockBufferCreateWithMemoryBlock(nullptr,nullptr,length,nullptr,nullptr,0,length,0,&block);
     if(block) CMBlockBufferReplaceDataBytes(samples.data(),block,0,length);
-    CMSampleTimingInfo timing={CMTimeMake(1,48000),pts,kCMTimeInvalid};
-    size_t size=8; CMSampleBufferRef sample=nullptr;
+    CMSampleTimingInfo timing={CMTimeMake(1,rate),pts,kCMTimeInvalid};
+    size_t size=bytesPerSample; CMSampleBufferRef sample=nullptr;
     if(block && format) CMSampleBufferCreateReady(nullptr,block,format,count,1,&timing,1,&size,&sample);
     if(block) CFRelease(block); if(format) CFRelease(format);
     if(!sample) fail(d,"Audio sample creation failed");
@@ -311,6 +364,8 @@ static CMSampleBufferRef audioSample(CM2Decoder *d,AVFrame *f,CMTime pts) {
 int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
     active=d; *sample=nullptr;
     while(!d->cancelled.load() && !d->error[0]) {
+        int requested=d->requestedAudio.exchange(-1);
+        if(requested>=0 && requested!=d->audioIndex && !switchAudio(d,requested)) return -1;
         if(d->filterOutput) {
             int filtered=av_buffersink_get_frame(d->filterOutput,d->filtered);
             if(filtered>=0) {
@@ -383,7 +438,7 @@ void cm2_close(CM2Decoder *d) {
     avcodec_free_context(&d->video); avcodec_free_context(&d->audio);
     avformat_close_input(&d->format); av_frame_free(&d->frame); av_frame_free(&d->filtered); av_packet_free(&d->packet);
     avfilter_graph_free(&d->filters);
-    swr_free(&d->swr); sws_freeContext(d->sws);
+    swr_free(&d->swr); av_channel_layout_uninit(&d->outputLayout); sws_freeContext(d->sws);
     if(active==d) active=nullptr;
     delete d;
 }
@@ -391,3 +446,25 @@ int cm2_has_audio(CM2Decoder *d) { return d->audioIndex>=0; }
 uint64_t cm2_gpu_blocks(CM2Decoder *d) { return d->blocks.load(); }
 double cm2_gpu_seconds(CM2Decoder *d) { return d->gpuTime.load(); }
 const char *cm2_error(CM2Decoder *d) { return d->error[0]?d->error:"Experimental decoder stopped"; }
+
+static AVStream *audioStream(CM2Decoder *d,int position) {
+    if(!d->format || position<0) return nullptr;
+    for(unsigned i=0;i<d->format->nb_streams;i++) if(d->format->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO)
+        if(position--==0) return d->format->streams[i];
+    return nullptr;
+}
+int cm2_audio_track_count(CM2Decoder *d) {
+    int count=0; while(audioStream(d,count)) count++; return count;
+}
+int cm2_audio_track_id(CM2Decoder *d,int i) { AVStream *s=audioStream(d,i); return s?s->index:-1; }
+int cm2_audio_track_channels(CM2Decoder *d,int i) { AVStream *s=audioStream(d,i); return s?s->codecpar->ch_layout.nb_channels:0; }
+const char *cm2_audio_track_language(CM2Decoder *d,int i) {
+    AVStream *s=audioStream(d,i); AVDictionaryEntry *entry=s?av_dict_get(s->metadata,"language",nullptr,0):nullptr;
+    return entry?entry->value:"";
+}
+const char *cm2_audio_track_codec(CM2Decoder *d,int i) { AVStream *s=audioStream(d,i); return s?avcodec_get_name(s->codecpar->codec_id):""; }
+int cm2_audio_track_supported(CM2Decoder *d,int i) {
+    AVStream *s=audioStream(d,i); return s && s->codecpar->ch_layout.nb_channels<=8 && avcodec_find_decoder(s->codecpar->codec_id)!=nullptr;
+}
+int cm2_selected_audio(CM2Decoder *d) { return d->audioIndex; }
+void cm2_request_audio(CM2Decoder *d,int id) { d->requestedAudio.store(id); }

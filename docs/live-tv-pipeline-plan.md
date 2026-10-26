@@ -9,10 +9,10 @@
 - User correction: **DVR is not required**. No buffer seeking, recording, skip
   controls or Go Live implementation. Pause/resume is in scope; long pauses must
   not grow memory without bound or become an implicit recording feature.
-- Current milestone: M1 implemented and automated checks passed; user runtime
-  verification pending. M2 is the next independent implementation milestone.
-- Next action: preserve multichannel PCM/layout and expose/select audio tracks;
-  keep caption controls disabled until M3. Do not add DVR.
+- Current milestone: M2 audio tracks and PCM layout implementation; automated
+  checks passed, hardware/output-device validation remains pending.
+- Next action: M3 captions. Keep unsupported caption controls disabled until a
+  tested timed-caption path exists. M1/M2 user checks remain pending. No DVR.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
 
@@ -43,7 +43,7 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | --- | --- | --- | --- |
 | M0 — Plan and baseline | Resumable plan, exclusions, previous evidence | Linked from docs index; clean diff and links | Complete |
 | M1 — Picture and audio baseline | Proper progressive output from interlaced sources; field order/cadence; stable timestamped PCM; buffer/underrun diagnostics | Generated progressive/TFF/BFF fixtures; CPU/Metal fidelity and cadence checks; safe pause/resume; user picture/audio sync check | Implemented; user verification pending |
-| M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Planned |
+| M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Tracks/layout implemented; device recovery/verification pending |
 | M3 — Captions and subtitles | Broadcast caption/subtitle extraction, selection and Off, synchronized display following macOS caption preferences | Reproducible caption fixtures, timing/selection tests; user style/readability checks; explicitly document unsupported formats | Planned |
 | M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Planned |
 | M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Planned |
@@ -129,3 +129,33 @@ No agent visual inspection or app launch was performed.
 
 Commit: the M1 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
 Next: M2 multichannel and audio selection; retain M1 user checks as pending.
+
+### P2 — 2026-10-25: M2 audio selection and PCM layout checkpoint
+
+M1 code checkpoint is `35193ca`. Added audio stream enumeration with stable
+container IDs, language/codec/channel metadata and decoder availability. The
+existing player language selection can use those tracks. Audio-only selection
+capability is separate from caption selection, which remains disabled. Selection
+is applied on the native worker; old-context output is flushed and stale tagged
+samples are rejected in the Mac engine without retuning Plex or changing video.
+
+Float PCM now preserves source sample rate and supported mono-to-7.1 channel
+layouts with explicit Core Audio channel descriptions, instead of downmixing all
+input to stereo/48 kHz. Unmapped layouts and unavailable codecs fail explicitly.
+Default-output-device routing is delegated to AVSampleBufferAudioRenderer; actual
+route changes, speaker mapping and output failure recovery remain unverified.
+Robust failure recovery is carried into M4, not declared complete here.
+
+Verification: nine native cases passed with real GPU execution and Metal
+validation, including new 5.1 and English/Spanish multi-track fixtures. Checks
+assert PCM channel count, explicit mapping and rate; switch 5.1/48 kHz → stereo
+AAC/44.1 kHz → 5.1/48 kHz; reject invalid non-audio IDs. Deinterlaced CPU/Metal
+outputs still pass PSNR >45 dB / maximum-error <=12 gates (edge interpolation can
+amplify the earlier pre-deinterlace differences). Signed Mac build and 182 Mac
+tests passed. M2 changes are Mac-only and add no project/shared/TV sources;
+M1's signed TV build and 32-test tvOS 26 baseline are unchanged.
+
+User checks pending: both language selections, switch gap and synchronization,
+physical surround layout, headphones/default-output changes, plus M1 checks.
+Commit: this M2 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
+Next: M3 timed captions, with existing limitations explicit until tested.

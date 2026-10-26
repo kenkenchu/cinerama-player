@@ -372,9 +372,9 @@ Resume, for both playing and paused sessions; visual inspection is user-owned.
 Settings offers Standard playback, Experimental CPU and Experimental Metal for
 MPEG-2 Live TV. Changes apply on retune; forced engine preferences and AirPlay
 retain priority. The experimental player shows its hybrid IDCT path and GPU block
-count in Cmd-I. It disables seek/Go Live and audio/subtitle controls, with the
-stereo/default-track and no-caption limitations explained beside
-the setting. DVR is out of scope; interlaced output is deinterlaced at field rate. Other Mac
+count in Cmd-I. It disables seek/Go Live and subtitle controls. Audio tracks can be selected;
+PCM channel count/rate are shown in diagnostics. Caption limitations are
+explained beside the setting. DVR is out of scope; interlaced output is deinterlaced at field rate. Other Mac
 playback and the TV UI keep their existing behavior.
 See [playback](playback.md#experimental-metal-mpeg-2-reconstruction) and the
 [native experiment](../Native/CineramaMPEG2/README.md). No visual/input runtime

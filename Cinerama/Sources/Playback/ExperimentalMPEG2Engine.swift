@@ -36,18 +36,32 @@ private final class MPEG2NativeSession: @unchecked Sendable {
         guard cm2_open(decoder, url.absoluteString) == 0 else { throw failure }
     }
     var failure: PlaybackError { .unknown(String(cString: cm2_error(decoder))) }
+    func audioTracks() -> [AudioTrack] {
+        (0..<cm2_audio_track_count(decoder)).map { position in
+            let language = String(cString: cm2_audio_track_language(decoder, position))
+            let codec = String(cString: cm2_audio_track_codec(decoder, position))
+            let channels = Int(cm2_audio_track_channels(decoder, position))
+            let display = [language.isEmpty ? "Audio \(position + 1)" : language, codec.uppercased(), "\(channels) ch"].joined(separator: " · ")
+            var track = AudioTrack(id: Int(cm2_audio_track_id(decoder, position)), displayTitle: display,
+                language: nil, languageCode: language.isEmpty ? nil : language, codec: codec,
+                channels: channels, channelLayout: nil)
+            track.isDecodable = cm2_audio_track_supported(decoder, position) != 0
+            return track
+        }
+    }
     func next() throws -> MPEG2DecodedSample? {
         var kind: Int32 = 0
         guard let sample = cm2_next(decoder, &kind) else {
             if kind < 0 { throw failure }
             return nil
         }
-        return .init(sample: sample, kind: kind, blocks: cm2_gpu_blocks(decoder), gpuSeconds: cm2_gpu_seconds(decoder))
+        return .init(sample: sample, kind: kind, audioTrackID: Int(cm2_selected_audio(decoder)), blocks: cm2_gpu_blocks(decoder), gpuSeconds: cm2_gpu_seconds(decoder))
     }
 }
 private struct MPEG2DecodedSample: @unchecked Sendable {
     let sample: CMSampleBuffer
     let kind: Int32
+    let audioTrackID: Int
     let blocks: UInt64
     let gpuSeconds: Double
 }
@@ -59,13 +73,14 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     var duration: TimeInterval { 0 }
     var supportsSeeking: Bool { false }
     var supportsTrackSelection: Bool { false }
+    var supportsAudioTrackSelection: Bool { true }
     var seekableTimeRange: ClosedRange<TimeInterval>? { nil }
     private(set) var isBuffering = false
     private(set) var error: PlaybackError?
     var availableSubtitleTracks: [SubtitleTrack] { [] }
-    var availableAudioTracks: [AudioTrack] { [] }
+    private(set) var availableAudioTracks: [AudioTrack] = []
     var selectedSubtitleTrackID: Int? { nil }
-    var selectedAudioTrackID: Int? { nil }
+    private(set) var selectedAudioTrackID: Int?
     var prefersSpatializedAudioSession: Bool { false }
     var videoEnhancementStatus: VideoEnhancementStatus { .init(state: .unavailable, reason: "Experimental MPEG-2 renderer") }
     var onPlaybackEnded: (@MainActor () -> Void)?
@@ -74,6 +89,8 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     private(set) var gpuBlocks: UInt64 = 0
     private(set) var gpuSeconds = 0.0
     private(set) var buffers = LivePlaybackBufferState()
+    private(set) var outputAudioChannels = 0
+    private(set) var outputAudioRate = 0.0
     @ObservationIgnored private let surface = MPEG2VideoSurface()
     @ObservationIgnored private let audio = AVSampleBufferAudioRenderer()
     @ObservationIgnored private let synchronizer = AVSampleBufferRenderSynchronizer()
@@ -109,7 +126,9 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
                 let session = try MPEG2NativeSession(metal: mode == .metal)
                 guard let self, await self.attach(session, id: id) else { return }
                 try session.open(source.url)
-                await self.setAudioExpectation(cm2_has_audio(session.decoder) != 0, id: id)
+                let tracks = session.audioTracks()
+                let selected = Int(cm2_selected_audio(session.decoder))
+                await self.setAudioTracks(tracks, selected: selected, id: id)
                 while !Task.isCancelled, let decoded = try session.next() {
                     while !Task.isCancelled {
                         guard await self.isCurrent(id) else { return }
@@ -136,11 +155,13 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         return true
     }
     private func isCurrent(_ id: UUID) -> Bool { generation == id }
-    private func setAudioExpectation(_ value: Bool, id: UUID) {
+    private func setAudioTracks(_ tracks: [AudioTrack], selected: Int, id: UUID) {
         guard generation == id else { return }
-        buffers.expectsAudio = value
+        availableAudioTracks = tracks; selectedAudioTrackID = selected >= 0 ? selected : nil
+        buffers.expectsAudio = selected >= 0
     }
     private func ready(_ decoded: MPEG2DecodedSample) -> Bool {
+        if decoded.kind == 2 && decoded.audioTrackID != selectedAudioTrackID { return true }
         guard outputReady else { return false }
         if origin != nil {
             let ahead = CMTimeGetSeconds(CMTimeSubtract(CMSampleBufferGetPresentationTimeStamp(decoded.sample), synchronizer.currentTime()))
@@ -150,6 +171,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     }
     private func enqueue(_ decoded: MPEG2DecodedSample, id: UUID) {
         guard generation == id else { return }
+        if decoded.kind == 2 && decoded.audioTrackID != selectedAudioTrackID { return }
         let pts = CMSampleBufferGetPresentationTimeStamp(decoded.sample)
         if origin == nil || (!clockStarted && CMTimeCompare(pts, origin!) < 0) {
             origin = pts
@@ -159,6 +181,11 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
             surface.display.sampleBufferRenderer.enqueue(decoded.sample)
             buffers.enqueueVideo(end: CMTimeGetSeconds(pts))
         } else {
+            if let description = CMSampleBufferGetFormatDescription(decoded.sample),
+               let asbd = CMAudioFormatDescriptionGetStreamBasicDescription(description) {
+                outputAudioChannels = Int(asbd.pointee.mChannelsPerFrame)
+                outputAudioRate = asbd.pointee.mSampleRate
+            }
             audio.enqueue(decoded.sample)
             let duration = CMSampleBufferGetDuration(decoded.sample)
             let end = CMTimeGetSeconds(pts) + max(0, CMTimeGetSeconds(duration))
@@ -208,6 +235,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         audio.flush()
         origin = nil; clockStarted = false; buffers = LivePlaybackBufferState()
         currentTime = 0; gpuBlocks = 0; gpuSeconds = 0
+        availableAudioTracks = []; selectedAudioTrackID = nil; outputAudioChannels = 0; outputAudioRate = 0
         isBuffering = false; state = .stopped
     }
     func play() { desiredRate = 1; if clockStarted { synchronizer.rate = 1; state = .playing } else { startClockIfReady() } }
@@ -222,7 +250,14 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     func configureVideoEnhancement(_ request: VideoEnhancementRequest) {}
     func configureCoordinatedPlayback(itemIdentifier: String?) {}
     func selectSubtitleTrack(_ track: SubtitleTrack?) {}
-    func selectAudioTrack(_ track: AudioTrack) {}
+    func selectAudioTrack(_ track: AudioTrack) {
+        guard let session, track.isDecodable,
+              availableAudioTracks.contains(where: { $0.id == track.id && $0.isDecodable }),
+              selectedAudioTrackID != track.id else { return }
+        selectedAudioTrackID = track.id
+        audio.flush(); buffers.resetAudio()
+        cm2_request_audio(session.decoder, Int32(track.id))
+    }
     func setVideoFillEnabled(_ enabled: Bool) { surface.display.videoGravity = enabled ? .resizeAspectFill : .resizeAspect }
     func makePlayerView() -> AnyView { AnyView(MPEG2SurfaceHost(view: surface)) }
     var renderingDiagnostics: [(String, String)] {
@@ -230,12 +265,12 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
          ("GPU reconstructed blocks", String(gpuBlocks)),
          ("GPU reconstruction time", String(format: "%.3f s", gpuSeconds)),
          ("Prediction / parsing", "CPU"),
-         ("Audio", "Stereo PCM; default track"),
+         ("Audio", "\(outputAudioChannels) ch PCM · \(Int(outputAudioRate)) Hz"),
          ("Video processing", "BWDIF field-rate deinterlacing; progressive passthrough"),
          ("Audio queued", String(format: "%.3f s", buffers.audioDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),
          ("Video queued", String(format: "%.3f s", buffers.videoDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),
          ("Observed audio buffer starvations", String(buffers.audioStarvations)),
-         ("Prototype limits", "No captions or track switching; live playback only")]
+         ("Prototype limits", "No captions; live playback only")]
     }
 }
 
