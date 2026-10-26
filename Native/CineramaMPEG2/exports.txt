@@ -7,3 +7,4 @@ _cm2_gpu_blocks
 _cm2_gpu_seconds
 _cm2_error
 _cm2_next
+_cm2_has_audio

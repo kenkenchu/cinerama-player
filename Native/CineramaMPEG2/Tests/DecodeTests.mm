@@ -11,7 +11,7 @@ static Result decode(const char *path,bool metal) {
     Result r; CM2Decoder *d=cm2_create(metal); require(d,"create");
     double start=CFAbsoluteTimeGetCurrent();
     if(cm2_open(d,path)<0) { fprintf(stderr,"%s\n",cm2_error(d)); exit(1); }
-    CMTime lastAudio=kCMTimeInvalid;
+    CMTime lastAudio=kCMTimeInvalid, lastAudioEnd=kCMTimeInvalid;
     while(true) {
         int kind=0; CMSampleBufferRef sample=cm2_next(d,&kind);
         if(!sample) { if(kind<0) fprintf(stderr,"%s\n",cm2_error(d)); require(kind==0,"decode"); break; }
@@ -32,6 +32,10 @@ static Result decode(const char *path,bool metal) {
         } else {
             CMTime pts=CMSampleBufferGetPresentationTimeStamp(sample);
             if(CMTIME_IS_VALID(lastAudio)) require(CMTimeCompare(pts,lastAudio)>0,"ordered audio timestamps");
+            if(CMTIME_IS_VALID(lastAudioEnd)) require(fabs(CMTimeGetSeconds(CMTimeSubtract(pts,lastAudioEnd)))<0.00003,"continuous PCM timestamps");
+            CMTime duration=CMSampleBufferGetDuration(sample);
+            require(CMTIME_IS_NUMERIC(duration) && CMTimeGetSeconds(duration)>0,"positive aggregate PCM duration");
+            lastAudioEnd=CMTimeAdd(pts,duration);
             lastAudio=pts;
             require(CMSampleBufferGetNumSamples(sample)>0,"audio samples"); r.audio++;
         }
@@ -41,9 +45,14 @@ static Result decode(const char *path,bool metal) {
 }
 int main(int argc,char **argv) {
     @autoreleasepool {
-        require(argc==2,"fixture argument");
+        require(argc==2 || argc==3,"fixture argument");
+        size_t expectedFrames=argc==3?atoi(argv[2]):90;
         Result cpu=decode(argv[1],false), gpu=decode(argv[1],true);
-        require(cpu.frames.size()==90 && gpu.frames.size()==90,"all 90 I/P/B frames decoded");
+        require(cpu.frames.size()==expectedFrames && gpu.frames.size()==expectedFrames,"all frames including field-rate outputs decoded");
+        for(size_t i=1;i<gpu.frames.size();i++) {
+            double delta=CMTimeGetSeconds(CMTimeSubtract(gpu.frames[i].pts,gpu.frames[i-1].pts));
+            require(fabs(delta-(expectedFrames==180?1.0/60:1.0/30))<0.00001,"progressive/field output cadence");
+        }
         require(cpu.audio>80 && cpu.audio==gpu.audio,"audio present in both modes");
         require(cpu.blocks==0 && gpu.blocks>100,"Metal actually executed IDCT");
         double squared=0; uint64_t samples=0; int maxError=0;

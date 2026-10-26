@@ -262,14 +262,17 @@ with GPU work. Parsing and frame/field motion compensation remain CPU work.
 Native audio/video sample renderers share one clock, bounded decode-ahead and
 cancellable input. Cmd-I exposes the actual path and GPU block count.
 
-Experimental limits: stereo/default audio, no captions, track selection or DVR
-seeking; woven interlaced output can show combing. Unsupported controls are
+Experimental limits: stereo/default audio, no captions or track selection. DVR
+is out of scope. BWDIF supplies progressive output at field cadence for
+interlaced video; progressive input retains its cadence. Startup waits for
+audio/video buffer coverage, and Cmd-I exposes queue starvation observations. Unsupported controls are
 disabled. Errors remain explicit, with Standard playback available on retune.
 No automatic fallback masks an A/B result. See the
 [native experiment README](../Native/CineramaMPEG2/README.md) for architecture,
 run commands, real-stream tests and performance results. The Metal path is
 currently slower than CPU on generated HD fixtures; CPU/energy savings have not
-been established. Actual Plex playback needs user verification.
+been established. User ran both modes with real Live TV; picture/audio parity remains unverified.
+See the [resumable pipeline plan](live-tv-pipeline-plan.md) for milestone progress.
 
 The earlier [standalone block prototype](../Native/MetalMPEG2Prototype/README.md)
 remains an independent mathematical kernel test; its synthetic throughput is not

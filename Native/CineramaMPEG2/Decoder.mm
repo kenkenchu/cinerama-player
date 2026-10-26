@@ -12,6 +12,9 @@ extern "C" {
 #include "libavcodec/simple_idct.h"
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
+#include <libavfilter/avfilter.h>
+#include <libavfilter/buffersrc.h>
+#include <libavfilter/buffersink.h>
 }
 #undef restrict
 #include <atomic>
@@ -35,6 +38,11 @@ struct CM2Decoder {
     AVCodecContext *video = nullptr, *audio = nullptr;
     AVFrame *frame = nullptr;
     AVPacket *packet = nullptr;
+    AVFilterGraph *filters = nullptr;
+    AVFilterContext *filterInput = nullptr, *filterOutput = nullptr;
+    AVFrame *filtered = nullptr;
+    bool filterEOF = false;
+    int filterWidth = 0, filterHeight = 0, filterFormat = -1;
     SwrContext *swr = nullptr;
     SwsContext *sws = nullptr;
     int videoIndex = -1, audioIndex = -1;
@@ -147,8 +155,8 @@ CM2Decoder *cm2_create(int metal) {
     CM2Decoder *d=new CM2Decoder(); d->metal=metal!=0;
     // FFmpeg diagnostics can contain credential-bearing URLs: never forward them.
     av_log_set_level(AV_LOG_QUIET);
-    d->frame=av_frame_alloc(); d->packet=av_packet_alloc();
-    if (!d->frame || !d->packet) { cm2_close(d); return nullptr; }
+    d->frame=av_frame_alloc(); d->filtered=av_frame_alloc(); d->packet=av_packet_alloc();
+    if (!d->frame || !d->filtered || !d->packet) { cm2_close(d); return nullptr; }
     if (d->metal) {
         @autoreleasepool {
             d->device=MTLCreateSystemDefaultDevice(); d->queue=[d->device newCommandQueue];
@@ -209,6 +217,37 @@ int cm2_open(CM2Decoder *d,const char *url) {
         if(avcodec_open2(context,codec,nullptr)<0) { fail(d,"Could not initialize the experimental decoder"); return -1; }
     }
     return 0;
+}
+static bool prepareVideoFilter(CM2Decoder *d, AVFrame *frame) {
+    if (d->filters) {
+        if (d->filterWidth!=frame->width || d->filterHeight!=frame->height || d->filterFormat!=frame->format) {
+            fail(d,"Video format changed; retune the channel"); return false;
+        }
+        return true;
+    }
+    if (frame->width<=0 || frame->height<=0 || frame->width>2048 || frame->height>1200 ||
+        (frame->format!=AV_PIX_FMT_YUV420P && frame->format!=AV_PIX_FMT_YUV422P)) {
+        fail(d,"Experimental decoder supports HD 8-bit MPEG-2 4:2:0/4:2:2 only"); return false;
+    }
+    d->filters=avfilter_graph_alloc();
+    if(!d->filters) { fail(d,"Deinterlacer allocation failed"); return false; }
+    d->filters->nb_threads=2;
+    AVRational tb=d->format->streams[d->videoIndex]->time_base;
+    AVRational sar=frame->sample_aspect_ratio.num>0?frame->sample_aspect_ratio:AVRational{1,1};
+    AVRational fps=av_guess_frame_rate(d->format,d->format->streams[d->videoIndex],frame);
+    char args[256];
+    snprintf(args,sizeof(args),"video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:frame_rate=%d/%d",
+        frame->width,frame->height,frame->format,tb.num,tb.den,sar.num,sar.den,fps.num,fps.den);
+    AVFilterContext *deinterlace=nullptr;
+    if(avfilter_graph_create_filter(&d->filterInput,avfilter_get_by_name("buffer"),"source",args,nullptr,d->filters)<0 ||
+       avfilter_graph_create_filter(&deinterlace,avfilter_get_by_name("bwdif"),"deinterlace","mode=send_field:parity=auto:deint=interlaced",nullptr,d->filters)<0 ||
+       avfilter_graph_create_filter(&d->filterOutput,avfilter_get_by_name("buffersink"),"sink",nullptr,nullptr,d->filters)<0 ||
+       avfilter_link(d->filterInput,0,deinterlace,0)<0 || avfilter_link(deinterlace,0,d->filterOutput,0)<0 ||
+       avfilter_graph_config(d->filters,nullptr)<0) {
+        fail(d,"Could not configure field-rate deinterlacing"); return false;
+    }
+    d->filterWidth=frame->width; d->filterHeight=frame->height; d->filterFormat=frame->format;
+    return true;
 }
 static CMSampleBufferRef videoSample(CM2Decoder *d, AVFrame *f, CMTime pts) {
     if(f->width<=0 || f->height<=0 || f->width>2048 || f->height>1200 ||
@@ -272,6 +311,16 @@ static CMSampleBufferRef audioSample(CM2Decoder *d,AVFrame *f,CMTime pts) {
 int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
     active=d; *sample=nullptr;
     while(!d->cancelled.load() && !d->error[0]) {
+        if(d->filterOutput) {
+            int filtered=av_buffersink_get_frame(d->filterOutput,d->filtered);
+            if(filtered>=0) {
+                AVRational tb=av_buffersink_get_time_base(d->filterOutput);
+                CMTime pts=CMTimeMake(av_rescale_q(d->filtered->pts,tb,{1,1000000}),1000000);
+                *sample=videoSample(d,d->filtered,pts); av_frame_unref(d->filtered);
+                return *sample?1:-1;
+            }
+            if(filtered!=AVERROR(EAGAIN) && filtered!=AVERROR_EOF) { fail(d,"Deinterlacing failed"); return -1; }
+        }
         if(d->pending) {
             int result=avcodec_receive_frame(d->pending,d->frame);
             cinerama_mpeg2_idct_flush(d);
@@ -282,14 +331,29 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
                 if(timestamp==AV_NOPTS_VALUE) { av_frame_unref(d->frame); fail(d,"Missing media timestamp"); return -1; }
                 AVRational tb=d->format->streams[index]->time_base;
                 CMTime pts=CMTimeMake(av_rescale_q(timestamp,tb,{1,1000000}),1000000);
-                *sample=kind==1?videoSample(d,d->frame,pts):audioSample(d,d->frame,pts);
+                if(kind==1) {
+                    if(!prepareVideoFilter(d,d->frame)) return -1;
+                    d->frame->pts=timestamp;
+                    int fed=av_buffersrc_add_frame_flags(d->filterInput,d->frame,AV_BUFFERSRC_FLAG_KEEP_REF);
+                    av_frame_unref(d->frame);
+                    if(fed<0) { fail(d,"Video filter input failed"); return -1; }
+                    continue;
+                }
+                *sample=audioSample(d,d->frame,pts);
                 av_frame_unref(d->frame);
                 return *sample?kind:-1;
             }
             if(result!=AVERROR(EAGAIN) && result!=AVERROR_EOF) { fail(d,"MPEG-2/audio decode failed"); return -1; }
             d->pending=nullptr;
         }
-        if(d->draining) return 0;
+        if(d->draining) {
+            if(d->filterInput && !d->filterEOF) {
+                int fed=av_buffersrc_add_frame_flags(d->filterInput,nullptr,0);
+                if(fed<0) { fail(d,"Video filter drain failed"); return -1; }
+                d->filterEOF=true; continue;
+            }
+            return 0;
+        }
         int result=av_read_frame(d->format,d->packet);
         if(result<0) {
             if(result!=AVERROR_EOF) { fail(d,"Live stream read failed"); return -1; }
@@ -317,11 +381,13 @@ void cm2_cancel(CM2Decoder *d) { if(d) d->cancelled.store(true); }
 void cm2_close(CM2Decoder *d) {
     if(!d) return;
     avcodec_free_context(&d->video); avcodec_free_context(&d->audio);
-    avformat_close_input(&d->format); av_frame_free(&d->frame); av_packet_free(&d->packet);
+    avformat_close_input(&d->format); av_frame_free(&d->frame); av_frame_free(&d->filtered); av_packet_free(&d->packet);
+    avfilter_graph_free(&d->filters);
     swr_free(&d->swr); sws_freeContext(d->sws);
     if(active==d) active=nullptr;
     delete d;
 }
+int cm2_has_audio(CM2Decoder *d) { return d->audioIndex>=0; }
 uint64_t cm2_gpu_blocks(CM2Decoder *d) { return d->blocks.load(); }
 double cm2_gpu_seconds(CM2Decoder *d) { return d->gpuTime.load(); }
 const char *cm2_error(CM2Decoder *d) { return d->error[0]?d->error:"Experimental decoder stopped"; }

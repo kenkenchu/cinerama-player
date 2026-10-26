@@ -87,7 +87,7 @@ Copyright (c) the FFmpeg developers.
 https://ffmpeg.org/
 
 CineramaMPEG2 dynamically embeds a native bridge containing statically linked
-FFmpeg libavcodec, libavformat, libavutil, libswscale and libswresample, built
+FFmpeg libavcodec, libavformat, libavfilter, libavutil, libswscale and libswresample, built
 with GPL and nonfree components disabled under LGPL-2.1-or-later. FFmpeg is
 modified to permit opt-in MPEG-2 IDCT offload; parsing and motion compensation
 remain FFmpeg code. This is not endorsed by FFmpeg.

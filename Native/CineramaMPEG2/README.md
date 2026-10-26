@@ -22,9 +22,10 @@ Compare CPU load after startup has settled. Total app load and energy matter
 more than GPU execution time alone.
 
 Experimental limits are visible in Settings: default audio track downmixed to
-stereo; no captions, track switching, spatial audio or DVR seeking. Seeking and
-track controls are disabled. Interlaced pictures decode, but the output is woven,
-so motion may show combing. Proper field-rate deinterlacing remains future work.
+stereo; no captions, track switching or spatial audio. DVR is explicitly out of
+scope; seek/skip/Go Live stay disabled. BWDIF converts interlaced frames to
+progressive field-rate output with automatic TFF/BFF parity; progressive frames
+pass through at their original cadence. Deinterlacing runs on CPU in both modes.
 Network/codec/Metal failures show an error; choose Standard playback and retune.
 There is no silent CPU fallback that could invalidate an A/B test.
 
@@ -48,11 +49,15 @@ There is no silent CPU fallback that could invalidate an A/B test.
   cross workers. Cancelling input uses FFmpeg's atomic interrupt callback.
 - A bounded row batch (8192 blocks) and input dimension limits bound native GPU
   staging. Output is converted to video-range NV12 and retained CMSampleBuffers.
+  A bounded FFmpeg BWDIF filter precedes NV12 conversion.
   AC3/EAC3/AAC/MP2 audio is decoded locally and resampled to 48 kHz stereo float
   PCM. Unsupported codecs fail rather than requesting Plex conversion.
 - `AVSampleBufferRenderSynchronizer` paces video and audio on one media clock.
   The worker waits for renderer readiness and limits decode-ahead to 600 ms.
-  Pause stops that clock and naturally bounds buffering. Generation checks
+  Startup waits for at least 200 ms of audio and 100 ms of video (video alone
+  for audio-free input). Pause stops that clock and naturally bounds buffering.
+  Cmd-I shows queue depth and observed audio starvation transitions; these are
+  media-time observations, not hardware underrun counts. Generation checks
   discard retired-session callbacks. Stop cancels network IO and flushes output.
 - FFmpeg logs are silenced, errors are fixed safe strings, and no media URL is
   exposed in diagnostics. For Plex HLS segments missing a token, the top-level
@@ -80,9 +85,10 @@ CINERAMA_MACOS_SIGNING_IDENTITY='Apple Development: kenkenchu@gmail.com (BZ2K63H
 ```
 
 Native tests generate their own three-second MPEG-2/AC3 fixtures, including
-progressive, interlaced, 4:2:2, 1920x1080 interlaced and HLS. Each has I/P/B frames.
-Both decoders must return all 90 video frames, matching timestamps and audio
-counts. GPU block counts prove real execution; every Y/Cb/Cr output sample is
+progressive, TFF/BFF interlaced, 4:2:2, 1920x1080 interlaced and HLS. Each
+has I/P/B frames. Both decoders must return 90 progressive frames or 180
+deinterlaced field outputs, matching timestamps, cadence and audio counts. PCM
+timestamps and aggregate durations must be contiguous. GPU block counts prove real execution; every Y/Cb/Cr output sample is
 compared against CPU output. The test also checks missing-input failure and
 cancellation. A loopback HTTP server publishes a growing HLS playlist and
 requires a synthetic token on both playlist and segment requests, exercising
@@ -98,7 +104,9 @@ numbers demonstrate real-time headroom for that fixture but **not a speedup**.
 They are not measurements of the user's live channel, CPU savings or energy.
 
 Both signed platform builds, 180 hosted Mac tests and 32 tvOS 26 simulator tests
-passed during integration. User verification of picture, audio synchronization,
+passed during integration. For resumable milestones and current evidence see
+[the implementation plan](../../docs/live-tv-pipeline-plan.md).
+User verification of picture, audio synchronization,
 Plex-server delivery and controls remains pending; agents do not manually launch
 the app. Future optimization should batch more work without violating first-field
 reference dependencies, then measure production live streams without validation.

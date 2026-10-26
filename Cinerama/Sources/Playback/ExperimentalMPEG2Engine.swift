@@ -73,6 +73,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     let mode: ExperimentalMPEG2Mode
     private(set) var gpuBlocks: UInt64 = 0
     private(set) var gpuSeconds = 0.0
+    private(set) var buffers = LivePlaybackBufferState()
     @ObservationIgnored private let surface = MPEG2VideoSurface()
     @ObservationIgnored private let audio = AVSampleBufferAudioRenderer()
     @ObservationIgnored private let synchronizer = AVSampleBufferRenderSynchronizer()
@@ -83,6 +84,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     @ObservationIgnored private var generation = UUID()
     @ObservationIgnored private var origin: CMTime?
     @ObservationIgnored private var desiredRate: Float = 1
+    @ObservationIgnored private var clockStarted = false
     @ObservationIgnored private var flushID = UUID()
     @ObservationIgnored private var outputReady = true
 
@@ -107,6 +109,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
                 let session = try MPEG2NativeSession(metal: mode == .metal)
                 guard let self, await self.attach(session, id: id) else { return }
                 try session.open(source.url)
+                await self.setAudioExpectation(cm2_has_audio(session.decoder) != 0, id: id)
                 while !Task.isCancelled, let decoded = try session.next() {
                     while !Task.isCancelled {
                         guard await self.isCurrent(id) else { return }
@@ -133,28 +136,49 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         return true
     }
     private func isCurrent(_ id: UUID) -> Bool { generation == id }
+    private func setAudioExpectation(_ value: Bool, id: UUID) {
+        guard generation == id else { return }
+        buffers.expectsAudio = value
+    }
     private func ready(_ decoded: MPEG2DecodedSample) -> Bool {
         guard outputReady else { return false }
         if origin != nil {
             let ahead = CMTimeGetSeconds(CMTimeSubtract(CMSampleBufferGetPresentationTimeStamp(decoded.sample), synchronizer.currentTime()))
-            if ahead > 0.6 { return false }
+            if ahead > (clockStarted ? 0.6 : 2) { return false }
         }
         return decoded.kind == 1 ? surface.display.sampleBufferRenderer.isReadyForMoreMediaData : audio.isReadyForMoreMediaData
     }
     private func enqueue(_ decoded: MPEG2DecodedSample, id: UUID) {
         guard generation == id else { return }
         let pts = CMSampleBufferGetPresentationTimeStamp(decoded.sample)
-        if origin == nil {
+        if origin == nil || (!clockStarted && CMTimeCompare(pts, origin!) < 0) {
             origin = pts
-            synchronizer.setRate(desiredRate, time: pts)
+            synchronizer.setRate(0, time: pts)
         }
-        if decoded.kind == 1 { surface.display.sampleBufferRenderer.enqueue(decoded.sample) }
-        else { audio.enqueue(decoded.sample) }
+        if decoded.kind == 1 {
+            surface.display.sampleBufferRenderer.enqueue(decoded.sample)
+            buffers.enqueueVideo(end: CMTimeGetSeconds(pts))
+        } else {
+            audio.enqueue(decoded.sample)
+            let duration = CMSampleBufferGetDuration(decoded.sample)
+            let end = CMTimeGetSeconds(pts) + max(0, CMTimeGetSeconds(duration))
+            buffers.enqueueAudio(end: end)
+        }
         gpuBlocks = decoded.blocks; gpuSeconds = decoded.gpuSeconds
-        isBuffering = false; state = desiredRate == 0 ? .paused : .playing
+        startClockIfReady()
+    }
+    private func startClockIfReady() {
+        guard let origin else { return }
+        if !clockStarted && buffers.canStart(at: CMTimeGetSeconds(origin)) {
+            clockStarted = true
+            synchronizer.setRate(desiredRate, time: origin)
+        }
+        isBuffering = !clockStarted && desiredRate > 0
+        state = desiredRate == 0 ? .paused : clockStarted ? .playing : .loading
     }
     private func updateClock() {
         if let origin {
+            buffers.observe(time: CMTimeGetSeconds(synchronizer.currentTime()), running: clockStarted && desiredRate > 0)
             currentTime = max(0, CMTimeGetSeconds(CMTimeSubtract(synchronizer.currentTime(), origin)))
         }
         if surface.display.sampleBufferRenderer.status == .failed || audio.status == .failed {
@@ -182,12 +206,13 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
             }
         }
         audio.flush()
-        origin = nil; currentTime = 0; gpuBlocks = 0; gpuSeconds = 0
+        origin = nil; clockStarted = false; buffers = LivePlaybackBufferState()
+        currentTime = 0; gpuBlocks = 0; gpuSeconds = 0
         isBuffering = false; state = .stopped
     }
-    func play() { desiredRate = 1; if origin != nil { synchronizer.rate = 1; state = .playing } }
+    func play() { desiredRate = 1; if clockStarted { synchronizer.rate = 1; state = .playing } else { startClockIfReady() } }
     func pause() { desiredRate = 0; synchronizer.rate = 0; state = .paused }
-    func setPlaybackRate(_ rate: Float) { desiredRate = rate; if origin != nil { synchronizer.rate = rate } }
+    func setPlaybackRate(_ rate: Float) { desiredRate = rate; if clockStarted { synchronizer.rate = rate } }
     func seek(to position: TimeInterval) {
         // The experimental renderer has no DVR seek mapping. Do not pretend that
         // a seek changed the stream or restart a second Plex tuner session.
@@ -206,7 +231,11 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
          ("GPU reconstruction time", String(format: "%.3f s", gpuSeconds)),
          ("Prediction / parsing", "CPU"),
          ("Audio", "Stereo PCM; default track"),
-         ("Prototype limits", "No captions, track switching or DVR seek; interlaced output is woven")]
+         ("Video processing", "BWDIF field-rate deinterlacing; progressive passthrough"),
+         ("Audio queued", String(format: "%.3f s", buffers.audioDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),
+         ("Video queued", String(format: "%.3f s", buffers.videoDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),
+         ("Observed audio buffer starvations", String(buffers.audioStarvations)),
+         ("Prototype limits", "No captions or track switching; live playback only")]
     }
 }
 

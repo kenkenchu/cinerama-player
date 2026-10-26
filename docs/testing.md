@@ -112,3 +112,9 @@ Native/MetalMPEG2Prototype -c release`.
 Integration checkpoint: 180 Mac tests and 32 tvOS 26 simulator tests passed with
 both signed builds. The experimental decoder is Mac-only; project changes still
 require both platform verification gates.
+
+M1 pipeline checkpoint: field-rate deinterlacing now adds a BFF fixture and checks
+90 progressive versus 180 interlaced outputs, output cadence and contiguous PCM
+timing. Buffer startup/starvation state adds two hosted tests (182 Mac total).
+See [the resumable plan](live-tv-pipeline-plan.md) for evidence and pending user
+checks; DVR is excluded.

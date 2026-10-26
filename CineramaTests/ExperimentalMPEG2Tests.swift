@@ -31,3 +31,31 @@ import Testing
         #expect(VLCKitEngine().supportsTrackSelection)
     }
 }
+
+@Suite("Live buffer startup and starvation observations")
+struct LivePlaybackBufferTests {
+    @Test func clockWaitsForBothStreamsAndVideoOnlyCanStart() {
+        var state = LivePlaybackBufferState()
+        state.enqueueVideo(end: 10.4)
+        #expect(!state.canStart(at: 10))
+        state.enqueueAudio(end: 10.1)
+        #expect(!state.canStart(at: 10))
+        state.enqueueAudio(end: 10.3)
+        #expect(state.canStart(at: 10))
+        var silent = LivePlaybackBufferState()
+        silent.expectsAudio = false; silent.enqueueVideo(end: 10.2)
+        #expect(silent.canStart(at: 10))
+    }
+    @Test func starvationCountsTransitionsRatherThanEveryPollAndIgnoresPause() {
+        var state = LivePlaybackBufferState()
+        state.enqueueAudio(end: 1)
+        state.observe(time: 2, running: false)
+        #expect(state.audioStarvations == 0)
+        state.observe(time: 2, running: true); state.observe(time: 3, running: true)
+        #expect(state.audioStarvations == 1)
+        state.enqueueAudio(end: 4); state.observe(time: 3, running: true)
+        state.observe(time: 5, running: true)
+        #expect(state.audioStarvations == 2)
+        #expect(state.audioDepth(at: 5) == 0)
+    }
+}

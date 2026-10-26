@@ -22,6 +22,7 @@ int main(int argc,char **argv) {
     v->pix_fmt=chroma422?AV_PIX_FMT_YUV422P:AV_PIX_FMT_YUV420P; v->bit_rate=hd?12000000:1500000;
     v->gop_size=12; v->max_b_frames=2; v->thread_count=1;
     if(chroma422) v->profile=AV_PROFILE_MPEG2_422;
+    if(interlaced) v->field_order=interlaced==2?AV_FIELD_BB:AV_FIELD_TT;
     if(interlaced) v->flags|=AV_CODEC_FLAG_INTERLACED_DCT|AV_CODEC_FLAG_INTERLACED_ME;
     check(avcodec_open2(v,v->codec,nullptr));
     AVStream *vs=avformat_new_stream(mux,nullptr); vs->time_base=v->time_base;
@@ -53,7 +54,7 @@ int main(int argc,char **argv) {
     int64_t audioPTS=0;
     for(int n=0;n<90;n++) {
         check(av_frame_make_writable(vf)); vf->pts=n;
-        if(interlaced) vf->flags=AV_FRAME_FLAG_INTERLACED|AV_FRAME_FLAG_TOP_FIELD_FIRST;
+        if(interlaced) vf->flags=AV_FRAME_FLAG_INTERLACED|(interlaced==2?0:AV_FRAME_FLAG_TOP_FIELD_FIRST);
         for(int plane=0;plane<3;plane++) {
             int w=plane?v->width/2:v->width, h=plane&&!chroma422?v->height/2:v->height;
             for(int y=0;y<h;y++) for(int x=0;x<w;x++) {

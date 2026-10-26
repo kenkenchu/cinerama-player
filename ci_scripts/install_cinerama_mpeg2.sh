@@ -26,8 +26,8 @@ if [ ! -f "$PREFIX/lib/libavcodec.a" ] || [ ! -f "$PREFIX/ffmpeg.sha256" ] || [ 
        --host-ldflags="-isysroot $(xcrun --sdk macosx --show-sdk-path)" \
        --extra-cflags='-mmacosx-version-min=26.0 -fvisibility=hidden' \
        --disable-shared --enable-static --enable-pic --disable-autodetect --disable-gpl --disable-nonfree \
-       --disable-doc --disable-programs --disable-avdevice --disable-avfilter \
-       --disable-everything --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
+       --disable-doc --disable-programs --disable-avdevice --enable-avfilter \
+       --disable-everything --enable-filter=bwdif,buffer,buffersink --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
        --enable-encoder=mpeg2video,ac3 --enable-muxer=mpegts,hls --enable-decoder=mpeg2video,ac3,eac3,aac,mp2 --enable-parser=mpegvideo,ac3,aac,mpegaudio \
        --enable-demuxer=hls,mpegts,mpegvideo,mov --enable-protocol=file,http,https,tcp,tls,crypto \
        --enable-securetransport
@@ -51,7 +51,7 @@ xcrun clang++ -isysroot "$(xcrun --sdk macosx --show-sdk-path)" -std=c++17 -O3 -
     -c Native/CineramaMPEG2/Decoder.mm -o "$CACHE/relink/Decoder.o"
 xcrun clang++ -isysroot "$(xcrun --sdk macosx --show-sdk-path)" -dynamiclib -mmacosx-version-min=26.0 \
     "$CACHE/relink/Decoder.o" -L "$PREFIX/lib" \
-    -lavformat -lavcodec -lswresample -lswscale -lavutil -lz -lbz2 -liconv \
+    -lavformat -lavfilter -lavcodec -lswresample -lswscale -lavutil -lz -lbz2 -liconv \
     -framework Foundation -framework Metal -framework CoreMedia -framework CoreVideo \
     -framework AudioToolbox -framework Security -framework CoreFoundation \
     -Wl,-install_name,@rpath/CineramaMPEG2.framework/CineramaMPEG2 \

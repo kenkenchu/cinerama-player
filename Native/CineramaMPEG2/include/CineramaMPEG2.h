@@ -15,6 +15,7 @@ int cm2_read(CM2Decoder *, CMSampleBufferRef *sample);
 CMSampleBufferRef cm2_next(CM2Decoder *, int *kind) CF_RETURNS_RETAINED;
 void cm2_cancel(CM2Decoder *);
 void cm2_close(CM2Decoder *);
+int cm2_has_audio(CM2Decoder *);
 uint64_t cm2_gpu_blocks(CM2Decoder *);
 double cm2_gpu_seconds(CM2Decoder *);
 const char *cm2_error(CM2Decoder *);

@@ -9,10 +9,10 @@
 - User correction: **DVR is not required**. No buffer seeking, recording, skip
   controls or Go Live implementation. Pause/resume is in scope; long pauses must
   not grow memory without bound or become an implicit recording feature.
-- Current milestone: M1, audio/video baseline. Planning checkpoint complete;
-  implementation not yet started.
-- Next action: inspect current native PCM timing and interlaced output, implement
-  deinterlacing with field-order/cadence tests and establish audio diagnostics.
+- Current milestone: M1 implemented and automated checks passed; user runtime
+  verification pending. M2 is the next independent implementation milestone.
+- Next action: preserve multichannel PCM/layout and expose/select audio tracks;
+  keep caption controls disabled until M3. Do not add DVR.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
 
@@ -42,7 +42,7 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | Milestone | Deliverables | Acceptance | Status |
 | --- | --- | --- | --- |
 | M0 — Plan and baseline | Resumable plan, exclusions, previous evidence | Linked from docs index; clean diff and links | Complete |
-| M1 — Picture and audio baseline | Proper progressive output from interlaced sources; field order/cadence; stable timestamped PCM; buffer/underrun diagnostics | Generated progressive/TFF/BFF fixtures; CPU/Metal fidelity and cadence checks; safe pause/resume; user picture/audio sync check | In progress |
+| M1 — Picture and audio baseline | Proper progressive output from interlaced sources; field order/cadence; stable timestamped PCM; buffer/underrun diagnostics | Generated progressive/TFF/BFF fixtures; CPU/Metal fidelity and cadence checks; safe pause/resume; user picture/audio sync check | Implemented; user verification pending |
 | M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Planned |
 | M3 — Captions and subtitles | Broadcast caption/subtitle extraction, selection and Off, synchronized display following macOS caption preferences | Reproducible caption fixtures, timing/selection tests; user style/readability checks; explicitly document unsupported formats | Planned |
 | M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Planned |
@@ -102,3 +102,30 @@ known limitations above reflect source and previous verification, not new tests.
 Verification: documentation references and diff checks. Commit: this planning
 commit (find with `git log -- docs/live-tv-pipeline-plan.md`). Next: M1 discovery
 and first tested audio/video change; record the result below before committing.
+
+### P1 — 2026-10-25: M1 audio/video baseline implementation
+
+Replaced woven output with LGPL FFmpeg BWDIF (`send_field`, automatic parity,
+interlaced-only). Progressive sources pass through, while TFF/BFF interlaced
+sources emit two progressive outputs per decoded frame. Added a bounded two-thread
+filter graph; CPU and Metal modes use the same deinterlacer. Resolution/pixel-format
+changes currently fail explicitly rather than reconfiguring (M4).
+
+Startup now holds the shared clock until it has at least 200 ms of audio and
+100 ms of video, or video alone for audio-free input. Added tested media-time
+queue coverage and audio starvation transition observations to Cmd-I. These are
+not hardware underrun measurements; the previous Core Audio warning cause is
+not yet proven. Retired flush completions remain guarded. DVR remains excluded.
+
+Verification: seven generated native cases passed with Metal validation,
+including TFF/BFF, HD interlaced, 4:2:2 and growing authenticated HTTP HLS.
+Interlaced cases returned 180 outputs at 60 Hz from 90 input pictures; progressive
+cases retained 90 at 30 Hz. PCM durations/timestamps are contiguous. CPU/Metal
+fidelity gates passed. Signed Mac and TV builds passed; 182 Mac tests and 32
+TV tests passed. Source/project membership regenerated and boundary-checked.
+User checks pending: motion quality/field order, initial startup and audio sync,
+short pause/resume, and whether overload warnings recur on the real channel.
+No agent visual inspection or app launch was performed.
+
+Commit: the M1 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
+Next: M2 multichannel and audio selection; retain M1 user checks as pending.
