@@ -23,7 +23,7 @@ more than GPU execution time alone.
 
 Experimental limits are visible in Settings: no captions or spatial audio.
 Audio tracks can be selected; PCM preserves supported source layouts and rates. DVR is explicitly out of
-scope; seek/skip/Go Live stay disabled. BWDIF converts interlaced frames to
+scope; seek/skip stay disabled and the Mac player omits Go Live. BWDIF converts interlaced frames to
 progressive field-rate output with automatic TFF/BFF parity; progressive frames
 pass through at their original cadence. Deinterlacing runs on CPU in both modes.
 Retryable network/input failures reconnect to the existing session with a

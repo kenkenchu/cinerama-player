@@ -163,3 +163,7 @@ The metal-blue/Liquid Glass update passed both signed builds and platform-bounda
 checks. It requires a fresh user visual/focus check; the earlier appearance
 approval applies to the preceding screening-deck version. Agents did not launch
 either app or run tests.
+
+Live TV remains deferred on tvOS: its library-only native AVKit player has no
+app-owned LIVE labels or Go Live button. The Mac red LIVE status treatment has
+no current TV equivalent; apply it when TV Live TV playback is implemented.

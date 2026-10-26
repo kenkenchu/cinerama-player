@@ -65,8 +65,7 @@ extension PlayerViewModel {
     /// the readout below — back and forth several times a minute.
     var isAtLiveEdge: Bool {
         // A live session that has not produced a snapshot yet is still starting
-        // up, and playback always starts at the edge — reading it as "behind"
-        // would offer a Go Live jump with nowhere to jump to.
+        // up, and playback always starts at the edge.
         guard let liveTimeline else { return isLiveTV }
         return liveTimeline.isAtLiveEdge(atPosition: displayPosition)
     }

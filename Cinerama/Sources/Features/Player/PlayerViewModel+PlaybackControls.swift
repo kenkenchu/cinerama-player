@@ -355,18 +355,6 @@ extension PlayerViewModel {
         return max(position, 0)
     }
 
-    /// Jumps back to the live edge and resumes if the session was paused —
-    /// pausing is the usual way to fall behind, so "Go Live" that leaves the
-    /// picture frozen would only be half the action.
-    func goLive() {
-        guard engine.supportsSeeking else { return }
-        guard let seekableRange else { return }
-        seek(to: max(seekableRange.lowerBound, seekableRange.upperBound - 1), revealControls: true)
-        if state == .paused {
-            togglePlayPause()
-        }
-    }
-
     // MARK: - Auto-Skip
 
     func updateAutoSkipState() {

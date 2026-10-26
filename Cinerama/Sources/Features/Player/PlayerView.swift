@@ -192,6 +192,15 @@ private struct MacPlayerSession: View {
         return details.title
     }
 
+    /// Tint only the live-status marker, keeping channel names and time offsets neutral.
+    private func liveStatusText(_ value: String) -> Text {
+        var text = AttributedString(value)
+        if model.isLiveTV, let range = text.range(of: "LIVE", options: .backwards) {
+            text[range].foregroundColor = .red
+        }
+        return Text(text)
+    }
+
     private var controls: some View {
         VStack(spacing: 8) {
             HStack {
@@ -211,7 +220,7 @@ private struct MacPlayerSession: View {
                        })
                     .accessibilityLabel("Playback position")
                     .disabled(!model.engine.supportsSeeking)
-                Text(model.isLiveTV ? model.formattedLiveOffset : model.formattedRemainingTime)
+                liveStatusText(model.isLiveTV ? model.formattedLiveOffset : model.formattedRemainingTime)
                     .monospacedDigit()
                     .help(model.isLiveTV ? "Position relative to live" : "Time remaining")
                     .accessibilityLabel(model.isLiveTV
@@ -230,7 +239,7 @@ private struct MacPlayerSession: View {
                     .keyboardShortcut(.rightArrow, modifiers: [])
                     .help("Forward 10 Seconds (→)")
                     .disabled(!model.engine.supportsSeeking)
-                Text(playbackTitle)
+                liveStatusText(playbackTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -240,7 +249,6 @@ private struct MacPlayerSession: View {
                     .toggleStyle(.button)
                     .keyboardShortcut("i", modifiers: .command)
                     .help("Playback Debug Info (⌘I)")
-                if model.liveTVContext != nil { Button("Go Live") { model.goLive() }.disabled(!model.engine.supportsSeeking) }
                 Menu("Audio", systemImage: "speaker.wave.2") {
                     ForEach(model.audioTracks) { track in
                         Button(track.displayTitle) { model.selectAudio(track) }
@@ -330,7 +338,7 @@ private struct MacPlayerSession: View {
                         ForEach(Array(debugRows.enumerated()), id: \.offset) { _, row in
                             GridRow {
                                 Text(row.0).foregroundStyle(.secondary)
-                                Text(row.1).textSelection(.enabled)
+                                liveStatusText(row.1).textSelection(.enabled)
                             }
                         }
                     }

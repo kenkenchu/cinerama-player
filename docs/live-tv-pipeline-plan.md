@@ -60,8 +60,9 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | M6 — Metal efficiency | Reduce synchronous submission/waits and copies without violating reference/field dependencies; retain CPU oracle | Fidelity/conformance-oriented fixtures, benchmark without validation plus live CPU/energy measurements; no default change without evidence | Planned |
 | M7 — Production acceptance | Resolve remaining supported-MPEG-2 gaps, simplify experimental controls, operational docs and dependency/relink artifacts | Full required builds/tests, explicit user picture/audio/input acceptance; rollback to standard route retained | Planned |
 
-DVR and Live TV captions/subtitles are excluded from all milestones. Seek/skip/Go Live stay disabled for this
-pipeline. Other exclusions: library codec/container parity, HDR/Dolby Vision,
+DVR and Live TV captions/subtitles are excluded from all milestones. Seek/skip
+stay disabled for this pipeline. The Mac player omits Go Live across all Live TV
+engines. Other exclusions: library codec/container parity, HDR/Dolby Vision,
 Atmos restoration, downloading, recording/scheduling, tvOS Live TV, and adding
 EPG requirements. Multichannel PCM is not a promise of unimplemented library-engine parity.
 Library subtitle support remains on the existing standard playback routes.
@@ -319,3 +320,19 @@ video outputs and 3,750 PCM buffers each). CPU sampled RSS grew 35.38 → 35.52 
 comparison. Commit: this P6 checkpoint (find via the plan's Git history).
 Next: longer paced renderer/network/reconnect soak with ownership/memory checks;
 incorporate user device and live CPU/Metal/CPU comparisons before M6 optimization.
+
+### UI scope correction — 2026-10-26: remove Go Live
+
+Removed the Mac player’s Go Live button and its unused seek/resume action across
+all Live TV engines, matching the no-DVR scope. Pause/resume remains available.
+tvOS has no Live TV UI and needs no corresponding control change.
+
+LIVE markers in the playback title, timeline readout and debug position now use
+red. tvOS currently has no app-owned LIVE playback labels; its Live TV feature
+remains deferred.
+
+Verification: both signed builds, 186 Mac tests and 32 tvOS 26 simulator tests
+passed. Diff/reference checks passed. No native decoder, shared, project or TV
+source inputs changed. User visual verification remains pending.
+Commit: this UI checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
+Next: continue the remaining M5 validation recorded above; no DVR work.
