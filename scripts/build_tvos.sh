@@ -7,6 +7,7 @@ if ! command -v xcodegen >/dev/null 2>&1; then
     echo 'error: install XcodeGen with brew install xcodegen.' >&2
     exit 1
 fi
+./ci_scripts/install_cinerama_mpeg2_tvos.sh
 xcodegen generate
 python3 scripts/verify_platform_boundaries.py
 TV_DESTINATION='generic/platform=tvOS'

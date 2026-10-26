@@ -67,6 +67,9 @@ targets:
       - path: CineramaTV/Sources
       - path: CineramaTV/Resources
         buildPhase: resources
+      - path: Cinerama/Sources/Playback/MPEG2Pipeline.swift
+      - path: Cinerama/Sources/Playback/LivePlaybackBufferState.swift
+      - path: Cinerama/Sources/Features/LiveTV/LiveTVViewModel.swift
       - path: Cinerama/Sources/Models
       - path: Cinerama/Sources/PlexService
       - path: Cinerama/Sources/Shared/AppImageCache.swift
@@ -101,6 +104,10 @@ targets:
         ENABLE_DEBUG_DYLIB: NO
         TARGETED_DEVICE_FAMILY: "3"
 
+    dependencies:
+      - framework: Frameworks/CineramaMPEG2TV.xcframework
+        embed: true
+
   CineramaTests:
     type: bundle.unit-test
     platform: macOS
@@ -122,6 +129,9 @@ targets:
     platform: tvOS
     sources:
       - path: CineramaTVTests
+      - path: .build/metal-mpeg2/fixtures/renderer-hd.ts
+        buildPhase: resources
+        optional: true
       - path: CineramaTests/HomeHubArrangementTests.swift
       - path: CineramaTests/LibraryUnwatchedFilterTests.swift
       - path: CineramaTests/PlexMediaPartDecodingTests.swift

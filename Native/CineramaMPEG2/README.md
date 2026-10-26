@@ -1,9 +1,11 @@
-# Real-stream MPEG-2 CPU/Metal experiment (macOS)
+# Real-stream MPEG-2 CPU/Metal experiment (macOS and tvOS)
 
 This opt-in player decodes real MPEG-2 streams. It builds on the isolated
 [reconstruction experiment](../MetalMPEG2Prototype/README.md), but adds a patched
 FFmpeg decoder, HLS demuxing, PCM audio and native sample-buffer rendering. It is
-Mac-only, for HD SDR MPEG-2. Standard playback remains the default.
+for HD SDR MPEG-2. Mac keeps Standard playback by default; TV Live TV is
+disabled until explicitly enabled. TV has a separate native host and controls;
+see [TV Live TV](../../docs/tvos-live-tv.md).
 
 ## User test
 
@@ -80,7 +82,10 @@ retains a relinkable bridge object at `.build/metal-mpeg2/relink/Decoder.o`,
 and links it into a versioned dynamic `CineramaMPEG2.framework` inside a generated
 arm64 macOS xcframework. Sources, archives and frameworks remain git-ignored.
 The app's normal signed build and Mac test scripts install/rebuild it as needed.
-`project.yml` links it only to Mac; the boundary verifier rejects it on TV.
+The TV builder calls the same recipe with `tvos` and `tvos-simulator`, producing
+a separate `CineramaMPEG2TV.xcframework` containing only TV slices. The boundary
+verifier rejects the Mac binary on TV. See [TV Live TV](../../docs/tvos-live-tv.md)
+for TV controls, build/cache/relink paths and hardware acceptance.
 
 ```sh
 ./scripts/test_mpeg2_native.sh
@@ -132,7 +137,7 @@ original-project notices remain unchanged.
 ## Audio tracks checkpoint (M2)
 
 The native demuxer enumerates audio stream IDs, languages, codecs and channel
-counts. The Mac player exposes supported selections and retains its existing
+counts. Both platform players expose supported selections; the Mac player retains its existing
 language preference/metadata matching. Selection is an atomic request consumed
 on the decoder worker, which replaces only the audio context and converter.
 The UI flushes old PCM and rejects stale samples tagged with the retired stream

@@ -28,6 +28,8 @@ struct TVCatalogShell: View {
             }.tabItem { Label("Libraries", systemImage: "rectangle.stack") }.tag(1)
             NavigationStack { TVSearchView(service: model.service) }
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(2)
+            NavigationStack { TVLiveTVView(service: model.service).id(model.service.activeProfileID) }
+                .tabItem { Label("Live TV", systemImage: "tv") }.tag(4)
             NavigationStack { TVSettingsView(model: model) }
                 .tabItem { Label("Settings", systemImage: "gearshape") }.tag(3)
         }
@@ -180,6 +182,13 @@ struct TVSettingsView: View {
                 Text("Liquid Glass controls over a metal-blue screening deck. Appearance stays consistent with either system theme.")
             }
             Section("About") {
+                NavigationLink("Third-Party Notices") {
+                    ScrollView {
+                        Text((Bundle.main.url(forResource: "ThirdPartyNotices", withExtension: "txt")
+                            .flatMap { try? String(contentsOf: $0, encoding: .utf8) }) ?? "Notices unavailable")
+                            .font(.callout).padding(60)
+                    }.navigationTitle("Third-Party Notices")
+                }
                 LabeledContent("Device", value: "Apple TV HD · tvOS 26+")
                 LabeledContent("Version", value: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")
             }

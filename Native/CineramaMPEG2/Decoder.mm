@@ -1,6 +1,7 @@
 // Cinerama experimental hybrid MPEG-2 decoder. FFmpeg is LGPL-2.1-or-later;
 // its source is fetched with a pinned checksum and patched by patch_ffmpeg.py.
 #import <Foundation/Foundation.h>
+#include <TargetConditionals.h>
 #import <Metal/Metal.h>
 #import <AudioToolbox/AudioToolbox.h>
 #include "CineramaMPEG2.h"
@@ -211,6 +212,12 @@ int cm2_open(CM2Decoder *d,const char *url) {
     if(d->videoIndex<0 || d->format->streams[d->videoIndex]->codecpar->codec_id!=AV_CODEC_ID_MPEG2VIDEO) {
         fail(d,"Experimental decoder requires MPEG-2 video"); return -1;
     }
+#if TARGET_OS_TV
+    AVCodecParameters *videoParams=d->format->streams[d->videoIndex]->codecpar;
+    if(videoParams->width>1920 || videoParams->height>1080) {
+        fail(d,"Apple TV HD requires an HD channel; UHD playback and downscaling are unavailable"); return -1;
+    }
+#endif
     for(int kind=1;kind<=2;kind++) {
         int index=kind==1?d->videoIndex:d->audioIndex;
         if(index<0) continue;
@@ -257,6 +264,11 @@ static AudioChannelLabel audioLabel(enum AVChannel channel) {
     }
 }
 static bool prepareVideoFilter(CM2Decoder *d, AVFrame *frame) {
+#if TARGET_OS_TV
+    if (frame->width > 1920 || frame->height > 1080) {
+        fail(d,"Apple TV HD requires an HD channel; UHD playback and downscaling are unavailable"); return false;
+    }
+#endif
     if (d->filters) {
         if (d->filterWidth!=frame->width || d->filterHeight!=frame->height || d->filterFormat!=frame->format) {
             fail(d,"Video format changed; retune the channel",true); return false;

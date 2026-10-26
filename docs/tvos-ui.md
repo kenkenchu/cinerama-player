@@ -9,7 +9,7 @@ and card geometry remain independent of the TV focus engine.
 
 `TVRootView` gates Plex linking and Home profile selection. `TVCatalogShell`
 keeps a separate navigation stack mounted for Home, Libraries, Search and
-Settings. `TVAppModel` owns account/profile lifecycle and catalog refresh.
+Settings and experimental Live TV. `TVAppModel` owns account/profile lifecycle and catalog refresh.
 Refresh leaves the shell mounted; a profile change clears the catalog and
 invalidates old async results. Sign-out is confirmed in the TV Settings form.
 
@@ -164,6 +164,6 @@ checks. It requires a fresh user visual/focus check; the earlier appearance
 approval applies to the preceding screening-deck version. Agents did not launch
 either app or run tests.
 
-Live TV remains deferred on tvOS: its library-only native AVKit player has no
-app-owned LIVE labels or Go Live button. The Mac red LIVE status treatment has
-no current TV equivalent; apply it when TV Live TV playback is implemented.
+The [experimental Live TV tab](tvos-live-tv.md) now offers an opt-in HD MPEG-2
+CPU/Metal path with TV-owned remote controls and a red LIVE marker. Library
+AVKit behavior remains independent. No Go Live, DVR or Live TV captions are added.

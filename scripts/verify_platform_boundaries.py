@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Fail builds if platform UI or native playback dependencies cross targets."""
 import json
+import plistlib
 import subprocess
 from pathlib import Path
 
@@ -43,6 +44,9 @@ tv_resources = files("Cinerama-tvOS", "PBXResourcesBuildPhase")
 # Data-only Home models/helpers are shared explicitly. Mac views and Mac route
 # adapters are deliberately absent from this allowlist.
 allowed_tv_shared = {
+    "Cinerama/Sources/Playback/MPEG2Pipeline.swift",
+    "Cinerama/Sources/Playback/LivePlaybackBufferState.swift",
+    "Cinerama/Sources/Features/LiveTV/LiveTVViewModel.swift",
     "Cinerama/Sources/Shared/AppImageCache.swift", "Cinerama/Sources/Shared/String+NilIfEmpty.swift",
     "Cinerama/Sources/Features/Home/HomeViewModel.swift",
     "Cinerama/Sources/Features/Home/HomeHubItemsViewModel.swift",
@@ -66,6 +70,16 @@ violations += [f"TV includes Mac UI/engine input: {path}" for path in tv
 violations += [f"TV includes Mac resources: {path}" for path in tv_resources if path.startswith("Cinerama/")]
 violations += [f"TV links desktop dependency: {path}" for path in files("Cinerama-tvOS", "PBXFrameworksBuildPhase")
                if Path(path).name in {"VLCKit.xcframework", "CineramaDovi.xcframework", "CineramaMPEG2.xcframework"}]
+violations += [f"Mac links TV native dependency: {path}" for path in files("Cinerama-macOS", "PBXFrameworksBuildPhase")
+               if Path(path).name == "CineramaMPEG2TV.xcframework"]
+tv_native = root / "Frameworks/CineramaMPEG2TV.xcframework/Info.plist"
+if tv_native.exists():
+    with tv_native.open("rb") as stream:
+        libraries = plistlib.load(stream)["AvailableLibraries"]
+    if (len(libraries) != 2 or
+        any(lib.get("SupportedPlatform") != "tvos" or lib.get("SupportedArchitectures") != ["arm64"] for lib in libraries) or
+        {lib.get("SupportedPlatformVariant", "device") for lib in libraries} != {"device", "simulator"}):
+        violations.append("TV MPEG-2 framework must contain only arm64 tvOS device/simulator slices")
 shared_tests = {
     "CineramaTests/HomeHubArrangementTests.swift",
     "CineramaTests/LibraryUnwatchedFilterTests.swift",

@@ -46,7 +46,7 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   `StreamResolver`; orchestration belongs in `PlaybackCoordinator`. TV uses
   `TVStreamResolver` and `TVPlaybackCoordinator` over shared Plex APIs until
   platform-neutral engine extraction is justified by actual reuse.
-- Minimal dependencies: desktop VLCKit and CineramaDovi on Mac; native AVKit on TV.
+- Minimal dependencies: desktop VLCKit and CineramaDovi on Mac; native AVKit for TV libraries and opt-in CineramaMPEG2 CPU/Metal for TV Live TV.
   New Rust dependencies need
   notices in `Cinerama/Resources/ThirdPartyNotices.txt` and the native license list.
 - Never log tokens or raw token-bearing media/artwork URLs.
@@ -140,6 +140,18 @@ renaming source files. Never hand-edit the generated Xcode project. Use the
 pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 ## Next-Session Handoff
+
+- TV Live TV now has a separate opt-in CPU/Metal port. Read `docs/tvos-live-tv.md`
+  before changing it. `MPEG2Pipeline.swift` shares decoder/render-clock/recovery
+  logic; Mac keeps its AppKit/protocol adapter, TV owns its UIKit host and remote
+  controls. The TV Live TV tab defaults Disabled. No DVR, captions, seeking,
+  Go Live, UHD downscaling or server A/V encoding. TV native slices are built
+  separately in `CineramaMPEG2TV.xcframework`; desktop binaries remain excluded.
+  Earlier statements below deferring TV Live TV describe the preceding baseline.
+  Both signed builds, 186 Mac tests and 39 tvOS 26 simulator tests pass; native
+  stream/fidelity/fault checks pass (2026-10-26). The signed TV app was installed
+  without manual launch. A device test launch was blocked by sleep. Hardware
+  performance and user picture/audio/focus acceptance remain pending.
 
 - TV target: `CineramaTV/Sources`, scheme `Cinerama-tvOS`. See
   `docs/tvos-prototype.md` for signing, pairing, install and user verification.

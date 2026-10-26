@@ -110,8 +110,8 @@ kernel tests remain available through `swift test --package-path
 Native/MetalMPEG2Prototype -c release`.
 
 Integration checkpoint: 180 Mac tests and 32 tvOS 26 simulator tests passed with
-both signed builds. The experimental decoder is Mac-only; project changes still
-require both platform verification gates.
+both signed builds. The experimental decoder now also has an explicit TV port; project changes
+require both platform verification gates. See [TV Live TV](tvos-live-tv.md).
 
 M1 pipeline checkpoint: field-rate deinterlacing now adds a BFF fixture and checks
 90 progressive versus 180 interlaced outputs, output cadence and contiguous PCM
@@ -150,3 +150,28 @@ Verification on 2026-10-26: signed Mac build and 186 Mac tests passed, including
 both renderer integration modes (74.4 seconds combined). Native cases/faults and
 120-second CPU/Metal decoder soaks passed with validation; sampled RSS growth was
 0.14/0.05 MiB. TV inputs and the prior signed TV/32-test baseline are unchanged.
+
+## TV CPU/Metal port checkpoint (2026-10-26)
+
+Both signed builds and the source/native-slice boundary checks pass. The Mac
+suite passes **186 tests**; the tvOS 26.0 simulator suite passes **39 tests**.
+The new TV tests cover copy-only decision gating, stream/metadata HD/SDR limits,
+stop idempotence, cancelled late-tune cleanup and retained pause intent. Native
+TV framework tests compare CPU/Metal NV12 samples, check field cadence and PCM
+format/counts, and require real GPU blocks in Metal mode. Paced TV renderer
+checks cover startup, bounded pause, resume, reconnect, rapid reload and retired
+worker safety in both modes. They use a generated fixture bundled only with
+the test target, not a Plex channel or tuner. Native Mac stream/fidelity/fault/
+cancellation checks also pass after the shared builder/decoder changes.
+
+Initial concurrent Mac/simulator renderer attempts stalled inside host audio
+output initialization; the Mac test then timed out. The user switched macOS
+output to built-in speakers, after which separate full Mac and simulator runs
+passed. This is not evidence of a pipeline synchronization fix or a conclusive
+diagnosis of the previous output-device failure.
+
+The signed TV app was installed without manual launch. An additional automated
+Apple TV HD test run was attempted but could not launch because the device was
+asleep. No device test pass is claimed. User live-channel picture/audio/focus
+and sustained A8 performance/energy remain pending, as do physical audio route
+and output synchronization checks. Mac M5/M6/M7 acceptance remains separate.

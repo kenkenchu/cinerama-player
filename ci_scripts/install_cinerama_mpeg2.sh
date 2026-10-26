@@ -2,14 +2,21 @@
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
-CACHE="$ROOT_DIR/.build/metal-mpeg2"
+PLATFORM="${1:-macos}"
+case "$PLATFORM" in
+ macos) SDK=macosx; TARGET=arm64-apple-macos26.0; SUFFIX="" ;;
+ tvos) SDK=appletvos; TARGET=arm64-apple-tvos26.0; SUFFIX="-tvos" ;;
+ tvos-simulator) SDK=appletvsimulator; TARGET=arm64-apple-tvos26.0-simulator; SUFFIX="-tvos-simulator" ;;
+ *) echo "Unknown MPEG-2 platform: $PLATFORM" >&2; exit 1 ;;
+esac
+CACHE="$ROOT_DIR/.build/metal-mpeg2$SUFFIX"
 SOURCE="$CACHE/ffmpeg-8.0.1"
 PREFIX="$CACHE/install"
-OUTPUT="$ROOT_DIR/Frameworks/CineramaMPEG2.xcframework"
+OUTPUT="$ROOT_DIR/Frameworks/CineramaMPEG2$SUFFIX.xcframework"
 HASH="05ee0b03119b45c0bdb4df654b96802e909e0a752f72e4fe3794f487229e5a41"
 mkdir -p "$CACHE"
 # Stamp covers bridge, kernel, headers, patch and this builder.
-STAMP=$(cat Native/CineramaMPEG2/Decoder.mm Native/CineramaMPEG2/include/CineramaMPEG2.h Native/CineramaMPEG2/patch_ffmpeg.py Native/CineramaMPEG2/exports.txt ci_scripts/install_cinerama_mpeg2.sh | shasum -a 256 | cut -d ' ' -f 1)
+STAMP=$({ printf "%s" "$TARGET"; cat Native/CineramaMPEG2/Decoder.mm Native/CineramaMPEG2/include/CineramaMPEG2.h Native/CineramaMPEG2/patch_ffmpeg.py Native/CineramaMPEG2/exports.txt ci_scripts/install_cinerama_mpeg2.sh; } | shasum -a 256 | cut -d ' ' -f 1)
 if [ -f "$OUTPUT/source.sha256" ] && [ "$(cat "$OUTPUT/source.sha256")" = "$STAMP" ]; then exit 0; fi
 if [ ! -f "$CACHE/ffmpeg-8.0.1.tar.xz" ]; then
     curl --fail --location --retry 3 --proto '=https' --tlsv1.2 https://ffmpeg.org/releases/ffmpeg-8.0.1.tar.xz -o "$CACHE/ffmpeg-8.0.1.tar.xz.partial"
@@ -18,13 +25,13 @@ fi
 printf '%s  %s\n' "$HASH" "$CACHE/ffmpeg-8.0.1.tar.xz" | shasum -a 256 --check
 if [ ! -d "$SOURCE" ]; then tar -xf "$CACHE/ffmpeg-8.0.1.tar.xz" -C "$CACHE"; fi
 python3 Native/CineramaMPEG2/patch_ffmpeg.py "$SOURCE"
-FFMPEG_STAMP=$(cat Native/CineramaMPEG2/patch_ffmpeg.py ci_scripts/install_cinerama_mpeg2.sh | shasum -a 256 | cut -d ' ' -f 1)
+FFMPEG_STAMP=$({ printf "%s" "$TARGET"; cat Native/CineramaMPEG2/patch_ffmpeg.py ci_scripts/install_cinerama_mpeg2.sh; } | shasum -a 256 | cut -d ' ' -f 1)
 if [ ! -f "$PREFIX/lib/libavcodec.a" ] || [ ! -f "$PREFIX/ffmpeg.sha256" ] || [ "$(cat "$PREFIX/ffmpeg.sha256")" != "$FFMPEG_STAMP" ]; then
     (cd "$SOURCE"
-     ./configure --prefix="$PREFIX" --cc="$(xcrun -f clang)" --arch=arm64 --target-os=darwin --sysroot="$(xcrun --sdk macosx --show-sdk-path)" \
-       --host-cflags="-isysroot $(xcrun --sdk macosx --show-sdk-path)" \
-       --host-ldflags="-isysroot $(xcrun --sdk macosx --show-sdk-path)" \
-       --extra-cflags='-mmacosx-version-min=26.0 -fvisibility=hidden' \
+     ./configure --prefix="$PREFIX" --enable-cross-compile --cc="$(xcrun --sdk "$SDK" -f clang)" --arch=arm64 --target-os=darwin --sysroot="$(xcrun --sdk "$SDK" --show-sdk-path)" \
+       --host-cflags="-isysroot $(xcrun --sdk "$SDK" --show-sdk-path)" \
+       --host-ldflags="-isysroot $(xcrun --sdk "$SDK" --show-sdk-path)" \
+       --extra-cflags="-target $TARGET -fvisibility=hidden" --extra-ldflags="-target $TARGET" \
        --disable-shared --enable-static --enable-pic --disable-autodetect --disable-gpl --disable-nonfree \
        --disable-doc --disable-programs --disable-avdevice --enable-avfilter \
        --disable-everything --enable-filter=bwdif,buffer,buffersink --enable-avcodec --enable-avformat --enable-swresample --enable-swscale \
@@ -46,16 +53,27 @@ cat > "$STAGE/Resources/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>CFBundleIdentifier</key><string>com.cinerama-player.mpeg2</string><key>CFBundleName</key><string>CineramaMPEG2</string><key>CFBundleExecutable</key><string>CineramaMPEG2</string><key>CFBundlePackageType</key><string>FMWK</string><key>CFBundleVersion</key><string>1</string></dict></plist>
 PLIST
 mkdir -p "$CACHE/relink"
-xcrun clang++ -isysroot "$(xcrun --sdk macosx --show-sdk-path)" -std=c++17 -O3 -fobjc-arc -mmacosx-version-min=26.0 \
+xcrun clang++ -isysroot "$(xcrun --sdk "$SDK" --show-sdk-path)" -std=c++17 -O3 -fobjc-arc -target "$TARGET" \
     -I "$PREFIX/include" -iquote "$SOURCE" -I Native/CineramaMPEG2/include \
     -c Native/CineramaMPEG2/Decoder.mm -o "$CACHE/relink/Decoder.o"
-xcrun clang++ -isysroot "$(xcrun --sdk macosx --show-sdk-path)" -dynamiclib -mmacosx-version-min=26.0 \
+xcrun clang++ -isysroot "$(xcrun --sdk "$SDK" --show-sdk-path)" -dynamiclib -target "$TARGET" \
     "$CACHE/relink/Decoder.o" -L "$PREFIX/lib" \
     -lavformat -lavfilter -lavcodec -lswresample -lswscale -lavutil -lz -lbz2 -liconv \
     -framework Foundation -framework Metal -framework CoreMedia -framework CoreVideo \
     -framework AudioToolbox -framework Security -framework CoreFoundation \
     -Wl,-install_name,@rpath/CineramaMPEG2.framework/CineramaMPEG2 \
     -Wl,-exported_symbols_list,Native/CineramaMPEG2/exports.txt -o "$STAGE/Versions/A/CineramaMPEG2"
+if [ "$PLATFORM" != macos ]; then
+    # tvOS uses a flat framework bundle (no macOS Versions directory).
+    FLAT="$CACHE/flat/CineramaMPEG2.framework"
+    mkdir -p "$FLAT/Headers" "$FLAT/Modules"
+    cp "$STAGE/Versions/A/CineramaMPEG2" "$FLAT/"
+    cp "$STAGE/Headers/CineramaMPEG2.h" "$FLAT/Headers/"
+    cp "$STAGE/Modules/module.modulemap" "$FLAT/Modules/"
+    cp "$STAGE/Resources/Info.plist" "$FLAT/Info.plist"
+    /usr/libexec/PlistBuddy -c 'Add :MinimumOSVersion string 26.0' "$FLAT/Info.plist"
+    STAGE="$FLAT"
+fi
 # Replace only this generated, ignored framework.
 if [ -d "$OUTPUT" ]; then mv "$OUTPUT" "$CACHE/previous-xcframework-$(date +%s)"; fi
 xcodebuild -create-xcframework -framework "$STAGE" -output "$OUTPUT"

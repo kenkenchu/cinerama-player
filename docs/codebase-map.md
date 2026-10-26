@@ -34,9 +34,10 @@ Cinerama/Sources/
   Siri/             Inherited App Intents/title matching; Mac runtime behavior unverified
 CineramaTV/Sources/     TV app/auth gate, tab shell, artwork, Home/search, library/details,
                     TVStreamResolver, TVPlaybackCoordinator, scoped track preferences,
-                    native AVKit host and system-caption adapter
+                    native AVKit host and system-caption adapter; TVLivePlayback/TVLiveTVView
+                    own experimental Live TV and its UIKit host
 Native/CineramaDovi/     Mac Rust Dolby Vision conversion crate and C header
-Native/CineramaMPEG2/    Mac FFmpeg/Metal hybrid experiment, C ABI and native tests
+Native/CineramaMPEG2/    Shared Mac/TV FFmpeg/Metal hybrid experiment, C ABI and native tests
 Native/MetalMPEG2Prototype/ Isolated block reconstruction kernel/reference benchmark
 CineramaTests/          Mac/shared unit tests, playback and native window attachment regressions
 CineramaTVTests/        TV resolver, copy-only policy, track preferences, playback lifecycle/delegate tests
@@ -115,6 +116,11 @@ New Mac-specific UI belongs beside its feature. Engine behavior stays behind
   require confirmed video and audio copying before a start URL is constructed.
 - XcodeGen must run after source changes. Verify the native Mac build and update
   the relevant guide in the same change.
+
+The CPU/Metal Live TV worker and buffer/recovery policies are explicitly shared
+from `Playback/MPEG2Pipeline.swift` and `LivePlaybackBufferState.swift`. Native
+views stay platform-owned; TV links only its dedicated device/simulator MPEG-2
+framework. See [TV Live TV](tvos-live-tv.md).
 
 ## Platform Boundary Gate
 

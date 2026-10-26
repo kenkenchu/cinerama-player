@@ -255,8 +255,10 @@ known MPEG-2 channel selects the experiment; forced player overrides and AirPlay
 win. Other media stays on the existing resolver. The existing copy-only Plex
 session and keepalives remain coordinator-owned.
 
-`Native/CineramaMPEG2` builds a checksum-pinned LGPL FFmpeg decoder into a Mac-only
-framework. Both experimental modes decode real MPEG-2/HLS locally. CPU mode uses
+`Native/CineramaMPEG2` builds a checksum-pinned LGPL FFmpeg decoder into
+separate Mac and TV device/simulator frameworks. The shared worker/clock lives in
+`MPEG2Pipeline.swift`, while AppKit and UIKit rendering hosts remain separate.
+See [TV Live TV](tvos-live-tv.md) for the opt-in TV path and hardware gates. Both experimental modes decode real MPEG-2/HLS locally. CPU mode uses
 FFmpeg's IDCT; Metal mode replaces luma/chroma IDCT and residual reconstruction
 with GPU work. Parsing and frame/field motion compensation remain CPU work.
 Native audio/video sample renderers share one clock, bounded decode-ahead and

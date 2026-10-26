@@ -2,7 +2,8 @@
 
 Status: user-confirmed basic playback and text subtitles established feasibility.
 The user has authorized maintaining macOS and tvOS in this repository, starting
-with TV library playback; Live TV comes later. See [TV UI](tvos-ui.md) and
+with TV library playback. Live TV now has an opt-in
+[CPU/Metal experiment](tvos-live-tv.md). See [TV UI](tvos-ui.md) and
 [device workflow](tvos-prototype.md). Mac and TV have separate native interfaces
 and explicitly different feature coverage.
 
@@ -67,7 +68,8 @@ The maintained TV client adds native artwork browsing, Home/search,
 audio/subtitle preferences, system caption integration and ordered progress
 finalization. Library Home now shares Mac's data model with a TV-owned hero,
 personalized shelves, watched actions and Show All routes; see [TV Home](tvos-home.md). Upcoming work is runtime hardening against the user's library;
-Live TV and broader engine support follow later. Full Mac feature parity is not
+the CPU/Metal Live TV experiment is available separately. Broader library-engine
+support remains deferred. Full Mac feature parity is not
 a prerequisite for maintaining TV, and must not be claimed from this milestone.
 
 The original feasibility sequence remains useful context:
@@ -77,7 +79,8 @@ The original feasibility sequence remains useful context:
 3. Play one representative HD movie with remote controls, resume and Plex
    progress reporting on the actual Apple TV.
 4. Expand Home, libraries, details, audio/subtitle selection and settings.
-5. Add TVVLCKit and Live TV after basic playback is reliable.
+5. Add experimental Live TV through the shared FFmpeg/Metal decoder with a
+   TV-owned host; TVVLCKit remains deferred.
 
 Use small commits. Every code checkpoint requires the existing Apple
 Development-signed, compile-only Mac build, preserving signing identity,

@@ -6,7 +6,8 @@
   resume future checkpoints directly on `main`.
 - Scope: production-quality HD SDR MPEG-2 Live TV on Mac, using the new FFmpeg
   pipeline; CPU and Metal IDCT remain comparable. Existing AVPlayer/VLC routes
-  remain available. This is not a plan to replace library playback or tvOS.
+  remain available. This Mac milestone plan does not replace library playback. The separately
+  requested TV port is recorded below and in [TV Live TV](tvos-live-tv.md).
 - User corrections: **DVR and Live TV captions/subtitles are not required**.
   No caption extraction/rendering/selection or caption-style work in this plan.
   No buffer seeking, recording, skip controls or Go Live implementation.
@@ -63,7 +64,7 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 DVR and Live TV captions/subtitles are excluded from all milestones. Seek/skip
 stay disabled for this pipeline. The Mac player omits Go Live across all Live TV
 engines. Other exclusions: library codec/container parity, HDR/Dolby Vision,
-Atmos restoration, downloading, recording/scheduling, tvOS Live TV, and adding
+Atmos restoration, downloading, recording/scheduling, TV production acceptance, and adding
 EPG requirements. Multichannel PCM is not a promise of unimplemented library-engine parity.
 Library subtitle support remains on the existing standard playback routes.
 
@@ -336,3 +337,42 @@ passed. Diff/reference checks passed. No native decoder, shared, project or TV
 source inputs changed. User visual verification remains pending.
 Commit: this UI checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
 Next: continue the remaining M5 validation recorded above; no DVR work.
+
+### TV port — 2026-10-26: CPU/Metal experiment on tvOS
+
+The user explicitly requested porting this experiment to TV, superseding the
+previous TV Live TV deferral. Added a separate opt-in TV channel browser and
+UIKit renderer with remote play/pause, Back, audio selection, red LIVE status
+and safe playback information. TV defaults Disabled; CPU and Metal are explicit
+choices on the next tune. Library AVKit playback remains independent. No DVR,
+caption, seek, skip, Go Live, recording or server A/V conversion work is added.
+
+Extracted the existing decoder worker, audio/video renderers, clock, buffering,
+recovery and diagnostics into `Playback/MPEG2Pipeline.swift`; Mac retains its
+stable AppKit surface/protocol adapter and foreground layout behavior. The
+shared native builder now accepts explicit Mac, TV device and TV simulator
+targets with independent caches/relink objects. TV links only its own arm64
+xcframework; source/slice boundaries and tvOS 26 remain enforced. TV checks both
+metadata and native stream dimensions against 1920 × 1080, without downscaling.
+
+TV session ownership serializes timeline requests, pings remuxes, cleans up
+dismissed/late tunes and prevents retired sessions from restarting. Cleanup runs
+in a separate task so cancellation of the presentation task cannot cancel the
+server release. TV bundles the FFmpeg notice and LGPL text. See
+[TV Live TV](tvos-live-tv.md) for controls, architecture and verification commands.
+
+Verification: both signed builds, 186 Mac tests and 39 tvOS 26.0 simulator tests
+passed. Platform/native-slice boundaries, shell syntax and Markdown links/diff
+checks passed.
+The signed TV app was installed without manual launch. An automated device-test
+launch was rejected because Apple TV was asleep; this is not hardware evidence.
+The first parallel Mac/simulator renderer attempts stalled in host audio-device
+initialization. The user switched macOS output to built-in speakers, after which
+the full Mac and TV simulator suites passed, including the cancelled late-tune
+cleanup regression. Native stream/fidelity/fault/cancellation checks passed. No manual
+visual inspection was performed.
+
+TV A8 throughput/energy, display cadence, physical audio/synchronization, focus,
+network interruptions and sustained playback remain pending user/device gates.
+This port does not complete Mac M5, M6 or M7 or promote Metal by default.
+Commit: this TV port checkpoint (find via this plan's Git history).

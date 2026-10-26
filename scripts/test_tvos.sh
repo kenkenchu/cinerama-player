@@ -2,6 +2,8 @@
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
+./ci_scripts/install_cinerama_mpeg2_tvos.sh
+./scripts/test_mpeg2_native.sh --prepare-renderer-fixture
 xcodegen generate
 python3 scripts/verify_platform_boundaries.py
 if [ -n "${CINERAMA_TVOS_DEVICE_ID:-}" ]; then
