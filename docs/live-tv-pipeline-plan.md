@@ -2,7 +2,8 @@
 
 ## Resume here
 
-- Branch: `codex/metal-mpeg2-prototype`.
+- Branch: `main`. The prototype branch was merged at the user's request;
+  resume future checkpoints directly on `main`.
 - Scope: production-quality HD SDR MPEG-2 Live TV on Mac, using the new FFmpeg
   pipeline; CPU and Metal IDCT remain comparable. Existing AVPlayer/VLC routes
   remain available. This is not a plan to replace library playback or tvOS.
@@ -11,21 +12,22 @@
   No buffer seeking, recording, skip controls or Go Live implementation.
   Pause/resume is in scope; long pauses must not grow memory without bound or
   become an implicit recording feature.
-- Work status: **resumed at the user's request for M5**. M1, M2 and M4 have
-  automated verification; user runtime gates remain pending. M5 initial diagnostics and
-  continuous decoder validation checkpoint is complete; no runtime feedback was supplied
-  with the resume request.
-- Latest completed code checkpoint before resume: M4 bounded recovery and
-  lifecycle, `2ac4147` (P4 below).
-  M2 code is `e315432`; caption scope correction is `40178e4`.
-- Current action: M5 sustained validation/diagnostics, preserving P4 limitations. M6 Metal optimization and M7 production
-  acceptance remain planned. M3 is excluded. No DVR or caption work.
+- Work status: **paused after the M5 initial checkpoint at the user's request**.
+  The user is happy with progress and authorized merging to `main`; this is not
+  specific confirmation of the pending picture/audio/device/wake acceptance gates.
+- Latest completed code checkpoint: M5 diagnostics and continuous decoder
+  validation, `8688af9` (P5 below). M4 is `2ac4147`; M2 is `e315432`;
+  caption scope correction is `40178e4`.
+- Next action when the user resumes: continue M5 sustained renderer/recovery
+  validation on `main`, incorporating any new runtime feedback. M6 Metal
+  optimization and M7 production acceptance remain planned. M3 is excluded.
+  No DVR or caption work. Do not resume implementation until requested.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
 
 ## Working rules
 
-Complete small checkpoints on this branch. At every checkpoint update this file
+Complete small checkpoints on `main`. At every checkpoint update this file
 with changes, verification results, remaining limitations, commit reference and
 exact next action; commit and push after the applicable checks. Do not mark a
 milestone fully verified until its required automated checks and user runtime
@@ -264,3 +266,14 @@ complete M5. M6 and M7 remain planned; no captions or DVR work is pending.
 Commit: this M5 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
 Next: extend sustained validation through renderer and recovery lifecycles;
 incorporate user live comparisons when available before Metal optimization.
+
+### Main handoff — 2026-10-25
+
+The user accepted progress so far and requested merging the prototype branch into
+`main`, pushing it, and resuming future work from `main` later. Main fast-forwarded
+to the verified M5 code checkpoint `8688af9`; this handoff changes documentation
+only. Prior signed builds/native and hosted test evidence remains as recorded
+above. Documentation diff and relative-link checks passed. No new runtime
+acceptance is inferred from general satisfaction. Implementation is paused until
+the user resumes; continue with the remaining M5 work, keeping Standard default
+and CPU/Metal modes available.
