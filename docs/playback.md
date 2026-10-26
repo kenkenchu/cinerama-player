@@ -247,6 +247,17 @@ also confirmed the channel-grid layout and live-slider fix both work. These
 changes passed signed builds; broader tuner, seek and format coverage remains
 unverified.
 
+## Experimental Metal MPEG-2 Reconstruction
+
+`Native/MetalMPEG2Prototype` is an isolated macOS Swift package with a Metal
+inverse-DCT/motion-compensation kernel, CPU reference, GPU tests and synthetic
+benchmark. It is not compiled into either app and does not change Live TV. It
+accepts prepared coefficients and prediction commands, not MPEG-2 bitstreams;
+interlaced broadcast syntax and end-to-end decoding remain future work. See the
+[prototype README](../Native/MetalMPEG2Prototype/README.md) for commands, measured
+results, the exact boundary and follow-up gates. Synthetic GPU throughput is not
+evidence of reduced Live TV CPU usage or energy.
+
 ## Timeline, Scrobble, and Up Next
 
 Online sessions report on the active server and maintain transcode keepalives.
@@ -293,8 +304,10 @@ hooks may have no Mac UI; check the concrete consumer before promising a feature
 - URLs/server decisions: `PlexService+Playback`.
 - Proxy/conversion: `Playback/DolbyVision7` and `Native/CineramaDovi`.
 
-Run `scripts/build_macos.sh` after code changes. Do not run tests or launch unless
-requested. Runtime validation must use real Plex media; compilation does not
-prove codec support, audio output, HDR fidelity or playback recovery. Detailed
+Run the signed `scripts/build_macos.sh` and applicable automated tests after code
+changes, following [testing](testing.md). Automated test hosts are authorized;
+manual app launches and visual inspection remain user-owned. Runtime validation
+must use real Plex media; compilation does not prove codec support, audio output,
+HDR fidelity or playback recovery. Detailed
 pre-fork algorithms and removed-platform history are archived in
 `upstream/playback.md`; active Mac source remains authoritative.
