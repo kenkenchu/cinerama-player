@@ -30,6 +30,7 @@ struct CineramaWindowBackdrop: View {
             } else {
                 CineramaDesktopMaterial()
                     .glassEffect(.clear.tint(Color.cineramaBackground.opacity(0.28)), in: Rectangle())
+                    .opacity(0.25)
             }
         }
         .ignoresSafeArea()

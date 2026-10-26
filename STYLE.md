@@ -95,7 +95,7 @@ and keyboard input. Keep empty/error states secondary in color with one clear
 native retry/action control. Loading uses a plain `ProgressView()`.
 
 The player uses a dark native video surface. Its compact transport bar uses a
-translucent neutral black fill with light controls so the background composites
+75% transparent neutral black fill (25% opacity) with light controls so the background composites
 consistently over native AVPlayer/VLC surfaces and letterboxing; honor Reduce
 Transparency with an opaque fill. Other player panels use system materials. Preserve
 space/arrow/Escape shortcuts and native fullscreen. Do not add TV focus plates,
@@ -175,6 +175,7 @@ do not replace that fill with a backdrop-sampling effect.
 The main Mac window also uses a single translucent glass backdrop, owned by
 `CineramaWindowBackdrop` in `MacPlatform.swift`. A behind-window AppKit visual
 effect blurs the desktop; clear Liquid Glass adds the restrained metal-blue tint.
+The combined backdrop uses 25% opacity (75% transparency).
 The window container and catalog page backgrounds stay clear so opaque nested
 fills cannot hide it. Keep artwork scrims, raised bays and native form surfaces
 for readability. Reduce Transparency replaces the entire window backdrop with
