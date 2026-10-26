@@ -165,5 +165,37 @@ Verification includes HTTP 503 classification, cancellation during a blocked HTT
 open, resolution-change classification and deterministic retry/clock-policy tests.
 These are not substitutes for real-channel interruption, output-device, wake,
 rapid retune and audio/video synchronization checks. Sustained validation is M5.
-See the [plan](../../docs/live-tv-pipeline-plan.md); implementation is paused at
-the user's request after this checkpoint.
+See the [plan](../../docs/live-tv-pipeline-plan.md) for current progress and pending acceptance checks.
+
+## Sustained validation checkpoint (M5)
+
+Cmd-I includes output dimensions and observed timestamp cadence, submitted/late
+video counts, audio/video queue starvation transitions, sampled peak queue depth
+and queue-end A−V offset. Submission counts span recovery; queue statistics reset
+with each decoder/output context. Late submission is not a measured display drop;
+queue-end offset is not measured speaker/display synchronization or clock drift.
+No media URLs, token values or track titles are added to diagnostics.
+
+Run the regular native checks plus a continuous HD interlaced decode in each mode:
+
+```sh
+CINERAMA_MPEG2_SOAK_SECONDS=60 ./scripts/test_mpeg2_native.sh
+```
+
+The optional duration accepts 10–3600 seconds of generated media. Each mode uses
+the same 1080i fixture, validates every output's 60 Hz cadence and contiguous PCM,
+releases samples immediately and samples process RSS after 300 video outputs.
+Peak RSS growth above that baseline must stay below 64 MiB. Metal validation
+stays enabled; this is an unpaced decoder ownership regression, not a renderer,
+network, live-latency, CPU/energy benchmark or proof of hours-long bounded memory.
+The fidelity suite remains separate and retains short outputs for pixel comparison.
+
+For user live comparisons, quit/reopen the signed app, select CPU, tune the same
+channel, allow 30 seconds to settle, then record Cmd-I values and Activity Monitor
+CPU/memory over a fixed five-minute interval. Repeat with Metal using the same
+channel, window size, audio track and output device; repeat CPU afterward to expose
+broadcast/content variation. Record motion quality, audible drift, overload warnings
+and any recovery. Test short pause and >15-second pause separately. Standard remains
+the rollback route. Sequential live samples cannot establish identical content or
+energy savings. Longer renderer/network, sleep/wake and physical-output validation
+remain pending and user-owned; no caption or DVR verification is required.

@@ -266,7 +266,9 @@ Experimental audio supports track selection and preserves supported source PCM
 channel layouts/sample rates; default device output and physical surround need
 user verification. Live TV captions and DVR are explicitly out of scope. BWDIF supplies progressive output at field cadence for
 interlaced video; progressive input retains its cadence. Startup waits for
-audio/video buffer coverage, and Cmd-I exposes queue starvation observations. Unsupported controls are
+audio/video buffer coverage. Cmd-I exposes output format/cadence, submitted/late
+video, queue depths and starvation observations. Late submissions are not measured
+display drops; the queue-end A−V offset is not measured output sync drift. Unsupported controls are
 disabled. Retryable input/output interruptions reconnect to the same session URL and
 mode with a three-attempt budget. Timestamp jumps reanchor the output clock;
 long-pause resume refreshes the live session. Permanent errors remain explicit,

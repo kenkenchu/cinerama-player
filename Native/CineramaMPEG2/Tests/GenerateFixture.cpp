@@ -13,8 +13,10 @@ extern "C" void cinerama_mpeg2_idct_configure(void *,AVCodecContext *) { abort()
 extern "C" void cinerama_mpeg2_idct_flush(void *) { abort(); }
 static void check(int r) { if(r<0) { char e[128]; av_strerror(r,e,sizeof(e)); fprintf(stderr,"Fixture error: %s\n",e); exit(1); } }
 int main(int argc,char **argv) {
-    if(argc!=5 && argc!=6) return 2;
-    int audioMode=argc==6?atoi(argv[5]):0;
+    if(argc<5 || argc>7) return 2;
+    int audioMode=argc>=6?atoi(argv[5]):0;
+    int frames=argc==7?atoi(argv[6]):90;
+    if(frames<1 || frames>108000) return 2;
     const char *path=argv[1]; int interlaced=atoi(argv[2]), chroma422=atoi(argv[3]), hd=atoi(argv[4]);
     AVFormatContext *mux=nullptr;
     check(avformat_alloc_output_context2(&mux,nullptr,strstr(path,".m3u8")?"hls":"mpegts",path));
@@ -68,7 +70,7 @@ int main(int argc,char **argv) {
         check(av_channel_layout_copy(&af2->ch_layout,&a2->ch_layout)); check(av_frame_get_buffer(af2,0));
     }
     int64_t audioPTS=0, audioPTS2=0;
-    for(int n=0;n<90;n++) {
+    for(int n=0;n<frames;n++) {
         check(av_frame_make_writable(vf)); vf->pts=n;
         if(interlaced) vf->flags=AV_FRAME_FLAG_INTERLACED|(interlaced==2?0:AV_FRAME_FLAG_TOP_FIELD_FIRST);
         for(int plane=0;plane<3;plane++) {

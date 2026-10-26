@@ -97,6 +97,11 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     private(set) var outputAudioRate = 0.0
     private(set) var recovery = LiveStreamRecoveryPolicy()
     private(set) var timestampResets = 0
+    private(set) var submittedVideoFrames = 0
+    private(set) var lateVideoSubmissions = 0
+    private(set) var outputVideoWidth = 0
+    private(set) var outputVideoHeight = 0
+    private(set) var outputVideoCadence = 0.0
     @ObservationIgnored private let surface = MPEG2VideoSurface()
     @ObservationIgnored private let audio = AVSampleBufferAudioRenderer()
     @ObservationIgnored private let synchronizer = AVSampleBufferRenderSynchronizer()
@@ -259,12 +264,25 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         let pts = CMSampleBufferGetPresentationTimeStamp(decoded.sample)
         lastProgress = ProcessInfo.processInfo.systemUptime
         recovery.markHealthy(now: lastProgress)
-        if decoded.kind == 1 { lastVideoPTS = CMTimeGetSeconds(pts) } else { lastAudioPTS = CMTimeGetSeconds(pts) }
         if origin == nil || (!clockStarted && CMTimeCompare(pts, origin!) < 0) {
             origin = pts
             synchronizer.setRate(0, time: pts)
         }
         if decoded.kind == 1 {
+            submittedVideoFrames += 1
+            // A late submission is observable here; actual display drops are not.
+            if clockStarted && desiredRate > 0 && CMTimeCompare(pts, synchronizer.currentTime()) < 0 {
+                lateVideoSubmissions += 1
+            }
+            if let pixel = CMSampleBufferGetImageBuffer(decoded.sample) {
+                outputVideoWidth = CVPixelBufferGetWidth(pixel)
+                outputVideoHeight = CVPixelBufferGetHeight(pixel)
+            }
+            if let previous = lastVideoPTS {
+                let interval = CMTimeGetSeconds(pts) - previous
+                if interval.isFinite && interval > 0 && interval < 0.5 { outputVideoCadence = 1 / interval }
+            }
+            lastVideoPTS = CMTimeGetSeconds(pts)
             surface.display.sampleBufferRenderer.enqueue(decoded.sample)
             buffers.enqueueVideo(end: CMTimeGetSeconds(pts))
         } else {
@@ -273,6 +291,7 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
                 outputAudioChannels = Int(asbd.pointee.mChannelsPerFrame)
                 outputAudioRate = asbd.pointee.mSampleRate
             }
+            lastAudioPTS = CMTimeGetSeconds(pts)
             audio.enqueue(decoded.sample)
             let duration = CMSampleBufferGetDuration(decoded.sample)
             let end = CMTimeGetSeconds(pts) + max(0, CMTimeGetSeconds(duration))
@@ -314,6 +333,8 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
         lastAudioPTS = nil; lastVideoPTS = nil; preferredAudio = nil
         recovery = LiveStreamRecoveryPolicy(); timestampResets = 0
         currentTime = 0; gpuBlocks = 0; gpuSeconds = 0
+        submittedVideoFrames = 0; lateVideoSubmissions = 0
+        outputVideoWidth = 0; outputVideoHeight = 0; outputVideoCadence = 0
         availableAudioTracks = []; selectedAudioTrackID = nil; outputAudioChannels = 0; outputAudioRate = 0
         isBuffering = false; state = .stopped
     }
@@ -349,6 +370,10 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
     }
     func setVideoFillEnabled(_ enabled: Bool) { surface.display.videoGravity = enabled ? .resizeAspectFill : .resizeAspect }
     func makePlayerView() -> AnyView { AnyView(MPEG2SurfaceHost(view: surface)) }
+    private var queueEndOffset: String {
+        guard let audioEnd = buffers.audioEnd, let videoEnd = buffers.videoEnd else { return "Unavailable" }
+        return String(format: "%.3f s", audioEnd - videoEnd)
+    }
     var renderingDiagnostics: [(String, String)] {
         [("Decoder", mode == .metal ? "FFmpeg + Metal IDCT (experimental)" : "FFmpeg CPU (experimental)"),
          ("GPU reconstructed blocks", String(gpuBlocks)),
@@ -356,10 +381,15 @@ final class ExperimentalMPEG2Engine: NSObject, PlaybackEngine {
          ("Prediction / parsing", "CPU"),
          ("Stream reconnects", String(recovery.totalAttempts)),
          ("Timestamp resets", String(timestampResets)),
+         ("Video output", "\(outputVideoWidth) × \(outputVideoHeight) · " + String(format: "%.2f outputs/s", outputVideoCadence)),
+         ("Video submitted / late", "\(submittedVideoFrames) / \(lateVideoSubmissions) (not display drops)"),
          ("Audio", "\(outputAudioChannels) ch PCM · \(Int(outputAudioRate)) Hz"),
          ("Video processing", "BWDIF field-rate deinterlacing; progressive passthrough"),
          ("Audio queued", String(format: "%.3f s", buffers.audioDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),
          ("Video queued", String(format: "%.3f s", buffers.videoDepth(at: CMTimeGetSeconds(synchronizer.currentTime())))),
+         ("Peak queued A/V (current context)", String(format: "%.3f / %.3f s", buffers.peakAudioDepth, buffers.peakVideoDepth)),
+         ("Queue-end A−V (not measured sync drift)", queueEndOffset),
+         ("Observed video buffer starvations", String(buffers.videoStarvations)),
          ("Observed audio buffer starvations", String(buffers.audioStarvations)),
          ("Prototype limits", "No captions; live playback only")]
     }

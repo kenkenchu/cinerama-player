@@ -11,13 +11,14 @@
   No buffer seeking, recording, skip controls or Go Live implementation.
   Pause/resume is in scope; long pauses must not grow memory without bound or
   become an implicit recording feature.
-- Work status: **paused at the user's request after the M4 implementation
-  checkpoint**. M1, M2 and M4 have automated verification; user runtime gates
-  remain pending. Do not resume implementation until the user requests it.
-- Latest completed code checkpoint: M4 bounded recovery and lifecycle (P4 below).
+- Work status: **resumed at the user's request for M5**. M1, M2 and M4 have
+  automated verification; user runtime gates remain pending. M5 initial diagnostics and
+  continuous decoder validation checkpoint is complete; no runtime feedback was supplied
+  with the resume request.
+- Latest completed code checkpoint before resume: M4 bounded recovery and
+  lifecycle, `2ac4147` (P4 below).
   M2 code is `e315432`; caption scope correction is `40178e4`.
-- Next action on resume: review P4 limitations and user feedback, then M5
-  sustained validation/diagnostics. M6 Metal optimization and M7 production
+- Current action: M5 sustained validation/diagnostics, preserving P4 limitations. M6 Metal optimization and M7 production
   acceptance remain planned. M3 is excluded. No DVR or caption work.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
@@ -52,7 +53,7 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Tracks/layout implemented; device recovery/verification pending |
 | M3 — Captions and subtitles | Removed at the user's request | No Live TV caption implementation or acceptance gate | Out of scope |
 | M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Implementation checkpoint complete; runtime gates pending |
-| M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Planned |
+| M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Initial diagnostics/decoder soak checkpoint; full sustained acceptance pending |
 | M6 — Metal efficiency | Reduce synchronous submission/waits and copies without violating reference/field dependencies; retain CPU oracle | Fidelity/conformance-oriented fixtures, benchmark without validation plus live CPU/energy measurements; no default change without evidence | Planned |
 | M7 — Production acceptance | Resolve remaining supported-MPEG-2 gaps, simplify experimental controls, operational docs and dependency/relink artifacts | Full required builds/tests, explicit user picture/audio/input acceptance; rollback to standard route retained | Planned |
 
@@ -71,8 +72,9 @@ patch changes IDCT callbacks only; motion prediction and parsing remain CPU work
 The coordinator passes the already-authorized copy-only tuned session. Settings
 select Standard, Experimental CPU or Experimental Metal on the next tune.
 
-Existing limits: stereo/default audio, no captions or track selection, woven
-interlace, explicit failure instead of recovery. Automated fixtures decode 90
+Original pre-M1 limits were stereo/default audio, no track selection, woven
+interlace and explicit failure instead of recovery. M1/M2/M4 supersede those
+limits as recorded below; captions remain excluded. Automated fixtures decode 90
 I/P/B frames and audio for progressive, interlaced, 4:2:2, HD, local HLS and a
 same-origin token-protected growing HTTP playlist. Maximum observed CPU/Metal
 pixel difference was 2, with PSNR approximately 66 dB; this is not formal MPEG-2
@@ -223,3 +225,42 @@ Commit: this M4 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`
 **Paused here at the user's explicit request.** On resume, read this file and
 AGENTS instructions, inspect Git status, incorporate user runtime feedback, then
 start M5. Do not silently promote the experiment or enable Metal by default.
+
+### P5 — 2026-10-25: M5 diagnostics and continuous decoder validation
+
+Resumed at the user's request; no new user runtime feedback was provided.
+Added Cmd-I output dimensions/cadence, submitted/late video counts, video queue
+starvation transitions, sampled peak A/V queue depths and queue-end offset.
+Late submissions do not measure display drops, and queue-end offset does not
+measure physical output synchronization or clock drift. Queue statistics reset
+on recovery; video submission counters span the tune. Diagnostics contain no
+stream URLs or credentials. CPU/Metal selection and Standard default are unchanged.
+
+Added optional `CINERAMA_MPEG2_SOAK_SECONDS=60` to the native test script
+(10–3600 seconds of generated media). A continuous 1080i fixture passes through
+one decoder per mode without retaining frames. Every video output checks field
+cadence, PCM checks continuity, and sampled resident memory growth after 300
+video outputs must stay below 64 MiB. This tests native decoder ownership without
+renderer pacing/network interruptions; it is not a complete live-player memory
+or energy acceptance gate. Metal validation stays enabled. The native README
+records a repeatable user CPU/Metal/CPU comparison procedure.
+
+Verification: signed Mac build and **185 Mac tests** passed. Nine native stream
+cases and existing fault/cancellation checks passed with Metal validation. The
+60-second 1080i soak returned 3,600 video outputs and 1,875 PCM buffers in each
+mode with continuous cadence/timestamps. Post-warmup sampled RSS was CPU
+35.47 → 35.53 MiB (0.06 MiB growth), Metal 39.48 → 39.48 MiB (0.00 MiB growth).
+Unpaced elapsed decode was 3.458 s CPU and 23.769 s Metal with validation enabled;
+these are not live efficiency or energy measurements. The initial sandboxed native
+run could not allocate video buffers; the successful run used authorized GPU
+access outside that sandbox. No app was manually launched or visually inspected.
+No TV/shared/project inputs changed; the previous signed TV/32-test baseline is
+unchanged. Diff/reference checks passed.
+
+Remaining M5 work: longer renderer/network/reconnect soak coverage, measured
+output drops/drift where supported, live CPU/energy/memory measurements and user
+picture/audio/device/wake checks. The continuous decoder test alone does not
+complete M5. M6 and M7 remain planned; no captions or DVR work is pending.
+Commit: this M5 checkpoint (find with `git log -- docs/live-tv-pipeline-plan.md`).
+Next: extend sustained validation through renderer and recovery lifecycles;
+incorporate user live comparisons when available before Metal optimization.

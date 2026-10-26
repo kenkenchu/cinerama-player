@@ -8,6 +8,10 @@ struct LivePlaybackBufferState {
     private(set) var audioEnd: TimeInterval?
     private(set) var videoEnd: TimeInterval?
     private(set) var audioStarvations = 0
+    private(set) var videoStarvations = 0
+    private(set) var peakAudioDepth: TimeInterval = 0
+    private(set) var peakVideoDepth: TimeInterval = 0
+    private var wasVideoStarved = false
     private var wasAudioStarved = false
 
     mutating func resetAudio() { audioEnd = nil; wasAudioStarved = false }
@@ -22,6 +26,11 @@ struct LivePlaybackBufferState {
         let starved = running && expectsAudio && audioEnd != nil && audioDepth(at: time) <= 0
         if starved && !wasAudioStarved { audioStarvations += 1 }
         wasAudioStarved = starved
+        let videoStarved = running && videoEnd != nil && videoDepth(at: time) <= 0
+        if videoStarved && !wasVideoStarved { videoStarvations += 1 }
+        wasVideoStarved = videoStarved
+        peakAudioDepth = max(peakAudioDepth, audioDepth(at: time))
+        peakVideoDepth = max(peakVideoDepth, videoDepth(at: time))
     }
 }
 

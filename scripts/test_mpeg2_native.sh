@@ -32,3 +32,19 @@ root=Path(sys.argv[1])
 (root/'format-change.ts').write_bytes((root/'progressive.ts').read_bytes()+(root/'hd-interlaced.ts').read_bytes())
 PYFIXTURE
 MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" --failure "$CACHE/fixtures/format-change.ts"
+
+# Optional longer continuous decode without retaining output frames. Validation
+# stays enabled: these are ownership/cadence checks, not efficiency benchmarks.
+SOAK_SECONDS="${CINERAMA_MPEG2_SOAK_SECONDS:-0}"
+if ! [[ "$SOAK_SECONDS" =~ ^[0-9]+$ ]] || [ "$SOAK_SECONDS" -gt 3600 ]; then
+    echo 'CINERAMA_MPEG2_SOAK_SECONDS must be 0 or 10–3600 seconds.' >&2
+    exit 2
+fi
+if [ "$SOAK_SECONDS" -ne 0 ]; then
+    if [ "$SOAK_SECONDS" -lt 10 ]; then exit 2; fi
+    SOAK_FIXTURE="$CACHE/fixtures/soak-hd.ts"
+    "$CACHE/generate-fixture" "$SOAK_FIXTURE" 1 0 1 0 "$((SOAK_SECONDS * 30))"
+    for mode in cpu metal; do
+        MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" --soak "$SOAK_FIXTURE" "$mode" "$((SOAK_SECONDS * 60))"
+    done
+fi

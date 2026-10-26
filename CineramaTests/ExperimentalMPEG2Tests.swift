@@ -49,6 +49,22 @@ struct LivePlaybackBufferTests {
         silent.expectsAudio = false; silent.enqueueVideo(end: 10.2)
         #expect(silent.canStart(at: 10))
     }
+    @Test func videoStarvationAndQueuePeaksIgnoreRepeatedPollsAndPause() {
+        var state = LivePlaybackBufferState()
+        state.enqueueVideo(end: 10.5); state.enqueueAudio(end: 10.25)
+        state.observe(time: 10, running: true)
+        #expect(state.peakAudioDepth == 0.25)
+        #expect(state.peakVideoDepth == 0.5)
+        state.observe(time: 11, running: false)
+        #expect(state.videoStarvations == 0)
+        state.observe(time: 11, running: true); state.observe(time: 12, running: true)
+        #expect(state.videoStarvations == 1)
+        state.enqueueVideo(end: 13); state.observe(time: 12, running: true)
+        state.observe(time: 14, running: true)
+        #expect(state.videoStarvations == 2)
+        #expect(state.peakVideoDepth == 1)
+        #expect(state.peakAudioDepth == 0.25)
+    }
     @Test func starvationCountsTransitionsRatherThanEveryPollAndIgnoresPause() {
         var state = LivePlaybackBufferState()
         state.enqueueAudio(end: 1)

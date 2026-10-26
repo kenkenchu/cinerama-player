@@ -124,5 +124,14 @@ and resolution changes as recoverable and cancel an in-flight blocked HTTP open
 within two seconds. Hosted policy tests bound retries and check timestamp and
 long-pause thresholds. Full render-loop recovery, output devices, wake and
 long-duration memory/energy remain user/runtime validation gates; see the
-[paused milestone plan](live-tv-pipeline-plan.md). No DVR or caption work is in
+[milestone plan](live-tv-pipeline-plan.md). No DVR or caption work is in
 scope. Mac-only changes retain the last signed TV/32-test baseline.
+
+M5 initial checkpoint: signed Mac build and 185 Mac tests pass. Optional
+`CINERAMA_MPEG2_SOAK_SECONDS=60 ./scripts/test_mpeg2_native.sh` adds continuous
+1080i CPU/Metal decoding, field cadence, PCM continuity and post-warmup sampled
+RSS growth checks without retaining frames. Both modes returned 3,600 video
+outputs/1,875 PCM buffers; sampled growth was 0.06/0.00 MiB. This unpaced native
+check does not exercise renderer queues or establish live-player memory,
+synchronization or energy performance. See the native README and milestone plan
+for limits and the repeatable user comparison procedure. TV inputs are unchanged.

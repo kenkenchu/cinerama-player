@@ -8,6 +8,7 @@
 #include <cstring>
 #include <thread>
 #include <chrono>
+#include <mach/mach.h>
 struct Frame { std::vector<uint8_t> pixels; CMTime pts; };
 struct Result { std::vector<Frame> frames; int audio=0; uint64_t blocks=0; double elapsed=0,gpu=0; };
 static void require(bool value,const char *message) { if(!value) { fprintf(stderr,"FAIL: %s\n",message); exit(1); } }
@@ -53,8 +54,53 @@ static Result decode(const char *path,bool metal,int expectedChannels) {
     }
     r.elapsed=CFAbsoluteTimeGetCurrent()-start; r.blocks=cm2_gpu_blocks(d); r.gpu=cm2_gpu_seconds(d); cm2_close(d); return r;
 }
+// Streaming validation deliberately retains no decoded frames. RSS is sampled
+// after warmup; this tests decoder ownership, not AVFoundation renderer queues.
+static uint64_t residentBytes() {
+    mach_task_basic_info_data_t info{};
+    mach_msg_type_number_t count=MACH_TASK_BASIC_INFO_COUNT;
+    require(task_info(mach_task_self(),MACH_TASK_BASIC_INFO,(task_info_t)&info,&count)==KERN_SUCCESS,"read resident memory");
+    return info.resident_size;
+}
+static void soak(const char *path, bool metal, int expectedFrames) {
+    CM2Decoder *d=cm2_create(metal); require(d && cm2_open(d,path)==0,"open soak fixture");
+    int video=0,audio=0; uint64_t baseline=0,peak=0;
+    CMTime lastVideo=kCMTimeInvalid,lastAudioEnd=kCMTimeInvalid;
+    double start=CFAbsoluteTimeGetCurrent();
+    while(true) {
+        @autoreleasepool {
+            int kind=0; CMSampleBufferRef sample=cm2_next(d,&kind);
+            if(!sample) { require(kind==0,"soak decode completes without failure"); break; }
+            CMTime pts=CMSampleBufferGetPresentationTimeStamp(sample);
+            require(CMTIME_IS_NUMERIC(pts),"numeric soak timestamp");
+            if(kind==1) {
+                if(CMTIME_IS_VALID(lastVideo)) require(fabs(CMTimeGetSeconds(CMTimeSubtract(pts,lastVideo))-1.0/60)<0.00001,"sustained field cadence");
+                lastVideo=pts; video++;
+            } else {
+                if(CMTIME_IS_VALID(lastAudioEnd)) require(fabs(CMTimeGetSeconds(CMTimeSubtract(pts,lastAudioEnd)))<0.00003,"sustained contiguous PCM");
+                lastAudioEnd=CMTimeAdd(pts,CMSampleBufferGetDuration(sample)); audio++;
+            }
+            CFRelease(sample);
+            if(video>=300 && video%60==0) {
+                uint64_t rss=residentBytes();
+                if(!baseline) baseline=rss;
+                peak=std::max(peak,rss);
+                require(peak-baseline<64ULL*1024*1024,"post-warmup RSS growth stays below 64 MiB");
+            }
+        }
+    }
+    require(video==expectedFrames && audio>0 && baseline>0,"complete sustained video/audio and memory observations");
+    require(metal ? cm2_gpu_blocks(d)>100 : cm2_gpu_blocks(d)==0,"soak uses requested IDCT mode");
+    printf("soak: mode=%s frames=%d audio=%d elapsed=%.3fs baselineRSS=%.2fMiB peakRSS=%.2fMiB growth=%.2fMiB\n",
+        metal?"Metal":"CPU",video,audio,CFAbsoluteTimeGetCurrent()-start,baseline/1048576.0,peak/1048576.0,(peak-baseline)/1048576.0);
+    cm2_close(d);
+}
 int main(int argc,char **argv) {
     @autoreleasepool {
+        if(argc==5 && strcmp(argv[1],"--soak")==0) {
+            require(strcmp(argv[3],"cpu")==0 || strcmp(argv[3],"metal")==0,"explicit soak mode");
+            soak(argv[2],strcmp(argv[3],"metal")==0,atoi(argv[4])); return 0;
+        }
         if(argc==3 && strcmp(argv[1],"--cancel")==0) {
             CM2Decoder *d=cm2_create(0); int result=0; double start=CFAbsoluteTimeGetCurrent();
             std::thread worker([&] { result=cm2_open(d,argv[2]); });
