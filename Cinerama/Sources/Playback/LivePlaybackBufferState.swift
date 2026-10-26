@@ -19,8 +19,10 @@ struct LivePlaybackBufferState {
     mutating func enqueueVideo(end: TimeInterval) { videoEnd = max(videoEnd ?? end, end) }
     func audioDepth(at time: TimeInterval) -> TimeInterval { max(0, (audioEnd ?? time) - time) }
     func videoDepth(at time: TimeInterval) -> TimeInterval { max(0, (videoEnd ?? time) - time) }
+    // Leave room below the audio renderer's observed 192 ms backpressure
+    // limit: waiting for 200 ms can deadlock startup while the clock is stopped.
     func canStart(at time: TimeInterval) -> Bool {
-        videoDepth(at: time) >= 0.1 && (!expectsAudio || audioDepth(at: time) >= 0.2)
+        videoDepth(at: time) >= 0.1 && (!expectsAudio || audioDepth(at: time) >= 0.15)
     }
     mutating func observe(time: TimeInterval, running: Bool) {
         let starved = running && expectsAudio && audioEnd != nil && audioDepth(at: time) <= 0

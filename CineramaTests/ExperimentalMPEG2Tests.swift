@@ -43,7 +43,7 @@ struct LivePlaybackBufferTests {
         #expect(!state.canStart(at: 10))
         state.enqueueAudio(end: 10.1)
         #expect(!state.canStart(at: 10))
-        state.enqueueAudio(end: 10.3)
+        state.enqueueAudio(end: 10.192)
         #expect(state.canStart(at: 10))
         var silent = LivePlaybackBufferState()
         silent.expectsAudio = false; silent.enqueueVideo(end: 10.2)
@@ -105,5 +105,93 @@ struct LiveRecoveryTests {
         #expect(LiveStreamRecoveryPolicy.isTimestampDiscontinuity(previous: 10, next: 30))
         #expect(!LiveStreamRecoveryPolicy.shouldRefreshAfterPause(began: 100, now: 114))
         #expect(LiveStreamRecoveryPolicy.shouldRefreshAfterPause(began: 100, now: 115))
+    }
+}
+
+/// Exercises the production worker and AVFoundation renderers without a window,
+/// Plex session or manual app launch. Physical output fidelity remains user-owned.
+@Suite("MPEG-2 paced renderer recovery", .serialized)
+@MainActor struct MPEG2RendererIntegrationTests {
+    private func source() throws -> PlaybackSource {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let url = root.appendingPathComponent(".build/metal-mpeg2/fixtures/renderer-hd.ts")
+        try #require(FileManager.default.fileExists(atPath: url.path), "Run scripts/test_macos.sh to generate the renderer fixture")
+        return PlaybackSource(url: url, startPosition: nil, context: .init(
+            attemptID: UUID(), title: "Generated renderer fixture", ratingKey: "fixture",
+            engine: .avPlayer, resolverReason: "Hosted MPEG-2 integration test", mediaID: 0,
+            partID: 0, sanitizedPlaybackURL: "local generated fixture"))
+    }
+    private func waitUntil(_ condition: () -> Bool) async throws {
+        let deadline = ContinuousClock.now + .seconds(15)
+        while !condition(), ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        try #require(condition(), "Renderer lifecycle transition timed out")
+    }
+
+    @Test(arguments: [ExperimentalMPEG2Mode.cpu, .metal])
+    func pacedPauseRecoveryReloadAndStop(mode: ExperimentalMPEG2Mode) async throws {
+        let engine = ExperimentalMPEG2Engine(mode: mode)
+        defer { engine.stop() }
+        let input = try source()
+        engine.load(source: input)
+        do {
+            try await waitUntil { engine.state == .playing && engine.currentTime > 1 }
+        } catch {
+            print("Renderer startup: \(engine.state), \(String(describing: engine.error)), \(engine.renderingDiagnostics)")
+            throw error
+        }
+        #expect(engine.submittedVideoFrames > 60)
+        #expect(engine.outputVideoWidth == 1920 && engine.outputVideoHeight == 1080)
+        #expect(engine.outputAudioChannels == 2)
+        #expect(mode == .cpu ? engine.gpuBlocks == 0 : engine.gpuBlocks > 0)
+
+        engine.pause()
+        // Allow one in-flight sample to settle; paused decode must then stop
+        // advancing instead of accumulating the remaining minute of media.
+        try await Task.sleep(for: .seconds(1))
+        let pausedFrames = engine.submittedVideoFrames
+        let pausedTime = engine.currentTime
+        try await Task.sleep(for: .seconds(2))
+        #expect(engine.submittedVideoFrames == pausedFrames)
+        #expect(abs(engine.currentTime - pausedTime) < 0.05)
+        #expect(engine.buffers.peakVideoDepth < 2.1)
+        #expect(engine.buffers.peakAudioDepth < 2.1)
+        engine.play()
+        try await waitUntil { engine.currentTime > pausedTime + 0.5 }
+
+        let framesBeforeRecovery = engine.submittedVideoFrames
+        engine.recoverFromStall()
+        try await waitUntil { engine.recovery.totalAttempts == 1 && engine.state == .playing && engine.submittedVideoFrames > framesBeforeRecovery + 60 }
+        #expect(engine.error == nil)
+        #expect(engine.currentTime >= pausedTime)
+        let recoveredTime = engine.currentTime
+        try await waitUntil { engine.currentTime > recoveredTime + 10 }
+        #expect(engine.recovery.totalAttempts == 1)
+
+        engine.pause()
+        try await Task.sleep(for: .seconds(1))
+        let heldFrames = engine.submittedVideoFrames
+        try await Task.sleep(for: .seconds(15))
+        #expect(engine.submittedVideoFrames == heldFrames)
+        #expect(engine.recovery.totalAttempts == 1)
+        engine.play()
+        try await waitUntil { engine.recovery.totalAttempts == 2 && engine.state == .playing && engine.submittedVideoFrames > heldFrames + 60 }
+
+
+        // Invalidate an active worker and its asynchronous renderer flushes.
+        engine.load(source: input)
+        engine.load(source: input)
+        try await waitUntil { engine.state == .playing && engine.currentTime > 0.5 }
+        #expect(engine.recovery.totalAttempts == 0)
+        #expect(engine.error == nil)
+        engine.recoverFromStall()
+        try await waitUntil { engine.recovery.totalAttempts == 1 }
+        engine.stop()
+        try await Task.sleep(for: .seconds(1)) // crosses the pending retry delay
+        engine.play(); engine.recoverFromStall()
+        #expect(engine.state == .stopped)
+        #expect(engine.submittedVideoFrames == 0 && engine.currentTime == 0)
+        #expect(engine.recovery.totalAttempts == 0)
     }
 }

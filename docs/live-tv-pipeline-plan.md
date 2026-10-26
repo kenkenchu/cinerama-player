@@ -12,16 +12,17 @@
   No buffer seeking, recording, skip controls or Go Live implementation.
   Pause/resume is in scope; long pauses must not grow memory without bound or
   become an implicit recording feature.
-- Work status: **paused after the M5 initial checkpoint at the user's request**.
+- Work status: **M5 resumed on 2026-10-26 at the user's request**.
   The user is happy with progress and authorized merging to `main`; this is not
   specific confirmation of the pending picture/audio/device/wake acceptance gates.
-- Latest completed code checkpoint: M5 diagnostics and continuous decoder
-  validation, `8688af9` (P5 below). M4 is `2ac4147`; M2 is `e315432`;
+- Latest code checkpoint: M5 paced renderer/lifecycle validation and startup
+  deadlock fix (P6 below; locate with `git log -- docs/live-tv-pipeline-plan.md`).
+  P5 is `8688af9`; M4 is `2ac4147`; M2 is `e315432`;
   caption scope correction is `40178e4`.
-- Next action when the user resumes: continue M5 sustained renderer/recovery
+- Next action: continue M5 sustained renderer/network/recovery
   validation on `main`, incorporating any new runtime feedback. M6 Metal
   optimization and M7 production acceptance remain planned. M3 is excluded.
-  No DVR or caption work. Do not resume implementation until requested.
+  No DVR or caption work.
 - Baseline commit: `f27faa6`. Both signed builds, 180 Mac tests, 32 tvOS 26 tests
   and six native stream cases passed at that checkpoint.
 
@@ -55,7 +56,7 @@ opt-in until the final acceptance gate; do not hide CPU fallback during A/B test
 | M2 — Audio tracks and surround | Enumerate streams; select tracks and honor language; preserve supported multichannel PCM and layout; output-device recovery | Multi-track and 5.1 fixtures; layout/timestamp/selection tests; user surround and device-switch checks | Tracks/layout implemented; device recovery/verification pending |
 | M3 — Captions and subtitles | Removed at the user's request | No Live TV caption implementation or acceptance gate | Out of scope |
 | M4 — Live recovery and lifecycle | Stalls, HLS discontinuities, timestamp resets, damaged packets, format changes; rapid retunes, stop, sleep/wake and bounded long pauses | Deterministic network fault/cancellation tests; lifecycle/retired-session tests; user sustained channel/pause/wake checks | Implementation checkpoint complete; runtime gates pending |
-| M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Initial diagnostics/decoder soak checkpoint; full sustained acceptance pending |
+| M5 — Diagnostics and sustained validation | Video drops, audio starvation, buffer depth, format/cadence, timing drift; bounded memory and repeatable comparisons | Long headless stream tests, safe diagnostics; repeatable user live comparisons with identical settings/content where possible | Decoder soak and paced renderer/lifecycle coverage; full sustained acceptance pending |
 | M6 — Metal efficiency | Reduce synchronous submission/waits and copies without violating reference/field dependencies; retain CPU oracle | Fidelity/conformance-oriented fixtures, benchmark without validation plus live CPU/energy measurements; no default change without evidence | Planned |
 | M7 — Production acceptance | Resolve remaining supported-MPEG-2 gaps, simplify experimental controls, operational docs and dependency/relink artifacts | Full required builds/tests, explicit user picture/audio/input acceptance; rollback to standard route retained | Planned |
 
@@ -277,3 +278,44 @@ above. Documentation diff and relative-link checks passed. No new runtime
 acceptance is inferred from general satisfaction. Implementation is paused until
 the user resumes; continue with the remaining M5 work, keeping Standard default
 and CPU/Metal modes available.
+
+### P6 — 2026-10-26: M5 paced renderer and lifecycle validation
+
+Resumed at the user's request. Added hosted integration coverage that runs the
+production native worker, audio/video sample-buffer renderers and shared clock
+headlessly in both CPU and Metal modes. The Mac test script prepares a cached,
+locally generated 60-second 1080i/AC3 fixture. Tests check startup, decoded format
+and actual GPU execution, short pause with stable frame count/time and bounded
+sampled queue depths, resumed progress, explicit reconnect, ten further seconds
+of paced progress without another reconnect, 16-second pause/live refresh,
+rapid reload and stop during retry without resurrection. No Plex/tuner session
+or window is opened by these tests.
+
+The first run exposed a startup deadlock: the audio renderer backpressured at
+192 ms queued while the clock waited for 200 ms. Lowered the audio startup
+threshold to 150 ms, retaining the 100 ms video requirement. Both modes then
+passed the focused integration run. The pure startup regression now explicitly
+checks that 192 ms can start. This observed renderer capacity is not a universal
+hardware contract; broader output-device testing remains necessary.
+
+This extends automated coverage through real renderer pacing and recovery but
+is not a long-duration renderer/network memory soak or physical-output audit.
+Full M5 acceptance still requires longer network/reconnect/renderer validation,
+measured output drops/drift where supported, live CPU/energy/memory comparison
+and user picture/audio/device/wake checks. Standard remains default; no silent
+CPU fallback, DVR or captions were added. M6/M7 remain planned.
+
+Verification: signed Mac build (including bundle checks) and **186 Mac tests**
+passed; both integration modes passed in a combined 74.4 seconds. No TV/shared/
+project inputs changed; the prior signed TV/32-test baseline is unchanged.
+Documentation relative links and diff checks passed. No manual app launch or
+visual inspection was performed.
+
+Native verification: nine stream cases and fault/cancellation checks passed with
+Metal validation, plus a 120-second generated-media soak in each mode (7,200
+video outputs and 3,750 PCM buffers each). CPU sampled RSS grew 35.38 → 35.52 MiB
+(0.14 MiB); Metal 39.42 → 39.47 MiB (0.05 MiB). Unpaced elapsed decode was
+7.226/47.394 seconds with validation enabled; this is not a live efficiency
+comparison. Commit: this P6 checkpoint (find via the plan's Git history).
+Next: longer paced renderer/network/reconnect soak with ownership/memory checks;
+incorporate user device and live CPU/Metal/CPU comparisons before M6 optimization.

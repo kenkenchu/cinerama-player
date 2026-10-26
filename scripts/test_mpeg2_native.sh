@@ -9,6 +9,15 @@ SDK="$(xcrun --sdk macosx --show-sdk-path)"
 xcrun clang++ -isysroot "$SDK" -std=c++17 -O2 -I "$PREFIX/include" Native/CineramaMPEG2/Tests/GenerateFixture.cpp \
     -L "$PREFIX/lib" -lavformat -lavcodec -lavutil -lswresample -lz -liconv -lbz2 \
     -framework Security -framework CoreFoundation -o "$CACHE/generate-fixture"
+# Hosted renderer tests use a deterministic local stream, never Plex or a tuner.
+if [ "${1:-}" = "--prepare-renderer-fixture" ]; then
+    mkdir -p "$CACHE/fixtures"
+    if [ ! -s "$CACHE/fixtures/renderer-hd.ts" ] || [ Native/CineramaMPEG2/Tests/GenerateFixture.cpp -nt "$CACHE/fixtures/renderer-hd.ts" ]; then
+        "$CACHE/generate-fixture" "$CACHE/fixtures/renderer-hd.ts.partial.ts" 1 0 1 0 1800
+        mv "$CACHE/fixtures/renderer-hd.ts.partial.ts" "$CACHE/fixtures/renderer-hd.ts"
+    fi
+    exit 0
+fi
 FRAMEWORK="$ROOT_DIR/Frameworks/CineramaMPEG2.xcframework/macos-arm64"
 xcrun clang++ -isysroot "$SDK" -std=c++17 -O2 -fobjc-arc -I Native/CineramaMPEG2/include \
     -F "$FRAMEWORK" -framework CineramaMPEG2 -framework Foundation -framework CoreMedia -framework CoreVideo -framework AudioToolbox \

@@ -57,7 +57,7 @@ There is no silent CPU fallback that could invalidate an A/B test.
   Core Audio channel labels. Unknown layouts fail explicitly. Unsupported codecs fail rather than requesting Plex conversion.
 - `AVSampleBufferRenderSynchronizer` paces video and audio on one media clock.
   The worker waits for renderer readiness and limits decode-ahead to 600 ms.
-  Startup waits for at least 200 ms of audio and 100 ms of video (video alone
+  Startup waits for at least 150 ms of audio and 100 ms of video (video alone
   for audio-free input). Pause stops that clock and naturally bounds buffering. After a pause of at
   least 15 seconds, resume reconnects to the current live stream. No DVR is kept.
   Cmd-I shows queue depth and observed audio starvation transitions; these are
@@ -199,3 +199,13 @@ and any recovery. Test short pause and >15-second pause separately. Standard rem
 the rollback route. Sequential live samples cannot establish identical content or
 energy savings. Longer renderer/network, sleep/wake and physical-output validation
 remain pending and user-owned; no caption or DVR verification is required.
+
+The hosted Mac suite additionally exercises the actual engine worker and
+AVFoundation renderers in CPU/Metal modes without opening a window. Run
+`scripts/test_macos.sh`; it prepares a cached 60-second 1080i/AC3 fixture using
+`test_mpeg2_native.sh --prepare-renderer-fixture`. Coverage includes paced
+progress, short and 16-second pauses, bounded paused video submission, reconnect,
+rapid reload and stop during retry. Startup uses 150 ms audio because the hosted
+renderer backpressured at 192 ms, preventing the former 200 ms threshold from
+starting its clock. This is lifecycle coverage, not physical output or sustained
+renderer/network memory/energy acceptance.

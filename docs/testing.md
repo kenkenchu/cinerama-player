@@ -135,3 +135,18 @@ outputs/1,875 PCM buffers; sampled growth was 0.06/0.00 MiB. This unpaced native
 check does not exercise renderer queues or establish live-player memory,
 synchronization or energy performance. See the native README and milestone plan
 for limits and the repeatable user comparison procedure. TV inputs are unchanged.
+
+M5 renderer checkpoint: `test_macos.sh` now prepares a cached generated 60-second
+1080i/AC3 fixture before Xcode tests. When invoking Xcode directly, first run
+`scripts/test_mpeg2_native.sh --prepare-renderer-fixture`. The hosted CPU/Metal
+integration test uses the production worker/renderers headlessly to exercise
+startup, short/16-second pauses, bounded paused submission, reconnect, sustained
+paced progress, rapid reload and stop during retry. It found and guards against
+startup waiting for 200 ms when audio backpressures at 192 ms; startup now needs
+150 ms audio plus 100 ms video. This test does not audit speaker/display output,
+long-duration renderer RSS, real network delivery or energy performance.
+
+Verification on 2026-10-26: signed Mac build and 186 Mac tests passed, including
+both renderer integration modes (74.4 seconds combined). Native cases/faults and
+120-second CPU/Metal decoder soaks passed with validation; sampled RSS growth was
+0.14/0.05 MiB. TV inputs and the prior signed TV/32-test baseline are unchanged.
