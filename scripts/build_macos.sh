@@ -13,6 +13,7 @@ if ! xcrun --sdk macosx metal --version >/dev/null 2>&1; then
 fi
 ./ci_scripts/install_macos_vlckit.sh
 ./ci_scripts/install_cinerama_dovi.sh
+./ci_scripts/install_cinerama_mpeg2.sh
 xcodegen generate
 python3 scripts/verify_platform_boundaries.py
 xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Debug \

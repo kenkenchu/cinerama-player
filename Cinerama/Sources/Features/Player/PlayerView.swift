@@ -210,6 +210,7 @@ private struct MacPlayerSession: View {
                            if editing { model.beginScrub() } else { model.endScrub() }
                        })
                     .accessibilityLabel("Playback position")
+                    .disabled(!model.engine.supportsSeeking)
                 Text(model.isLiveTV ? model.formattedLiveOffset : model.formattedRemainingTime)
                     .monospacedDigit()
                     .help(model.isLiveTV ? "Position relative to live" : "Time remaining")
@@ -222,11 +223,13 @@ private struct MacPlayerSession: View {
                 Button("Back 10 Seconds", systemImage: "gobackward.10") { model.seek(to: model.currentTime - 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.leftArrow, modifiers: [])
                     .help("Back 10 Seconds (←)")
+                    .disabled(!model.engine.supportsSeeking)
                 Button(model.state == .playing ? "Pause" : "Play", systemImage: model.state == .playing ? "pause.fill" : "play.fill") { model.togglePlayPause() }
                     .help(model.state == .playing ? "Pause (Space)" : "Play (Space)")
                 Button("Forward 10 Seconds", systemImage: "goforward.10") { model.seek(to: model.currentTime + 10, revealControls: true, precise: false) }
                     .keyboardShortcut(.rightArrow, modifiers: [])
                     .help("Forward 10 Seconds (→)")
+                    .disabled(!model.engine.supportsSeeking)
                 Text(playbackTitle)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -237,13 +240,14 @@ private struct MacPlayerSession: View {
                     .toggleStyle(.button)
                     .keyboardShortcut("i", modifiers: .command)
                     .help("Playback Debug Info (⌘I)")
-                if model.liveTVContext != nil { Button("Go Live") { model.goLive() } }
+                if model.liveTVContext != nil { Button("Go Live") { model.goLive() }.disabled(!model.engine.supportsSeeking) }
                 Menu("Audio", systemImage: "speaker.wave.2") {
                     ForEach(model.audioTracks) { track in
                         Button(track.displayTitle) { model.selectAudio(track) }
                     }
                 }
                 .help("Choose an audio track")
+                .disabled(!model.engine.supportsTrackSelection)
                 Menu("Subtitles", systemImage: "captions.bubble") {
                     Picker("Subtitle track", selection: Binding<Int?>(
                         get: { model.selectedSubtitleTrackID },
@@ -265,6 +269,7 @@ private struct MacPlayerSession: View {
                     .labelsHidden()
                 }
                 .help("Choose a subtitle track")
+                .disabled(!model.engine.supportsTrackSelection)
                 if let info = playback.debugInfo, info.canSelectPlaybackQuality {
                     Menu("Quality", systemImage: "slider.horizontal.3") {
                         ForEach(info.availableQualityPresets) { preset in

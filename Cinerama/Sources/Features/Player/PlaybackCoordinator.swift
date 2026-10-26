@@ -373,10 +373,17 @@ final class PlaybackCoordinator {
                 forceVLCKit: preferences.forceVLCKit
             )
             airPlayController.refreshRoute(notify: false)
-            let engineType: PlaybackEngineType = airPlayController.isAirPlayRouteSelected
+            let experimental = ExperimentalMPEG2Mode.current != .standard
+                && ExperimentalMPEG2Mode.applies(
+                    codec: tune.serverDecisions?.videoCodec ?? tune.media.videoCodec,
+                    forceAVPlayer: preferences.forceAVPlayer, forceVLC: preferences.forceVLCKit,
+                    airPlay: airPlayController.isAirPlayRouteSelected)
+            let engineType: PlaybackEngineType = experimental ? .mpeg2Prototype : airPlayController.isAirPlayRouteSelected
                 ? .avPlayer
                 : resolver.engine
-            let resolverReason = airPlayController.isAirPlayRouteSelected
+            let resolverReason = experimental
+                ? "Experimental MPEG-2 \(ExperimentalMPEG2Mode.current.label); local hybrid decoding"
+                : airPlayController.isAirPlayRouteSelected
                 ? "AirPlay route selected; Plex Live HLS through AVPlayer"
                 : resolver.reason
             let newEngine = PlaybackEngineFactory.makeEngine(type: engineType)

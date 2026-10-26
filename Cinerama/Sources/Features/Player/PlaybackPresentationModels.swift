@@ -190,6 +190,7 @@ struct PlaybackDebugInfo: Sendable {
         switch engine {
         case .avPlayer: "AVPlayer"
         case .vlcKit: "VLCKit"
+        case .mpeg2Prototype: "Experimental MPEG-2"
         }
     }
 

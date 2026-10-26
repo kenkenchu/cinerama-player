@@ -3,6 +3,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 : "${CINERAMA_MACOS_SIGNING_IDENTITY:?Set CINERAMA_MACOS_SIGNING_IDENTITY to the installed Apple Development identity.}"
+./ci_scripts/install_cinerama_mpeg2.sh
 xcodegen generate
 python3 scripts/verify_platform_boundaries.py
 xcodebuild -project Cinerama.xcodeproj -scheme Cinerama-macOS -configuration Debug \

@@ -51,6 +51,8 @@ targets:
         embed: true
       - framework: Frameworks/CineramaDovi.xcframework
         embed: false
+      - framework: Frameworks/CineramaMPEG2.xcframework
+        embed: true
     postBuildScripts:
       - script: ./scripts/verify_embedded_vlckit.sh
         name: Verify embedded desktop VLCKit

@@ -1,0 +1,9 @@
+_cm2_create
+_cm2_open
+_cm2_read
+_cm2_cancel
+_cm2_close
+_cm2_gpu_blocks
+_cm2_gpu_seconds
+_cm2_error
+_cm2_next

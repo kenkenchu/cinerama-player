@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="${CI_PRIMARY_REPOSITORY_PATH:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 "${ROOT_DIR}/ci_scripts/install_macos_vlckit.sh"
 "${ROOT_DIR}/ci_scripts/install_cinerama_dovi.sh"
+"${ROOT_DIR}/ci_scripts/install_cinerama_mpeg2.sh"
 
 # Xcode 26 and later ship the Metal compiler as a separate component that is not
 # installed in the Xcode Cloud images. Without it, compiling

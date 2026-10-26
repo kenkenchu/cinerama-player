@@ -95,3 +95,20 @@ audits. Actual focus traversal/restoration, picture/audio output, system caption
 appearance, hardware codec fidelity and sustained A8 performance still require
 user device checks. Full Plex timeline/remux networking races and end-to-end
 caption rendering are not yet comprehensively covered by automated tests.
+
+## Native MPEG-2 CPU/Metal Experiment
+
+Run `scripts/test_mpeg2_native.sh` after changes to `Native/CineramaMPEG2` or its
+FFmpeg patch/build. It generates MPEG-2/AC3 fixtures and compares CPU and real GPU
+output for progressive, interlaced, 4:2:2, HD and local/HTTP HLS, including growing
+playlists and token propagation. It runs headlessly with Metal validation and
+checks cancellation, timestamps, audio counts and GPU execution. See the
+[experiment README](../Native/CineramaMPEG2/README.md) for fidelity thresholds,
+measured limits and licensing/build details. It does not open Plex or establish
+real-channel audio/video synchronization or energy savings. The original block
+kernel tests remain available through `swift test --package-path
+Native/MetalMPEG2Prototype -c release`.
+
+Integration checkpoint: 180 Mac tests and 32 tvOS 26 simulator tests passed with
+both signed builds. The experimental decoder is Mac-only; project changes still
+require both platform verification gates.

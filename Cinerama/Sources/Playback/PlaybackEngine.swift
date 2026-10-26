@@ -8,6 +8,7 @@ import SwiftUI
 enum PlaybackEngineType: Sendable {
     case avPlayer
     case vlcKit
+    case mpeg2Prototype
 }
 
 /// Where a playback source's bytes actually come from, resolved by the
@@ -99,6 +100,8 @@ protocol PlaybackEngine: AnyObject {
     /// The currently seekable media-time window. Live HLS commonly starts
     /// above zero and advances at its upper edge as Plex appends segments.
     var seekableTimeRange: ClosedRange<TimeInterval>? { get }
+    var supportsSeeking: Bool { get }
+    var supportsTrackSelection: Bool { get }
     var isBuffering: Bool { get }
     var error: PlaybackError? { get }
     var videoEnhancementStatus: VideoEnhancementStatus { get }
@@ -187,6 +190,8 @@ protocol PlaybackEngine: AnyObject {
 }
 
 extension PlaybackEngine {
+    var supportsSeeking: Bool { true }
+    var supportsTrackSelection: Bool { true }
     var renderingDiagnostics: [(String, String)] { [] }
 
     var seekableTimeRange: ClosedRange<TimeInterval>? {

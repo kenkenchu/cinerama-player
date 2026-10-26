@@ -45,7 +45,7 @@ enum PlaybackEngineFactory {
         )
 
         switch engineType {
-        case .avPlayer, .vlcKit:
+        case .avPlayer, .vlcKit, .mpeg2Prototype:
             return makeEngine(type: engineType)
         }
     }
@@ -58,6 +58,8 @@ enum PlaybackEngineFactory {
                 return warmedAVPlayerEngine
             }
             return AVPlayerEngine()
+        case .mpeg2Prototype:
+            return ExperimentalMPEG2Engine(mode: ExperimentalMPEG2Mode.current)
         case .vlcKit:
             if let warmedVLCKitEngine {
                 self.warmedVLCKitEngine = nil

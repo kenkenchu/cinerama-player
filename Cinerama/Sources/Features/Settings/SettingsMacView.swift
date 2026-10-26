@@ -4,6 +4,7 @@ struct SettingsMacView: View {
     @Environment(PlexService.self) private var plex
     @Environment(UserPreferences.self) private var preferences
     @Environment(DownloadManager.self) private var downloads
+    @AppStorage(ExperimentalMPEG2Mode.defaultsKey) private var mpeg2Mode = ExperimentalMPEG2Mode.standard.rawValue
     @State private var confirmsSignOut = false
     let viewModel: SettingsViewModel
 
@@ -36,6 +37,17 @@ struct SettingsMacView: View {
                 Toggle("Dolby Atmos remux", isOn: $preferences.spatialAudioRemuxEnabled)
                 Toggle("HDR & Dolby Vision remux", isOn: $preferences.hdrVideoRemuxEnabled)
                 Toggle("Dolby Vision 7 → 8.1", isOn: $preferences.dolbyVision7ConversionEnabled)
+            }
+            Section("Live TV decoding experiment") {
+                Picker("MPEG-2 decoder", selection: $mpeg2Mode) {
+                    ForEach(ExperimentalMPEG2Mode.allCases) { mode in
+                        Text(mode.label).tag(mode.rawValue)
+                    }
+                }
+                Text("Applies when you retune an MPEG-2 channel. Compare Experimental CPU and Experimental Metal using the same channel. Metal performs inverse DCT; parsing and motion prediction use the CPU.")
+                    .foregroundStyle(.secondary)
+                Text("Experimental modes use the default audio track in stereo, with no captions, track switching or DVR seek. Interlaced video is woven and may show combing. Select Standard playback to restore the normal player. Forced player overrides and AirPlay take priority.")
+                    .foregroundStyle(.secondary)
             }
             Section("Library") {
                 Toggle("Personalized shelves", isOn: $preferences.personalizedShelvesEnabled)

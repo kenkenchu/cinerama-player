@@ -65,7 +65,7 @@ violations += [f"TV includes Mac UI/engine input: {path}" for path in tv
                        or path in allowed_tv_shared)]
 violations += [f"TV includes Mac resources: {path}" for path in tv_resources if path.startswith("Cinerama/")]
 violations += [f"TV links desktop dependency: {path}" for path in files("Cinerama-tvOS", "PBXFrameworksBuildPhase")
-               if Path(path).name in {"VLCKit.xcframework", "CineramaDovi.xcframework"}]
+               if Path(path).name in {"VLCKit.xcframework", "CineramaDovi.xcframework", "CineramaMPEG2.xcframework"}]
 shared_tests = {
     "CineramaTests/HomeHubArrangementTests.swift",
     "CineramaTests/LibraryUnwatchedFilterTests.swift",

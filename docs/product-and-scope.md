@@ -69,6 +69,10 @@ downloads and HDR conversion are deferred; prioritize library playback first.
 - Desktop VLCKit is checksum-pinned, fetched into git-ignored `Frameworks/`, and
   dynamically linked for LGPL compliance. No private upstream VLC repo access
   is needed for the Mac build.
+- The opt-in Mac MPEG-2 Live TV experiment builds a pinned LGPL FFmpeg into
+  `CineramaMPEG2.framework`. Standard playback still uses AVPlayer/VLC; the
+  experiment has explicit caption/audio/seek limits. See
+  [playback](playback.md#experimental-metal-mpeg-2-reconstruction).
 - CineramaDovi is an arm64 macOS static library built from `Native/CineramaDovi` with a
   pinned Rust toolchain. New crates need corresponding license notices.
 - XcodeGen owns project generation. System frameworks and URLSession are

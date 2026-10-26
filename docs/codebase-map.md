@@ -36,6 +36,8 @@ CineramaTV/Sources/     TV app/auth gate, tab shell, artwork, Home/search, libra
                     TVStreamResolver, TVPlaybackCoordinator, scoped track preferences,
                     native AVKit host and system-caption adapter
 Native/CineramaDovi/     Mac Rust Dolby Vision conversion crate and C header
+Native/CineramaMPEG2/    Mac FFmpeg/Metal hybrid experiment, C ABI and native tests
+Native/MetalMPEG2Prototype/ Isolated block reconstruction kernel/reference benchmark
 CineramaTests/          Mac/shared unit tests, playback and native window attachment regressions
 CineramaTVTests/        TV resolver, copy-only policy, track preferences, playback lifecycle/delegate tests
 ```

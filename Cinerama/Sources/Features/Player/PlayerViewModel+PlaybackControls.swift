@@ -230,6 +230,7 @@ extension PlayerViewModel {
     }
 
     func beginScrub() {
+        guard engine.supportsSeeking else { return }
         isScrubbing = true
         scrubPosition = currentTime
         cancelScheduledHide()
@@ -332,6 +333,7 @@ extension PlayerViewModel {
     }
 
     func seek(to position: TimeInterval, revealControls: Bool, precise: Bool = true) {
+        guard engine.supportsSeeking else { return }
         let clampedPosition = clampedSeekPosition(position)
 
         engine.seek(to: clampedPosition, precise: precise)
@@ -357,6 +359,7 @@ extension PlayerViewModel {
     /// pausing is the usual way to fall behind, so "Go Live" that leaves the
     /// picture frozen would only be half the action.
     func goLive() {
+        guard engine.supportsSeeking else { return }
         guard let seekableRange else { return }
         seek(to: max(seekableRange.lowerBound, seekableRange.upperBound - 1), revealControls: true)
         if state == .paused {

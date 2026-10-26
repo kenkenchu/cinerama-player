@@ -249,14 +249,31 @@ unverified.
 
 ## Experimental Metal MPEG-2 Reconstruction
 
-`Native/MetalMPEG2Prototype` is an isolated macOS Swift package with a Metal
-inverse-DCT/motion-compensation kernel, CPU reference, GPU tests and synthetic
-benchmark. It is not compiled into either app and does not change Live TV. It
-accepts prepared coefficients and prediction commands, not MPEG-2 bitstreams;
-interlaced broadcast syntax and end-to-end decoding remain future work. See the
-[prototype README](../Native/MetalMPEG2Prototype/README.md) for commands, measured
-results, the exact boundary and follow-up gates. Synthetic GPU throughput is not
-evidence of reduced Live TV CPU usage or energy.
+The Mac Settings page has **Live TV decoding experiment → MPEG-2 decoder** with
+Standard playback (default), Experimental CPU and Experimental Metal. Retuning a
+known MPEG-2 channel selects the experiment; forced player overrides and AirPlay
+win. Other media stays on the existing resolver. The existing copy-only Plex
+session and keepalives remain coordinator-owned.
+
+`Native/CineramaMPEG2` builds a checksum-pinned LGPL FFmpeg decoder into a Mac-only
+framework. Both experimental modes decode real MPEG-2/HLS locally. CPU mode uses
+FFmpeg's IDCT; Metal mode replaces luma/chroma IDCT and residual reconstruction
+with GPU work. Parsing and frame/field motion compensation remain CPU work.
+Native audio/video sample renderers share one clock, bounded decode-ahead and
+cancellable input. Cmd-I exposes the actual path and GPU block count.
+
+Experimental limits: stereo/default audio, no captions, track selection or DVR
+seeking; woven interlaced output can show combing. Unsupported controls are
+disabled. Errors remain explicit, with Standard playback available on retune.
+No automatic fallback masks an A/B result. See the
+[native experiment README](../Native/CineramaMPEG2/README.md) for architecture,
+run commands, real-stream tests and performance results. The Metal path is
+currently slower than CPU on generated HD fixtures; CPU/energy savings have not
+been established. Actual Plex playback needs user verification.
+
+The earlier [standalone block prototype](../Native/MetalMPEG2Prototype/README.md)
+remains an independent mathematical kernel test; its synthetic throughput is not
+an end-to-end decoder benchmark.
 
 ## Timeline, Scrobble, and Up Next
 
