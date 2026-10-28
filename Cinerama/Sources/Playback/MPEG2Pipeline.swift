@@ -102,8 +102,9 @@ final class ExperimentalMPEG2Engine: NSObject {
     private(set) var outputVideoCadence = 0.0
     @ObservationIgnored var renderingHost: AnyObject?
     @ObservationIgnored let display = AVSampleBufferDisplayLayer()
-    @ObservationIgnored private let audio = AVSampleBufferAudioRenderer()
-    @ObservationIgnored private let synchronizer = AVSampleBufferRenderSynchronizer()
+    @ObservationIgnored private lazy var audio = AVSampleBufferAudioRenderer()
+    @ObservationIgnored private lazy var synchronizer = AVSampleBufferRenderSynchronizer()
+    @ObservationIgnored private(set) var outputConfigured = false
     @ObservationIgnored private var coordinator: AVDelegatingPlaybackCoordinator!
     @ObservationIgnored private var worker: Task<Void, Never>?
     @ObservationIgnored private var session: MPEG2NativeSession?
@@ -127,10 +128,16 @@ final class ExperimentalMPEG2Engine: NSObject {
         self.mode = mode
         super.init()
         display.videoGravity = .resizeAspect
+        coordinator = AVDelegatingPlaybackCoordinator(playbackControlDelegate: self)
+    }
+    private func configureOutput() {
+        guard !outputConfigured else { return }
+        // On TV the session activates AVAudioSession before load. Attaching an
+        // audio renderer in init can block channel selection before presentation.
+        outputConfigured = true
         synchronizer.delaysRateChangeUntilHasSufficientMediaData = false
         synchronizer.addRenderer(display.sampleBufferRenderer)
         synchronizer.addRenderer(audio)
-        coordinator = AVDelegatingPlaybackCoordinator(playbackControlDelegate: self)
         for name in [Notification.Name.AVSampleBufferAudioRendererWasFlushedAutomatically,
                      Notification.Name.AVSampleBufferAudioRendererOutputConfigurationDidChange] {
             outputObservers.append(NotificationCenter.default.addObserver(forName: name, object: audio, queue: .main) { [weak self] _ in
@@ -141,6 +148,7 @@ final class ExperimentalMPEG2Engine: NSObject {
     deinit { worker?.cancel(); session?.cancel(); timer?.invalidate(); outputObservers.forEach { NotificationCenter.default.removeObserver($0) } }
 
     func load(url: URL, shouldAutoPlay: Bool = true) {
+        configureOutput()
         stop()
         let id = UUID(); generation = id
         state = .loading; isBuffering = true; error = nil
@@ -232,6 +240,7 @@ final class ExperimentalMPEG2Engine: NSObject {
         return delay
     }
     private func flushOutput() {
+        guard outputConfigured else { return }
         synchronizer.rate = 0
         let flush = UUID(); flushID = flush; outputReady = false
         display.sampleBufferRenderer.flush(removingDisplayedImage: true) { [weak self] in

@@ -95,11 +95,18 @@ import Testing
     @Test(arguments: [ExperimentalMPEG2Mode.cpu, .metal])
     func pacedPlaybackPauseReconnectAndRetiredWorker(mode: ExperimentalMPEG2Mode) async throws {
         let fixture = try #require(Bundle(for: TVFixtureBundle.self).url(forResource: "renderer-hd", withExtension: "ts"))
+        // Match channel selection: construct and dismiss an inactive session
+        // before activating audio. Neither operation may open an output device.
+        try AVAudioSession.sharedInstance().setActive(false)
+        let engine = ExperimentalMPEG2Engine(mode: mode)
+        #expect(!engine.outputConfigured)
+        engine.stop()
+        #expect(!engine.outputConfigured)
         try AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         try AVAudioSession.sharedInstance().setActive(true)
-        let engine = ExperimentalMPEG2Engine(mode: mode)
         defer { engine.stop(); try? AVAudioSession.sharedInstance().setActive(false) }
         engine.load(url: fixture)
+        #expect(engine.outputConfigured)
         do { try await waitUntil { engine.state == .playing && engine.currentTime > 1 } }
         catch { print("TV renderer: \(engine.state), \(String(describing: engine.error)), \(engine.renderingDiagnostics)"); throw error }
         #expect(engine.outputVideoWidth == 1920 && engine.outputVideoHeight == 1080)

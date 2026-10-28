@@ -13,7 +13,10 @@ its separate native AVKit player and existing format restrictions.
   provider/channels. No guide, program schedule or EPG is required.
 - `TVLivePlayback` tunes once through the shared Plex API, rejects unconfirmed
   remux decisions and unsupported metadata, activates the TV playback audio
-  session, serializes server-scoped timeline reports and pings the remux session.
+  session before the engine creates/attaches audio output, serializes
+  server-scoped timeline reports and pings the remux session. Engine construction
+  on channel selection must stay inactive so it cannot open audio output on the
+  channel grid before presentation. Stopping an unused engine also stays inactive.
   Dismissal cancels playback and sends stopped/cleanup after queued reports.
   A tune completing after dismissal is cleaned up without starting a decoder.
   Profile changes cannot authorize a retired session to start or report.
@@ -81,3 +84,20 @@ and documentation/diff checks pass. The signed TV app was installed without
 launching it. The attempted Apple TV HD test launch was blocked by device sleep;
 real-channel/user hardware acceptance is pending. Host audio initially stalled
 renderer tests; separate runs passed after the user selected built-in speakers.
+
+Startup correction (2026-10-27): the user reported both CPU and Metal freezing
+on channel selection, before the player appeared. The shared engine previously
+attached its audio renderer in its initializer, before TV audio-session activation;
+the renderer tests used the reverse order. Output creation/attachment now waits
+until `load`, after TV activates audio. The TV renderer regression constructs and
+stops an inactive engine before activation, then exercises playback in both modes.
+Real-channel Apple TV confirmation remains required; simulator playback does not
+establish the hardware hang is resolved.
+
+Verification: both signed builds, all 186 Mac tests (on rerun), all 39 TV tests
+on both tvOS 26.0 simulator and Apple TV HD/tvOS 26.6, and native CPU/Metal
+fidelity, stream, fault and cancellation checks pass. The first Mac run exited
+unexpectedly during its renderer test (185 other tests passed); the full rerun
+passed without further source changes. Device renderer tests use a generated
+fixture and do not tune a Plex channel. The signed TV app was reinstalled for
+user channel verification without a manual launch.
