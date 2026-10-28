@@ -16,7 +16,7 @@ then `AGENTS.local.md` if present, the codebase map, and the relevant topic.
 | [tvOS UI](tvos-ui.md) | Native TV shell, artwork, tracks, captions, playback lifecycle and focus |
 | [tvOS Home](tvos-home.md) | Mac library Home feature mapping, shared data ownership, remote hero and actions |
 | [tvOS device workflow](tvos-prototype.md) | Current scope, pairing, signing, installation and device checks |
-| [TV experimental Live TV](tvos-live-tv.md) | TV CPU/Metal port, build ownership, controls and device acceptance |
+| [TV experimental Live TV](tvos-live-tv.md) | TV CPU playback, build ownership, controls and device acceptance |
 | [Live TV pipeline plan](live-tv-pipeline-plan.md) | Resumable Mac MPEG-2 pipeline milestones, progress and verification; DVR and captions excluded |
 | [Playback](playback.md) | Engines, source selection, remux, timing, and track selection |
 | [Plex data](data-and-plex.md) | Account/session pool, API boundaries, models, merging |

@@ -7,25 +7,8 @@ struct TVCatalogShell: View {
         TabView(selection: $selectedTab) {
             TVHomeView(model: model, isSelected: selectedTab == 0, onSearch: { selectedTab = 2 })
                 .tabItem { Label("Home", systemImage: "house") }.tag(0)
-            NavigationStack {
-                List {
-                    ForEach(model.libraries) { library in
-                        NavigationLink {
-                            TVLibraryView(service: model.service, library: library)
-                        } label: {
-                            Label {
-                                TVItemLabel(title: library.title,
-                                    subtitle: model.service.pool.displayName(for: library.serverID ?? ""))
-                            } icon: { Image(systemName: library.libraryType?.systemImage ?? "film") }
-                        }
-                    }
-                    if model.libraries.isEmpty {
-                        Text(model.busy ? "Loading libraries…" : "No video libraries are available.")
-                    }
-                }
-                .background { TVDeckBackground().ignoresSafeArea() }
-                .navigationTitle("Libraries")
-            }.tabItem { Label("Libraries", systemImage: "rectangle.stack") }.tag(1)
+            NavigationStack { TVLibrariesView(model: model) }
+                .tabItem { Label("Libraries", systemImage: "rectangle.stack") }.tag(1)
             NavigationStack { TVSearchView(service: model.service) }
                 .tabItem { Label("Search", systemImage: "magnifyingglass") }.tag(2)
             NavigationStack { TVLiveTVView(service: model.service).id(model.service.activeProfileID) }
@@ -33,6 +16,47 @@ struct TVCatalogShell: View {
             NavigationStack { TVSettingsView(model: model) }
                 .tabItem { Label("Settings", systemImage: "gearshape") }.tag(3)
         }
+    }
+}
+
+/// A browse destination, with the same artwork hierarchy as Home shelves.
+private struct TVLibrariesView: View {
+    let model: TVAppModel
+
+    var body: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: TVDeckLayout.sectionSpacing) {
+                TVDeckSectionHeading(title: "Your Libraries", subtitle: "Browse your Plex collection")
+                if model.libraries.isEmpty {
+                    if model.busy { ProgressView("Loading libraries…") }
+                    else {
+                        ContentUnavailableView("No libraries available", systemImage: "rectangle.stack",
+                            description: Text("Check your server connections in Settings."))
+                    }
+                }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 460), spacing: 40)], spacing: 48) {
+                    ForEach(model.libraries) { library in
+                        NavigationLink {
+                            TVLibraryView(service: model.service, library: library)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 16) {
+                                TVArtwork(service: model.service, path: library.art ?? library.thumb,
+                                    serverID: library.serverID, width: 440, height: 248)
+                                    .overlay(alignment: .bottomLeading) {
+                                        Image(systemName: library.libraryType?.systemImage ?? "film")
+                                            .font(.title).padding(24)
+                                            .shadow(color: .black, radius: 8)
+                                    }
+                                TVItemLabel(title: library.title,
+                                    subtitle: model.service.pool.displayName(for: library.serverID ?? ""))
+                            }.frame(width: 440, alignment: .leading)
+                        }.buttonStyle(.card)
+                    }
+                }.focusSection()
+            }.modifier(TVDeckPageInsets())
+        }
+        .background { TVDeckBackground().ignoresSafeArea() }
+        .navigationTitle("")
     }
 }
 
@@ -129,9 +153,9 @@ struct TVHubView: View {
     @State private var model = TVHubModel()
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 35)], spacing: 45) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: TVDeckLayout.cardSpacing)], spacing: TVDeckLayout.sectionSpacing) {
                 ForEach(model.items) { TVMediaCard(service: service, item: $0) }
-            }.padding(60)
+            }.modifier(TVDeckPageInsets())
             if model.loading { ProgressView() }
             if model.hasMore && !model.loading {
                 Button("Load More") { Task { await model.load(service: service, hub: hub) } }
@@ -176,10 +200,6 @@ struct TVSettingsView: View {
                 LabeledContent("Quality", value: "Original")
                 Text("Compatible HD SDR video plays directly or through copy-only remuxing. Server video/audio re-encoding is disabled.")
                 Text("Caption appearance comes from Apple TV Settings → Accessibility → Subtitles and Captioning → Style.")
-            }
-            Section("Appearance") {
-                LabeledContent("Theme", value: "Cinematic Metal Blue")
-                Text("Liquid Glass controls over a metal-blue screening deck. Appearance stays consistent with either system theme.")
             }
             Section("About") {
                 NavigationLink("Third-Party Notices") {

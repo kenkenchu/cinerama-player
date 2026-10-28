@@ -162,43 +162,129 @@ struct TVLivePlayerScreen: View {
     let serverID: String?
     @State var playback: TVLivePlayback
     @State private var information = false
+    @State private var audioSelection = false
+    @State private var moreActions = false
+    @State private var controlsVisible = true
+    @State private var interaction = 0
+    @FocusState private var focus: Control?
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private enum Control: Hashable { case surface, play, audio, more }
+    private var controlsKey: String {
+        "\(interaction)|\(controlsVisible)|\(playback.engine.state)|\(playback.wantsPlayback)|\(information)|\(audioSelection)|\(moreActions)"
+    }
     @Environment(\.dismiss) private var dismiss
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
         ZStack(alignment: .bottom) {
             TVMPEG2Surface(display: playback.engine.display).ignoresSafeArea()
-            VStack(spacing: 20) {
-                HStack {
-                    Text("LIVE").foregroundStyle(.red).bold()
-                    Text(channel.displayTitle).font(.title3)
-                    Spacer()
-                    Text(playback.engine.mode.label).foregroundStyle(.secondary)
-                }
-                if let message = playback.message ?? playback.engine.error?.localizedDescription {
-                    Text(message).multilineTextAlignment(.center)
-                } else if playback.engine.isBuffering || playback.engine.state == .idle {
-                    ProgressView("Tuning channel…")
-                }
-                HStack(spacing: 40) {
-                    Button(playback.wantsPlayback ? "Pause" : "Play") { playback.togglePause() }
-                        .disabled(playback.message != nil || playback.engine.error != nil)
-                    Menu("Audio") {
-                        ForEach(playback.engine.availableAudioTracks) { track in
-                            Button((track.id == playback.engine.selectedAudioTrackID ? "✓ " : "") + track.displayTitle) {
-                                playback.engine.selectAudioTrack(track)
-                            }.disabled(!track.isDecodable)
-                        }
-                    }.disabled(playback.engine.availableAudioTracks.isEmpty)
-                    Button("Playback Information") { information = true }
-                    Button("Back to Channels") { dismiss() }
-                }
+            Button {
+                revealControls()
+            } label: {
+                Color.clear.contentShape(Rectangle())
             }
-            .padding(40).background(.ultraThinMaterial)
+            .buttonStyle(.plain).focusEffectDisabled()
+            .focused($focus, equals: .surface)
+            .accessibilityLabel("Show playback controls")
+            .disabled(controlsVisible)
+            if controlsVisible {
+                VStack(alignment: .leading, spacing: 24) {
+                    HStack(spacing: 20) {
+                        Label("LIVE", systemImage: "circle.fill")
+                            .font(.caption.bold()).foregroundStyle(.red)
+                        Text(channel.displayTitle).font(.title3.bold()).lineLimit(1)
+                        Spacer()
+                    }
+                    if let message = playback.message ?? playback.engine.error?.localizedDescription {
+                        Text(message).multilineTextAlignment(.leading)
+                    } else if playback.engine.isBuffering || playback.engine.state == .idle {
+                        ProgressView("Tuning channel…")
+                    }
+                    HStack(spacing: 32) {
+                        Button(
+                            playback.wantsPlayback ? "Pause" : "Play",
+                            systemImage: playback.wantsPlayback ? "pause.fill" : "play.fill"
+                        ) {
+                            playback.togglePause()
+                            revealControls()
+                        }
+                        .modifier(TVDeckActionStyle(prominent: true))
+                        .focused($focus, equals: .play)
+                        .disabled(playback.message != nil || playback.engine.error != nil)
+                        Button("Audio", systemImage: "speaker.wave.2") { audioSelection = true }
+                            .modifier(TVDeckActionStyle()).focused($focus, equals: .audio)
+                            .disabled(playback.engine.availableAudioTracks.isEmpty)
+                        Button("More", systemImage: "ellipsis") { moreActions = true }
+                            .modifier(TVDeckActionStyle()).focused($focus, equals: .more)
+                        Spacer()
+                    }
+                }
+                .padding(32)
+                .background(
+                    reduceTransparency ? Color.black : Color.black.opacity(0.75),
+                    in: RoundedRectangle(cornerRadius: 28)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 28).strokeBorder(.white.opacity(0.18), lineWidth: 1)
+                        .allowsHitTesting(false)
+                }
+                .padding(.horizontal, TVDeckLayout.horizontalInset)
+                .padding(.bottom, TVDeckLayout.verticalInset)
+                .transition(.opacity)
+            }
         }
         .background(.black)
         .task { await playback.start(provider: provider, channel: channel, serverID: serverID) }
-        .onPlayPauseCommand { playback.togglePause() }
+        .onAppear { focus = .play }
+        .onPlayPauseCommand {
+            playback.togglePause()
+            revealControls()
+        }
+        .onMoveCommand { _ in revealControls() }
+        .onReceive(NotificationCenter.default.publisher(for: UIAccessibility.voiceOverStatusDidChangeNotification)) { _ in
+            revealControls()
+        }
+        .onChange(of: playback.engine.state) { _, state in
+            if state != .playing { revealControls() }
+        }
+        .onChange(of: focus) { _, _ in interaction += 1 }
+        .task(id: controlsKey) {
+            guard controlsVisible, playback.wantsPlayback, playback.engine.state == .playing,
+                !UIAccessibility.isVoiceOverRunning,
+                !information, !audioSelection, !moreActions
+            else { return }
+            do { try await Task.sleep(for: .seconds(5)) } catch { return }
+            guard !Task.isCancelled else { return }
+            withAnimation(reduceMotion ? nil : .easeOut(duration: 0.2)) { controlsVisible = false }
+            focus = .surface
+        }
+        .confirmationDialog("Live TV", isPresented: $moreActions, titleVisibility: .visible) {
+            Button("Playback Information") { information = true }
+            Button("Back to Channels") { dismiss() }
+            Button("Cancel", role: .cancel) {}
+        }
+        .sheet(isPresented: $audioSelection) {
+            NavigationStack {
+                List {
+                    ForEach(playback.engine.availableAudioTracks) { track in
+                        Button {
+                            playback.engine.selectAudioTrack(track)
+                            audioSelection = false
+                        } label: {
+                            HStack {
+                                Text(track.displayTitle)
+                                Spacer()
+                                if track.id == playback.engine.selectedAudioTrackID {
+                                    Image(systemName: "checkmark")
+                                }
+                            }
+                        }.disabled(!track.isDecodable)
+                    }
+                }.navigationTitle("Audio")
+            }
+        }
         .onExitCommand { dismiss() }
         .onDisappear { playback.stop() }
         .onChange(of: phase) { _, value in playback.setForeground(value == .active) }
@@ -212,6 +298,14 @@ struct TVLivePlayerScreen: View {
             }
         }
     }
+    private func revealControls() {
+        interaction += 1
+        if !controlsVisible {
+            controlsVisible = true
+            focus = .play
+        }
+    }
+
 }
 
 private struct TVMPEG2Surface: UIViewRepresentable {
@@ -228,6 +322,9 @@ private struct TVMPEG2Surface: UIViewRepresentable {
             layer.addSublayer(display)
         }
         required init?(coder: NSCoder) { nil }
-        override func layoutSubviews() { super.layoutSubviews(); display.frame = bounds }
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            display.frame = bounds
+        }
     }
 }

@@ -23,7 +23,9 @@ struct TVRootView: View {
 
     private var connectionView: some View {
         VStack(spacing: 30) {
-            Text("Plex on Apple TV").font(.largeTitle)
+            Image(systemName: "film.stack").font(.system(size: 64, weight: .light))
+                .foregroundStyle(TVDeckPalette.secondary).accessibilityHidden(true)
+            Text("Welcome to Cinerama").font(.largeTitle.bold())
             if let pin = model.pin {
                 Text("On your phone or computer, open plex.tv/link and enter:")
                 Text(pin.code).font(.system(size: 72, weight: .bold, design: .monospaced))
@@ -39,17 +41,28 @@ struct TVRootView: View {
                 }
             }
         }
-        .padding(70)
+        .frame(maxWidth: 1000)
+        .padding(60)
+        .modifier(TVDeckInformationPanel())
+        .padding(TVDeckLayout.horizontalInset)
+        .modifier(TVDeckActionStyle())
     }
 
     private var profilePicker: some View {
         List {
             Section("Choose your Plex profile") {
                 ForEach(model.service.homeUsers) { user in
-                    Button(user.displayName + (user.isProtected ? " 🔒" : "")) {
+                    Button {
                         profilePIN = ""
                         if user.isProtected { profile = user }
                         else { Task { await model.selectProfile(user, pin: "") } }
+                    } label: {
+                        HStack(spacing: 24) {
+                            Image(systemName: "person.crop.circle").font(.title2)
+                            Text(user.displayName)
+                            Spacer()
+                            if user.isProtected { Image(systemName: "lock.fill").foregroundStyle(.secondary) }
+                        }
                     }
                     .disabled(model.busy)
                 }
@@ -126,9 +139,9 @@ struct TVLibraryView: View {
 
     var body: some View {
         ScrollView {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 35)], spacing: 45) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: TVDeckLayout.cardSpacing)], spacing: TVDeckLayout.sectionSpacing) {
                 ForEach(model.items) { item in TVMediaCard(service: service, item: item) }
-            }.padding(60)
+            }.modifier(TVDeckPageInsets())
             if model.busy { ProgressView("Loading…") }
             if let message = model.message { Text(message).padding() }
             if model.hasMore && !model.busy {

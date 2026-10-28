@@ -12,25 +12,35 @@ struct TVLiveTVView: View {
         _model = State(initialValue: LiveTVViewModel(plexService: service))
     }
 
+    private var visibleChannels: [PlexLiveChannel] {
+        model.channels.filter {
+            query.isEmpty || $0.displayTitle.localizedCaseInsensitiveContains(query)
+                || ($0.displayNumber ?? "").localizedCaseInsensitiveContains(query)
+        }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-                Text("Live TV · Experimental").font(.largeTitle)
-                Text("HD SDR MPEG-2 channels · Local decoding · No server video/audio conversion")
-                    .foregroundStyle(.secondary)
-                Text("No captions, DVR, seeking or recording.")
-                    .font(.callout).foregroundStyle(.secondary)
-                if model.isLoading { ProgressView("Loading channels…") }
-                if model.error != nil { Text("Could not load channels. Check your Plex server and retry.") }
-                Button("Refresh Channels") { Task { await model.load(force: true) } }
-                if !model.isLoading && model.channels.isEmpty && model.error == nil {
-                    Text("No Live TV channels on the highest-priority connected server.")
+                HStack(spacing: 32) {
+                    TVDeckSectionHeading(title: "Live TV", subtitle: "Choose a channel to watch live")
+                    Button("Refresh", systemImage: "arrow.clockwise") {
+                        Task { await model.load(force: true) }
+                    }.modifier(TVDeckActionStyle()).disabled(model.isLoading)
                 }
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 300), spacing: 40)], spacing: 40) {
-                    ForEach(model.channels.filter {
-                        query.isEmpty || $0.displayTitle.localizedCaseInsensitiveContains(query)
-                            || ($0.displayNumber ?? "").localizedCaseInsensitiveContains(query)
-                    }) { channel in
+                if model.isLoading { ProgressView("Loading channels…") }
+                if model.error != nil {
+                    ContentUnavailableView("Channels unavailable", systemImage: "network.slash",
+                        description: Text("Check your Plex server connection, then refresh."))
+                }
+                if !model.isLoading && model.channels.isEmpty && model.error == nil {
+                    ContentUnavailableView("No channels available", systemImage: "tv",
+                        description: Text("No Live TV channels are available from your Plex server."))
+                } else if !query.isEmpty && visibleChannels.isEmpty {
+                    ContentUnavailableView.search(text: query)
+                }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 360), spacing: TVDeckLayout.cardSpacing)], spacing: 40) {
+                    ForEach(visibleChannels) { channel in
                         Button {
                             guard let provider = model.provider else { return }
                             let playback = TVLivePlayback(service: service)
@@ -40,17 +50,18 @@ struct TVLiveTVView: View {
                         } label: {
                             VStack(spacing: 12) {
                                 TVArtwork(service: service, path: channel.thumb, serverID: model.serverID,
-                                    width: 280, height: 140)
+                                    width: 320, height: 180, contentMode: .fit)
                                 Text([channel.displayNumber, channel.displayTitle].compactMap { $0 }.joined(separator: " · "))
-                                    .lineLimit(2)
-                            }.padding(15)
+                                    .font(.headline).lineLimit(2)
+                                    .frame(width: 320, alignment: .leading)
+                            }.frame(width: 320, alignment: .leading)
                         }.buttonStyle(.card)
                     }
                 }
-            }.padding(60)
+            }.modifier(TVDeckPageInsets())
         }
         .background { TVDeckBackground().ignoresSafeArea() }
-        .navigationTitle("Live TV")
+        .navigationTitle("")
         .searchable(text: $query, prompt: "Channels")
         .task(id: service.liveTVServerID) { await model.load() }
         .fullScreenCover(item: $presentation, onDismiss: {

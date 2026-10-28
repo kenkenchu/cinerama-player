@@ -9,7 +9,8 @@ AVKit player and existing format restrictions.
 
 ## Ownership and flow
 
-- `TVLiveTVView` owns the remote-focused channel grid, search and direct channel selection.
+- `TVLiveTVView` owns the remote-focused channel grid, aspect-fit logos, search
+  empty states and direct channel selection.
   The shared `LiveTVViewModel` loads the highest-priority connected server's
   provider/channels. No guide, program schedule or EPG is required. Its cover
   item (`TVLivePlayerPresentation`) captures provider, channel, server and player
@@ -36,7 +37,10 @@ AVKit player and existing format restrictions.
   The native decoder also rejects other video codecs and unsupported formats.
 
 Remote Play/Pause and the focused button control the shared clock. Back returns
-to channels. The app-owned controls remain visible for this initial experiment.
+to channels. The compact app-owned controls hide after five seconds of active playback.
+Remote direction or Select reveals them; pause, tuning, errors and VoiceOver
+keep them visible. Audio opens a native track sheet; More holds Playback
+Information and Back to Channels. Remote Back still returns directly to channels.
 Audio offers the decoder's supported tracks and marks the current one. The red
 LIVE marker is status only. Playback Information exposes safe decoder, GPU,
 format, queue and recovery facts, without credentials or stream URLs.

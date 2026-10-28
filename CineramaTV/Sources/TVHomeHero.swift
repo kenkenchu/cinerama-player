@@ -44,27 +44,27 @@ struct TVHomeHero: View {
                         .id(item.id)
                         .transition(.opacity)
                         .accessibilityHidden(true)
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 16) {
                         Text("CONTINUE WATCHING")
                             .font(.system(.caption, design: .monospaced, weight: .semibold))
                             .tracking(3).foregroundStyle(.white.opacity(0.65))
                         Group {
                             if let image = logo.image {
                                 Image(uiImage: image).resizable().scaledToFit()
-                                    .frame(maxWidth: 520, maxHeight: 130, alignment: .leading)
+                                    .frame(maxWidth: 520, maxHeight: 100, alignment: .leading)
                                     .accessibilityLabel(home.displayTitle(for: item))
                             } else {
                                 Text(home.displayTitle(for: item)).font(.largeTitle.bold())
                                     .lineLimit(2).minimumScaleFactor(0.75)
                             }
-                        }.frame(width: 700, height: 130, alignment: .bottomLeading)
+                        }.frame(maxWidth: .infinity, minHeight: 100, maxHeight: 100, alignment: .bottomLeading)
                         if let episode = home.heroEpisodeTitle(for: item) {
                             Text(episode).font(.title3.weight(.semibold)).lineLimit(1)
                         }
                         Text(home.heroMetadata(for: item).joined(separator: " · "))
                             .font(.callout).foregroundStyle(.white.opacity(0.8))
                         if let summary = home.heroSummary(for: item) {
-                            Text(summary).font(.body).lineLimit(3).foregroundStyle(.white.opacity(0.85))
+                            Text(summary).font(.body).lineLimit(2).foregroundStyle(.white.opacity(0.85))
                         }
                         HStack(spacing: 28) {
                             Button { play(item) } label: {
@@ -72,7 +72,7 @@ struct TVHomeHero: View {
                                     if isPreparing { ProgressView() }
                                     else { Image(systemName: "play.fill") }
                                     Text(home.heroPrimaryActionTitle(for: item))
-                                }.frame(width: 380)
+                                }.frame(minWidth: 240)
                             }
                             .modifier(TVDeckActionStyle(prominent: true))
                             .focused($focusedAction, equals: .play)
@@ -93,22 +93,24 @@ struct TVHomeHero: View {
                                 .modifier(TVDeckActionStyle())
                                 .focused($focusedAction, equals: .details)
                         }.padding(.top, 8)
-                        if items.count > 1 { pager }
                     }
-                    .frame(width: 750, alignment: .leading)
-                    .padding(36)
+                    .frame(width: min(680, geometry.size.width * 0.48), alignment: .leading)
+                    .padding(28)
                     .modifier(TVDeckInformationPanel())
                     .environment(\.colorScheme, .dark)
-                    .padding(48)
+                    .padding(36)
                 }
                 .clipShape(.rect(cornerRadius: 28))
                 .overlay { TVViewportEdge() }
+                .overlay(alignment: .topTrailing) {
+                    if items.count > 1 { pager.padding(32) }
+                }
                 .onAppear { backdropWidth = Int(geometry.size.width) }
                 .foregroundStyle(.white)
                 .animation(reduceMotion ? nil : .easeInOut(duration: 0.35), value: item.id)
             }
         }
-        .frame(height: 820)
+        .frame(height: TVDeckLayout.heroHeight)
         .onAppear { isVisible = true }
         .onDisappear { isVisible = false }
         .onChange(of: selectionReset) { _, _ in selectedID = items.first?.id }
@@ -130,26 +132,22 @@ struct TVHomeHero: View {
             // One next backdrop only: keep the A8 cache and decoding work bounded.
             let prefetch = TVArtworkModel()
             await prefetch.load(service: service, path: backgroundPath(next), serverID: next.serverID,
-                width: backdropWidth, height: 820)
+                width: backdropWidth, height: Int(TVDeckLayout.heroHeight))
         }
     }
 
     private var pager: some View {
-        HStack(spacing: 20) {
+        HStack(spacing: 16) {
             Button { advance(-1) } label: { Image(systemName: "chevron.left") }
                 .modifier(TVDeckActionStyle())
                 .focused($focusedAction, equals: .previous).accessibilityLabel("Previous title")
-            let start = min(max(index - 4, 0), max(items.count - 9, 0))
-            ForEach(start..<min(start + 9, items.count), id: \.self) { position in
-                Capsule().fill(.white.opacity(position == index ? 0.95 : 0.35))
-                    .frame(width: position == index ? 24 : 8, height: 8)
-                    .accessibilityHidden(true)
-            }
             Text("\(index + 1) / \(items.count)").font(.caption2.monospacedDigit())
             Button { advance(1) } label: { Image(systemName: "chevron.right") }
                 .modifier(TVDeckActionStyle())
                 .focused($focusedAction, equals: .next).accessibilityLabel("Next title")
         }
+        .padding(12)
+        .background(.black.opacity(0.7), in: .capsule)
     }
 
     private func advance(_ delta: Int) {

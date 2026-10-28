@@ -141,6 +141,17 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 ## Next-Session Handoff
 
+- TV UX refinement (2026-10-27): TV-only layouts now use shared TV spacing,
+  a smaller Home hero with trailing pager, artwork-led library/season/episode
+  grids, a prominent detail Play/Resume action and separate Playback Options.
+  Live TV uses aspect-fit logos, search empty states and a compact panel that
+  hides after five seconds of playing; direction/Select reveals it. Pause,
+  loading, errors, sheets/dialogs and VoiceOver keep controls visible. Native
+  tabs, card focus and direct Back-to-channels remain. See `docs/tvos-ui.md`.
+  Both signed builds and 40 TV tests on simulator/device pass. The signed TV
+  app is installed; fresh user visual/focus acceptance is pending. Earlier
+  appearance approval covers the preceding layout. Mac UI is unchanged.
+
 - The user confirmed basic TV Live TV playback works in CPU and Metal modes
   after the atomic cover-presentation fix (2026-10-27), but Metal has severe
   playback delays on Apple TV HD. TV now uses CPU only with no enable/disable toggle or decoder picker;

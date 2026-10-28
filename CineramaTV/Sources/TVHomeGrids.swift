@@ -17,7 +17,7 @@ struct TVHomeHubView: View {
     var body: some View {
         ScrollView {
             if model.isLoading && model.items.isEmpty { ProgressView("Loading…").padding(60) }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: model.items.isAllClips ? 360 : 240), spacing: 35)], spacing: 45) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: model.items.isAllClips ? 360 : 240), spacing: TVDeckLayout.cardSpacing)], spacing: TVDeckLayout.sectionSpacing) {
                 ForEach(model.items.filter(\.isTVBrowsable)) { item in
                     TVMediaCard(service: service, item: item, landscape: model.items.isAllClips,
                         select: { navigate(item.id) })
@@ -26,7 +26,7 @@ struct TVHomeHubView: View {
                                 setWatched: { watched in Task { await model.setWatched(watched, for: item) } })
                         }
                 }
-            }.padding(60)
+            }.modifier(TVDeckPageInsets())
             if model.items.isEmpty && !model.isLoading {
                 ContentUnavailableView("No items available", systemImage: "film")
                 Button("Retry") { Task { await model.reloadItems() } }
@@ -59,7 +59,7 @@ struct TVHomeGenreView: View {
     var body: some View {
         ScrollView {
             if model.isLoading { ProgressView("Loading…").padding(60) }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: 35)], spacing: 45) {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 240), spacing: TVDeckLayout.cardSpacing)], spacing: TVDeckLayout.sectionSpacing) {
                 ForEach(model.items.filter(\.isTVBrowsable)) { item in
                     TVMediaCard(service: service, item: item, select: { navigate(item.id) })
                         .contextMenu {
@@ -67,7 +67,7 @@ struct TVHomeGenreView: View {
                                 setWatched: { watched in Task { await model.setWatched(watched, for: item) } })
                         }
                 }
-            }.padding(60)
+            }.modifier(TVDeckPageInsets())
             if model.isLoadingMore { ProgressView("Loading more…") }
             if model.hasMoreItems && !model.isLoading && !model.isLoadingMore, let last = model.items.last {
                 Button("Load More") { Task { await model.loadMoreIfNeeded(currentItem: last) } }

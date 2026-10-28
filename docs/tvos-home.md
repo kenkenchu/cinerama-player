@@ -9,7 +9,7 @@ Mac windows, pointer/keyboard behavior and rendering hosts remain separate.
 
 | Mac Home feature | TV implementation |
 | --- | --- |
-| Cinematic Continue Watching hero | Backdrop, Plex title logo or title text, episode title, metadata, summary and Play/Resume with watched-fraction fill. Details and bounded pager controls use native remote focus. |
+| Cinematic Continue Watching hero | Backdrop, Plex title logo or title text, episode title, metadata, summary and Play/Resume with watched-fraction fill. Details and bounded pager controls use native remote focus. The 660-point viewport leaves room for shelves, with the pager at its upper trailing edge. |
 | Hero rotation/navigation | Seven-second rotation, Previous/Next controls and position indicator. Rotation stops while actions have focus, playback is preparing/presented, another route/tab is active, the app is inactive, or Reduce Motion is enabled. |
 | Filtered, library-ordered Plex hubs | The same `HomeHubFilter`, `HomeHubArrangement` and account library order. Hide duplicate Continue Watching/On Deck and playlist hubs. |
 | Recently Added | Same 15-item inline limit, background expansion and actual show metadata normalization, including Show All. |
@@ -20,7 +20,7 @@ Mac windows, pointer/keyboard behavior and rendering hosts remain separate.
 | Artwork/labels/progress | Shared Plex presentation/formatting; 2:3 posters, 16:9 clip rows, watched checks and partial-progress bars. |
 | Refresh and error states | Refresh button, tab/scene return, player dismissal and server-content changes. Reuse first-paint settling, remembered hero sources, retained payloads during request failures, partial-outage notes and empty/error states. |
 | Home search action | Search button selects the native Search tab. |
-| Live TV shelf | Deferred with TV Live TV support; no guide/channel placeholder is presented as working tuning. |
+| Live TV shelf | Not included in library Home; the separate Live TV tab provides CPU channel tuning without guide data. |
 
 ## Ownership
 

@@ -23,7 +23,8 @@ A failing server is reported without emptying working servers' content.
 Library pages use explicit Load More controls; search is debounced and cancels
 superseded queries. Unsupported search types are omitted rather than routed to
 unimplemented detail screens. Settings offers profile switching, server refresh,
-connection status and playback/caption information.
+connection status and playback/caption information. Libraries use artwork-led
+collection cards with server labels rather than a setup-style list.
 
 ## Artwork, Layout and Focus
 
@@ -37,7 +38,9 @@ and readable titles; avoid Mac pointer/hover rules and fixed window assumptions.
 PlexService. The in-memory cache is capped at 32 MiB/120 images and scoped by
 profile, server and request. Lazy shelves/grids bound visible loading work for
 the A8. Poster artwork is 220 × 330 points with a 16-point radius; shelves use
-38-point card gaps and 60-point horizontal margins. Grids adapt to available
+40-point card gaps and 80-point horizontal content margins. Page content uses
+60-point vertical padding inside native safe areas; focus expansion has its own
+room between cards. `TVDeckLayout` owns these TV-only values. Grids adapt to available
 width with native focus treatment. Titles and episode labels sit below artwork;
 partial progress appears as a neutral bar over artwork.
 
@@ -52,13 +55,14 @@ verification requirement, not a compiler guarantee.
 
 `TVDeckStyle.swift` owns the TV adaptation of the Mac screening deck: a metal-blue
 gradient and static star/grid background, ruled headings, metal-blue library bays, and panoramic
-viewport edges with illuminated corner brackets. Home puts its Screening Deck
-header and actual featured count above the framed hero. The hero has a native Liquid Glass
+viewport edges with illuminated corner brackets. Home puts a quiet Screening Deck header and profile label above a 660-point
+framed hero, leaving room for shelves below. The hero has a native Liquid Glass
 information panel, system typography, native glass Play/Resume, Details and pager
-buttons. Artwork cards have fine neutral edges and retain native card focus.
+buttons. The pager sits at the upper trailing edge with a real item index; it
+does not compete with Play/Details in the information panel. Artwork cards have fine neutral edges and retain native card focus.
 Details use a wide backdrop/title/summary viewport instead of an extra poster.
 Search, library grids and Show All use the same background and shelf treatment;
-Settings and library selection retain their native form/list surfaces.
+Settings and playback options retain their native form surfaces.
 
 Keep native top tabs and persistent navigation stacks on TV. The Mac's bottom
 pointer-driven instrument console is not the TV navigation control. Decoration
@@ -91,9 +95,12 @@ The script does not alter Mac icon assets or require them in the TV app bundle.
 
 ## Details and Playback
 
-Details show artwork, title, year, summary and season/episode routes. Each
-media version offers compatible audio and text subtitle choices before
-Play/Resume. Unsupported tracks remain explanatory text rather than selectable
+Details are an artwork-led viewport with title, year and summary. A prominent
+Play/Resume action uses the first locally supported version and remembered
+tracks, using the same resolver eligibility checks as explicit playback options.
+A separate Playback Options route holds the native version/audio/subtitle form
+and Play from Start. Show seasons use poster grids; season episodes use landscape
+artwork grids, both preserving server-scoped navigation and native card focus. Unsupported tracks remain explanatory text rather than selectable
 routes that would require server conversion. Track choices are remembered on
 the device per Plex profile/server/movie or TV series; Off is explicit.
 Selections match semantic track properties rather than carrying an episode's
@@ -167,3 +174,40 @@ either app or run tests.
 The [experimental Live TV tab](tvos-live-tv.md) now offers HD MPEG-2
 CPU path with TV-owned remote controls and a red LIVE marker. Library
 AVKit behavior remains independent. No Go Live, DVR or Live TV captions are added.
+
+## TV UX refinement (2026-10-27)
+
+The TV-only refinement keeps the Mac palette, static screening-deck architecture,
+28-point surfaces and neutral native glass actions. It adapts the presentation
+for viewing distance and remote input, following Apple's
+[tvOS layout guidance](https://developer.apple.com/design/human-interface-guidelines/layout).
+Native tabs and separate navigation stacks remain mounted. Home/shelf focus
+sections group related actions without intercepting Back or forcing focus away
+from a returning card. Two-line media titles reserve consistent label height.
+Channel logos use aspect-fit artwork; a search with no matching channels has an
+explicit empty state. Browsing copy describes the task rather than decoder
+implementation details. Linking uses a centered information panel; profile locks
+use native symbols. Settings retains native forms and removes appearance prose
+that wasn't a setting.
+
+Live TV has a compact neutral-black control panel with Play/Pause, Audio and
+More. It hides after five seconds of playing without navigation/action changes;
+remote direction or Select restores it, and remote Play/Pause works while hidden.
+Paused, tuning, error, audio/More/information presentations and VoiceOver keep
+controls visible. Hidden controls hand focus to an invisible, labeled surface
+button; restoring them returns focus to Play/Pause. Reduce Motion disables the
+fade and Reduce Transparency makes the panel opaque. Back still returns directly
+to channels. Library transport remains owned by AVKit.
+
+Manual visual inspection is user-owned. Check safe-area edges, long titles,
+hero action fit, card expansion, directional focus between shelves, return from
+Playback Options/player, and Live TV control reveal/audio/More/Back on Apple TV HD.
+Hosted tests and signed builds do not establish these visual/focus properties.
+
+Verification for this refinement: both Apple Development-signed builds and all
+40 TV hosted tests pass on the tvOS 26.0 simulator and Apple TV HD/tvOS 26.6.
+The signed TV update was installed without a manual launch. Source boundaries
+and diff checks pass. Mac UI/shared playback source is unchanged; its preceding
+186-test baseline remains the latest full Mac test run. The existing TV tests
+cover playback policy, lifecycle, native renderer and modal contracts; the new
+visual hierarchy, control fade and remote focus paths still need user acceptance.

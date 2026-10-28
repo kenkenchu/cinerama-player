@@ -125,3 +125,39 @@ struct TVDeckInformationPanel: ViewModifier {
                          in: RoundedRectangle(cornerRadius: 28))
     }
 }
+
+/// Ten-foot layout values leave room for native focused cards to expand.
+enum TVDeckLayout {
+    static let horizontalInset: CGFloat = 80
+    static let verticalInset: CGFloat = 60
+    static let sectionSpacing: CGFloat = 48
+    static let cardSpacing: CGFloat = 40
+    static let heroHeight: CGFloat = 660
+}
+
+struct TVDeckSectionHeading: View {
+    let title: String
+    var subtitle: String? = nil
+
+    var body: some View {
+        HStack(spacing: 28) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title).font(.title2.bold())
+                if let subtitle {
+                    Text(subtitle).font(.callout).foregroundStyle(TVDeckPalette.secondary)
+                }
+            }
+            TVDeckRule()
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isHeader)
+    }
+}
+
+struct TVDeckPageInsets: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(.horizontal, TVDeckLayout.horizontalInset)
+            .padding(.vertical, TVDeckLayout.verticalInset)
+    }
+}

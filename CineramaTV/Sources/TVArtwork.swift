@@ -34,6 +34,7 @@ struct TVArtwork: View {
     var height: CGFloat = 330
     var cornerRadius: CGFloat = 16
     var showsPlaceholder = true
+    var contentMode: ContentMode = .fill
     @State private var model = TVArtworkModel()
 
     var body: some View {
@@ -41,7 +42,7 @@ struct TVArtwork: View {
             if showsPlaceholder { Rectangle().fill(.quaternary) }
             else { Color.black }
             if let image = model.image {
-                Image(uiImage: image).resizable().scaledToFill()
+                Image(uiImage: image).resizable().aspectRatio(contentMode: contentMode)
             } else if showsPlaceholder {
                 Image(systemName: "film").font(.largeTitle).foregroundStyle(.secondary)
             }
@@ -98,7 +99,8 @@ struct TVMediaCard: View {
                     }
                 }
             Text(item.type == .episode ? item.continueWatchingDisplayTitle : item.title)
-                .font(.headline).lineLimit(1)
+                .font(.callout.weight(.semibold)).lineLimit(2)
+                .frame(height: 72, alignment: .topLeading)
             Text(item.standardPosterSubtitle ?? " ").font(.caption).foregroundStyle(.secondary).lineLimit(1)
         }.frame(width: width, alignment: .leading)
     }
@@ -113,15 +115,16 @@ struct TVMediaShelf: View {
             HStack(spacing: 28) {
                 Text(title).font(.title2.bold())
                 TVDeckRule()
-            }.padding(.horizontal, 60)
+            }.padding(.horizontal, TVDeckLayout.horizontalInset)
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 38) {
+                LazyHStack(alignment: .top, spacing: TVDeckLayout.cardSpacing) {
                     ForEach(items) { TVMediaCard(service: service, item: $0) }
-                }.padding(.horizontal, 60).padding(.vertical, 24)
+                }.padding(.horizontal, TVDeckLayout.horizontalInset).padding(.vertical, 24)
             }
             .scrollClipDisabled()
         }
         .modifier(TVDeckBay())
+        .focusSection()
     }
 }
 

@@ -23,7 +23,7 @@ struct TVHomeView: View {
                     ProgressView("Loading Home…").frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 38) {
+                        LazyVStack(alignment: .leading, spacing: TVDeckLayout.cardSpacing) {
                             header
                             if !model.home.heroItems().isEmpty {
                                 TVHomeHero(service: model.service, home: model.home,
@@ -32,13 +32,13 @@ struct TVHomeView: View {
                                     play: { item in Task { await playback.play(item, service: model.service) } },
                                     details: { path.append(.item($0.id)) },
                                     navigate: { path.append(.item($0)) })
-                                    .padding(.horizontal, 60)
+                                    .padding(.horizontal, TVDeckLayout.horizontalInset)
                             }
-                            if let message = model.message { Text(message).padding(.horizontal, 60) }
+                            if let message = model.message { Text(message).padding(.horizontal, TVDeckLayout.horizontalInset) }
                             availabilityNote
                             if model.home.error != nil && model.home.hasLoadedContent {
                                 Text("A Home update could not be completed. Refresh to retry.")
-                                    .foregroundStyle(.secondary).padding(.horizontal, 60)
+                                    .foregroundStyle(.secondary).padding(.horizontal, TVDeckLayout.horizontalInset)
                             }
                             if model.home.error != nil && !model.home.hasLoadedContent {
                                 ContentUnavailableView {
@@ -122,39 +122,36 @@ struct TVHomeView: View {
         case .ready(let names):
             if !names.isEmpty {
                 Text("Unavailable servers: " + names.joined(separator: ", "))
-                    .foregroundStyle(.secondary).padding(.horizontal, 60)
+                    .foregroundStyle(.secondary).padding(.horizontal, TVDeckLayout.horizontalInset)
             }
         case .allDisabled:
             Text("Your Plex servers are disabled. Enable a server in Settings.")
-                .foregroundStyle(.secondary).padding(.horizontal, 60)
+                .foregroundStyle(.secondary).padding(.horizontal, TVDeckLayout.horizontalInset)
         case .unreachable:
             Text("Your Plex servers could not be reached. Check the network and refresh.")
-                .foregroundStyle(.secondary).padding(.horizontal, 60)
+                .foregroundStyle(.secondary).padding(.horizontal, TVDeckLayout.horizontalInset)
         case .unknown:
-            if !model.busy { Text("No Plex servers are available for this profile.").padding(.horizontal, 60) }
+            if !model.busy { Text("No Plex servers are available for this profile.").padding(.horizontal, TVDeckLayout.horizontalInset) }
         case .connecting:
-            Text("Connecting to Plex servers…").foregroundStyle(.secondary).padding(.horizontal, 60)
+            Text("Connecting to Plex servers…").foregroundStyle(.secondary).padding(.horizontal, TVDeckLayout.horizontalInset)
         }
     }
 
     private var header: some View {
         HStack(spacing: 28) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("CINERAMA / SCREENING DECK")
-                    .font(.system(.title3, design: .monospaced, weight: .semibold)).tracking(3)
+                Text("Screening Deck").font(.title2.bold())
                 Text(model.service.activeHomeUser?.displayName ?? "Your Plex libraries")
-                    .font(.caption).foregroundStyle(.secondary)
+                    .font(.callout).foregroundStyle(TVDeckPalette.secondary)
             }
-            TVDeckRule()
-            Text("\(model.home.heroItems().count) FEATURED")
-                .font(.system(.caption, design: .monospaced)).foregroundStyle(.secondary)
+            Spacer()
             if model.busy { ProgressView() }
             Button(action: onSearch) { Label("Search", systemImage: "magnifyingglass") }
                 .modifier(TVDeckActionStyle())
             Button { Task { await model.refresh() } } label: {
                 Label("Refresh", systemImage: "arrow.clockwise")
             }.modifier(TVDeckActionStyle()).disabled(model.busy)
-        }.padding(.horizontal, 60).padding(.top, 35)
+        }.padding(.horizontal, TVDeckLayout.horizontalInset).padding(.top, 28)
     }
 
     private func shelf(title: String, items: [PlexItem], landscape: Bool, showAll: TVHomeRoute?) -> some View {
@@ -165,9 +162,9 @@ struct TVHomeView: View {
                 if let showAll {
                     NavigationLink("Show All", value: showAll).modifier(TVDeckActionStyle())
                 }
-            }.padding(.horizontal, 60)
+            }.padding(.horizontal, TVDeckLayout.horizontalInset)
             ScrollView(.horizontal) {
-                LazyHStack(alignment: .top, spacing: 38) {
+                LazyHStack(alignment: .top, spacing: TVDeckLayout.cardSpacing) {
                     ForEach(items) { item in
                         TVMediaCard(service: model.service, item: item, landscape: landscape,
                             select: { path.append(.item(item.id)) })
@@ -176,10 +173,11 @@ struct TVHomeView: View {
                                     navigate: { path.append(.item($0)) })
                             }
                     }
-                }.padding(.horizontal, 60).padding(.vertical, 24)
+                }.padding(.horizontal, TVDeckLayout.horizontalInset).padding(.vertical, 24)
             }.scrollClipDisabled()
         }
         .modifier(TVDeckBay())
+        .focusSection()
     }
 }
 
