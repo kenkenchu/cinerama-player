@@ -164,6 +164,6 @@ checks. It requires a fresh user visual/focus check; the earlier appearance
 approval applies to the preceding screening-deck version. Agents did not launch
 either app or run tests.
 
-The [experimental Live TV tab](tvos-live-tv.md) now offers an opt-in HD MPEG-2
-CPU/Metal path with TV-owned remote controls and a red LIVE marker. Library
+The [experimental Live TV tab](tvos-live-tv.md) now offers HD MPEG-2
+CPU path with TV-owned remote controls and a red LIVE marker. Library
 AVKit behavior remains independent. No Go Live, DVR or Live TV captions are added.

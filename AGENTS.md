@@ -46,7 +46,7 @@ from `docs/README.md` before discovery-heavy or deep implementation work.
   `StreamResolver`; orchestration belongs in `PlaybackCoordinator`. TV uses
   `TVStreamResolver` and `TVPlaybackCoordinator` over shared Plex APIs until
   platform-neutral engine extraction is justified by actual reuse.
-- Minimal dependencies: desktop VLCKit and CineramaDovi on Mac; native AVKit for TV libraries and opt-in CineramaMPEG2 CPU/Metal for TV Live TV.
+- Minimal dependencies: desktop VLCKit and CineramaDovi on Mac; native AVKit for TV libraries and CineramaMPEG2 CPU for TV Live TV.
   New Rust dependencies need
   notices in `Cinerama/Resources/ThirdPartyNotices.txt` and the native license list.
 - Never log tokens or raw token-bearing media/artwork URLs.
@@ -141,17 +141,24 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 ## Next-Session Handoff
 
-- TV Live TV now has a separate opt-in CPU/Metal port. Read `docs/tvos-live-tv.md`
+- The user confirmed basic TV Live TV playback works in CPU and Metal modes
+  after the atomic cover-presentation fix (2026-10-27), but Metal has severe
+  playback delays on Apple TV HD. TV now uses CPU only with no enable/disable toggle or decoder picker;
+  the old decoder preference is ignored. Mac CPU/Metal options stay independent. Confirmation covers
+  basic playback, not a comprehensive audio, focus or sustained-performance audit.
+
+- TV Live TV now has a separate CPU-only port. Read `docs/tvos-live-tv.md`
   before changing it. `MPEG2Pipeline.swift` shares decoder/render-clock/recovery
   logic; Mac keeps its AppKit/protocol adapter, TV owns its UIKit host and remote
-  controls. The TV Live TV tab defaults Disabled. No DVR, captions, seeking,
+  controls. The TV Live TV tab loads channels immediately. No DVR, captions, seeking,
   Go Live, UHD downscaling or server A/V encoding. TV native slices are built
   separately in `CineramaMPEG2TV.xcframework`; desktop binaries remain excluded.
   Earlier statements below deferring TV Live TV describe the preceding baseline.
-  Both signed builds, 186 Mac tests and 39 tvOS 26 simulator tests pass; native
-  stream/fidelity/fault checks pass (2026-10-26). The signed TV app was installed
-  without manual launch. A device test launch was blocked by sleep. Hardware
-  performance and user picture/audio/focus acceptance remain pending.
+  Both signed builds and 40 CPU-only TV tests pass on the tvOS 26 simulator
+  and Apple TV HD (2026-10-27). The latest Mac suite passed 186 tests; native
+  stream/fidelity/fault checks passed before this TV-only change. The signed TV
+  app was installed without manual launch. Basic live-channel playback is now
+  user-confirmed; broader audio/focus and sustained-performance checks remain.
 
 - TV target: `CineramaTV/Sources`, scheme `Cinerama-tvOS`. See
   `docs/tvos-prototype.md` for signing, pairing, install and user verification.

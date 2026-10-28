@@ -19,7 +19,7 @@ final class TVLivePlayback {
     private var timeline: Task<Void, Never>?
     private var finalization: Task<Void, Never>?
 
-    init(service: PlexService, mode: ExperimentalMPEG2Mode,
+    init(service: PlexService,
          tuneChannel: (@MainActor (PlexLiveTVProvider, PlexLiveChannel, String?) async throws -> PlexLiveTuneResult)? = nil,
          releaseTune: (@MainActor (PlexLiveTuneResult) async -> Void)? = nil) {
         self.service = service
@@ -28,7 +28,7 @@ final class TVLivePlayback {
         }
         self.releaseTune = releaseTune
         identity = service.serverSessionToken
-        engine = ExperimentalMPEG2Engine(mode: mode)
+        engine = ExperimentalMPEG2Engine(mode: .cpu)
     }
 
     static func validate(_ tune: PlexLiveTuneResult) throws {

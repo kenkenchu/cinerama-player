@@ -62,7 +62,7 @@ movie or series. Caption appearance derives from tvOS accessibility settings;
 its explicit-override adapter still needs user visual verification. Native
 AVPlayer and copy-only HLS handle compatible HD SDR sources. Unsupported tracks
 and versions explain the limitation. Experimental HD MPEG-2 Live TV now has
-opt-in CPU/Metal decoding; see
+CPU decoding; see
 [TV Live TV](tvos-live-tv.md). TV VLC, automatic next episode,
 downloads and HDR conversion are deferred; prioritize library playback first.
 
@@ -71,7 +71,7 @@ downloads and HDR conversion are deferred; prioritize library playback first.
 - Desktop VLCKit is checksum-pinned, fetched into git-ignored `Frameworks/`, and
   dynamically linked for LGPL compliance. No private upstream VLC repo access
   is needed for the Mac build.
-- The opt-in Mac/TV MPEG-2 Live TV experiment builds a pinned LGPL FFmpeg into
+- The Mac/TV MPEG-2 Live TV decoder builds a pinned LGPL FFmpeg into
   `CineramaMPEG2.framework`. Standard playback still uses AVPlayer/VLC; the
   experiment has explicit caption/audio/seek limits. See
   [playback](playback.md#experimental-metal-mpeg-2-reconstruction).

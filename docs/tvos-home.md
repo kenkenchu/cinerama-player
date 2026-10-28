@@ -1,7 +1,7 @@
 # TV Home — Library Feature Parity
 
 The TV Home screen shares Mac Home's data/behavior layer while owning its own
-remote-first presentation. Live TV has a separate [opt-in CPU/Metal tab](tvos-live-tv.md); this
+remote-first presentation. Live TV has a separate [CPU tab](tvos-live-tv.md); this
 milestone covers **library Home**, not full platform/player feature parity.
 Mac windows, pointer/keyboard behavior and rendering hosts remain separate.
 

@@ -33,7 +33,7 @@ The Mac app additionally offers desktop VLCKit, intro/credits skipping,
 continuous play, downloads/offline sync, Live TV channel browsing/playback,
 optional Seerr requests, native window/fullscreen and keyboard/pointer controls,
 and supported Metal/HDR/Dolby Vision paths. These Mac capabilities remain intact.
-TV Live TV now has an opt-in [HD MPEG-2 CPU/Metal experiment](docs/tvos-live-tv.md).
+TV Live TV now has an [HD MPEG-2 CPU experiment](docs/tvos-live-tv.md).
 TV VLC and continuous play remain later milestones. There is no App Store
 release or iOS target for this project.
 

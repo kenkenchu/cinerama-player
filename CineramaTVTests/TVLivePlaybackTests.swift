@@ -46,7 +46,7 @@ import Testing
     @Test func tuneCompletingAfterDismissalIsReleasedWithoutPlayback() async throws {
         var pending: CheckedContinuation<PlexLiveTuneResult, any Error>?
         var released: [String] = []
-        let session = TVLivePlayback(service: PlexService(), mode: .cpu,
+        let session = TVLivePlayback(service: PlexService(),
             tuneChannel: { _, _, _ in try await withCheckedThrowingContinuation { pending = $0 } },
             releaseTune: {
                 #expect(!Task.isCancelled)
@@ -70,12 +70,13 @@ import Testing
         #expect(session.engine.submittedVideoFrames == 0)
     }
     @Test func stoppedSessionCannotTuneOrRestart() async throws {
-        let session = TVLivePlayback(service: PlexService(), mode: .cpu)
+        let session = TVLivePlayback(service: PlexService())
         await session.finish(); await session.finish()
         let provider = PlexLiveTVProvider(identifier: "fixture", providerIdentifier: "fixture", title: "Fixture", dvrID: 1, gridKey: "fixture")
         let channel = try TVTestFixtures.decode(PlexLiveChannel.self, ["id": "1", "title": "Fixture"])
         await session.start(provider: provider, channel: channel, serverID: "fixture")
         session.togglePause(); session.setForeground(true)
+        #expect(session.engine.mode == .cpu)
         #expect(!session.started)
         #expect(session.stopped)
         #expect(session.engine.state == .stopped)
@@ -85,7 +86,7 @@ import Testing
 }
 
 /// Real tvOS framework/worker/renderers, no Plex connection or player screen.
-@Suite("TV MPEG-2 CPU and Metal renderer", .serialized)
+@Suite("TV MPEG-2 CPU renderer", .serialized)
 @MainActor struct TVMPEG2RendererTests {
     private func waitUntil(_ condition: () -> Bool) async throws {
         let deadline = ContinuousClock.now + .seconds(30)
@@ -94,13 +95,13 @@ import Testing
         }
         try #require(condition(), "TV renderer transition timed out")
     }
-    @Test(arguments: [ExperimentalMPEG2Mode.cpu, .metal])
-    func pacedPlaybackPauseReconnectAndRetiredWorker(mode: ExperimentalMPEG2Mode) async throws {
+    @Test
+    func pacedPlaybackPauseReconnectAndRetiredWorker() async throws {
         let fixture = try #require(Bundle(for: TVFixtureBundle.self).url(forResource: "renderer-hd", withExtension: "ts"))
         // Match channel selection: construct and dismiss an inactive session
         // before activating audio. Neither operation may open an output device.
         try AVAudioSession.sharedInstance().setActive(false)
-        let engine = ExperimentalMPEG2Engine(mode: mode)
+        let engine = ExperimentalMPEG2Engine(mode: .cpu)
         #expect(!engine.outputConfigured)
         engine.stop()
         #expect(!engine.outputConfigured)
@@ -114,7 +115,7 @@ import Testing
         #expect(engine.outputVideoWidth == 1920 && engine.outputVideoHeight == 1080)
         #expect(engine.outputVideoCadence > 59 && engine.outputVideoCadence < 61)
         #expect(engine.outputAudioChannels == 2)
-        #expect(mode == .metal ? engine.gpuBlocks > 0 : engine.gpuBlocks == 0)
+        #expect(engine.gpuBlocks == 0)
         engine.pause()
         try await Task.sleep(for: .seconds(1))
         let frames = engine.submittedVideoFrames
@@ -142,28 +143,17 @@ private final class TVFixtureBundle: NSObject {}
 
 // Direct native checks do not open an audio output device. They remain useful
 // when a workstation's output driver prevents simulator renderer startup.
-@Suite("TV native MPEG-2 CPU/Metal samples", .serialized)
+@Suite("TV native MPEG-2 CPU samples", .serialized)
 struct TVMPEG2NativeTests {
-    @Test func videoFidelityPCMAndActualGPUExecution() throws {
+    @Test func videoCadenceAndPCM() throws {
         let fixture = try #require(Bundle(for: TVFixtureBundle.self).url(forResource: "renderer-hd", withExtension: "ts"))
-        let cpu = try decode(fixture, metal: false)
-        let metal = try decode(fixture, metal: true)
-        #expect(cpu.pixels.count == metal.pixels.count)
-        var squaredError = 0.0
-        var maxError = 0
-        for (a, b) in zip(cpu.pixels, metal.pixels) {
-            let delta = abs(Int(a) - Int(b))
-            maxError = max(maxError, delta)
-            squaredError += Double(delta * delta)
-        }
-        let mse = squaredError / Double(cpu.pixels.count)
-        let psnr = mse > 0 ? 10 * log10(255 * 255 / mse) : Double.infinity
-        #expect(maxError <= 12 && psnr > 45)
-        #expect(cpu.audio > 0 && cpu.audio == metal.audio)
+        let output = try decode(fixture)
+        #expect(!output.pixels.isEmpty)
+        #expect(output.audio > 0)
     }
 
-    private func decode(_ fixture: URL, metal: Bool) throws -> (pixels: [UInt8], audio: Int) {
-        let decoder = try #require(cm2_create(metal ? 1 : 0))
+    private func decode(_ fixture: URL) throws -> (pixels: [UInt8], audio: Int) {
+        let decoder = try #require(cm2_create(0))
         defer { cm2_close(decoder) }
         try #require(cm2_open(decoder, fixture.path) == 0)
         var video = 0, audio = 0
@@ -197,7 +187,7 @@ struct TVMPEG2NativeTests {
                 #expect(pcm.pointee.mChannelsPerFrame == 2 && pcm.pointee.mSampleRate == 48000)
             }
         }
-        #expect(metal ? cm2_gpu_blocks(decoder) > 0 : cm2_gpu_blocks(decoder) == 0)
+        #expect(cm2_gpu_blocks(decoder) == 0)
         return (pixels, audio)
     }
 }
@@ -206,12 +196,12 @@ struct TVMPEG2NativeTests {
 /// decoder startup. No Plex requests or manual screen inspection are involved.
 @Suite("TV Live TV modal presentation", .serialized)
 @MainActor struct TVLivePresentationTests {
-    @Test(arguments: [ExperimentalMPEG2Mode.cpu, .metal])
-    func firstPresentationStartsPlayerAndDismisses(mode: ExperimentalMPEG2Mode) async throws {
+    @Test
+    func firstPresentationStartsPlayerAndDismisses() async throws {
         let state = LivePresentationState()
         var pending: CheckedContinuation<PlexLiveTuneResult, any Error>?
         var receivedChannel: String?
-        let playback = TVLivePlayback(service: PlexService(), mode: mode,
+        let playback = TVLivePlayback(service: PlexService(),
             tuneChannel: { _, channel, serverID in
                 #expect(serverID == "fixture-server")
                 receivedChannel = channel.id

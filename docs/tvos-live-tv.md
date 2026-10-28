@@ -1,14 +1,15 @@
 # Experimental tvOS Live TV
 
-The TV **Live TV** tab ports the Mac CPU/Metal MPEG-2 experiment to Apple TV HD
-on tvOS 26+. It defaults to **Disabled**. Choose **Experimental CPU** or
-**Experimental Metal**, then select a channel. Decoder changes apply on the next
-tune. There is no automatic CPU fallback or TV VLC route. Library playback keeps
-its separate native AVKit player and existing format restrictions.
+The TV **Live TV** tab uses the CPU MPEG-2 decoder on Apple TV HD/tvOS 26+.
+Channels load immediately; select a channel to start playback. The old decoder
+preference is ignored. Metal playback is no
+longer offered on TV after the user reported severe delays on Apple TV HD; Mac
+CPU/Metal options remain independent. Library playback keeps its separate native
+AVKit player and existing format restrictions.
 
 ## Ownership and flow
 
-- `TVLiveTVView` owns the remote-focused channel grid, search and decoder picker.
+- `TVLiveTVView` owns the remote-focused channel grid, search and direct channel selection.
   The shared `LiveTVViewModel` loads the highest-priority connected server's
   provider/channels. No guide, program schedule or EPG is required. Its cover
   item (`TVLivePlayerPresentation`) captures provider, channel, server and player
@@ -28,8 +29,8 @@ its separate native AVKit player and existing format restrictions.
   common clock, bounded queues, audio switching, diagnostics and recovery.
   `ExperimentalMPEG2Engine.swift` retains the Mac protocol/AppKit adapter;
   `TVLivePlayerScreen` owns its UIKit display-layer host and TV controls.
-- CPU parsing, motion compensation and BWDIF field-rate deinterlacing run in
-  both modes. Metal offloads IDCT only. This is not hardware MPEG-2 decoding.
+- CPU parsing, IDCT, motion compensation and BWDIF field-rate deinterlacing
+  handle video locally. This is not hardware MPEG-2 decoding.
 - TV metadata and actual native bitstream checks reject dimensions above
   1920 × 1080. No downscaling, server A/V re-encoding or UHD rescue is added.
   The native decoder also rejects other video codecs and unsupported formats.
@@ -47,11 +48,11 @@ Atmos restoration or library-engine expansion. Short pauses retain bounded
 queues; resuming after 15 seconds refreshes the existing live URL. Backgrounding
 pauses playback, and foreground return does not automatically resume it.
 Retryable failures use the shared three-attempt budget; permanent errors remain
-visible. Select another mode and retune manually if necessary.
+visible. Return to channels and retune manually if necessary.
 
 A8 real-time performance, field cadence at the display, physical speaker layout,
 output synchronization, route changes, interruptions, wake, focus and sustained
-memory/energy need device verification. Metal is not assumed faster than CPU.
+memory/energy need device verification beyond the confirmed basic CPU playback.
 Mac milestone M5/M6/M7 acceptance does not establish TV production readiness.
 
 ## Build and verification
@@ -70,15 +71,15 @@ About → Third-Party Notices includes the FFmpeg notice and LGPL text.
 
 Run both signed builds, both hosted test suites and native MPEG-2 checks; see
 [testing](testing.md) and [device workflow](tvos-prototype.md). TV tests generate
-and bundle a local HD fixture into the test target only. CPU/Metal renderer
+and bundle a local HD fixture into the test target only. CPU renderer
 checks exercise playback, bounded pause, reconnect, rapid reload and stop
 headlessly; policy tests cover copy-only gating, UHD/codec rejection and late
-tune cleanup. They open no Plex tuner or player screen.
+tune cleanup. A native presentation regression opens and dismisses the player
+cover without connecting to a Plex tuner.
 
-For user verification, open Live TV, select CPU and tune a known HD MPEG-2
+For user verification, open Live TV and tune a known HD MPEG-2
 channel. Check motion/audio, remote pause/resume, audio selection, Back and a
-pause longer than 15 seconds. Repeat with Metal on the same channel. Check GPU
-block counts in Playback Information (zero CPU, increasing Metal). Check Plex
+pause longer than 15 seconds. GPU block counts should remain zero. Check Plex
 Dashboard confirms copying. Report failures using mode/channel/codec and safe
 diagnostics. No captions or DVR checks are required.
 
@@ -121,3 +122,19 @@ modes on the device, including first presentation, tune-task entry and dismissal
 The signed app was reinstalled without manual launch. Mac UI/shared decoder
 sources are unchanged in this follow-up; the preceding 186-test Mac baseline
 remains the latest run. Actual Plex-channel playback still needs user confirmation.
+
+CPU-only checkpoint (2026-10-27): the user confirmed basic live-channel playback
+works in both modes after the presentation fix, but Metal suffers severe delays
+on Apple TV HD. At the user's request, TV now constructs only CPU sessions and
+loads channels immediately with no enable/disable toggle or decoder picker.
+The old decoder preference is ignored, so previous CPU, Metal and Disabled
+selections all use CPU playback.
+TV hosted renderer, native sample and presentation tests now exercise CPU only;
+shared native Metal implementation and Mac behavior remain unchanged. This user
+confirmation supersedes the pending basic-playback acceptance statements above;
+long-duration, audio-route and comprehensive remote/focus checks remain pending.
+
+CPU-only verification: both signed builds and all 40 TV tests pass on the tvOS
+26.0 simulator and Apple TV HD/tvOS 26.6, including CPU renderer lifecycle,
+native cadence/PCM and cover presentation/dismissal. The signed app was installed
+without manual launch. Mac source and the preceding 186-test baseline are unchanged.

@@ -17,7 +17,7 @@ Home, Libraries, Search and Settings have separate navigation stacks. Home now
 shares the Mac Home model and presents a cinematic Continue Watching hero,
 library-ordered Plex hubs, personalized genre shelves, watched actions and Show
 All. See [TV Home](tvos-home.md) for the library feature mapping. Experimental
-Live TV has its own [CPU/Metal port](tvos-live-tv.md). Libraries
+Live TV has its own [CPU port](tvos-live-tv.md). Libraries
 use paged artwork grids in account order; search fans out across connected
 servers. Profile switches invalidate old results; catalog refresh preserves the
 shell and reports outages per server. Details show artwork, metadata, hierarchy,
@@ -49,7 +49,7 @@ requires user visual verification. Timeline requests are serialized, include
 transport changes, periodic progress and final stopped state. Natural completion
 marks the item watched. Catalog refresh waits for final progress/remux cleanup.
 
-TV Live TV is now an opt-in HD MPEG-2 CPU/Metal experiment with its own TV
+TV Live TV is now an HD MPEG-2 CPU experiment with its own TV
 controls. VLC, automatic next episode, downloads, enhancement and HDR
 conversion are deferred. No Top Shelf extension or App Store workflow is added.
 See [TV UI](tvos-ui.md) for current implementation boundaries and runtime checks.
