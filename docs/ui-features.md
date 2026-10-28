@@ -136,6 +136,14 @@ page cannot stay in front of the player when Play is selected. Do not replace a
 split-view detail root to present playback: native pushed destinations can remain
 in front while audio starts. Closing playback restores the same page and
 instrument console.
+Windowed Mac playback extends video through the title-bar area and hides the title,
+separator, traffic-light buttons and shadow, retaining native resizing and keyboard
+focus. The titled AppKit style stays enabled so the existing window can become key. Closing playback
+restores catalog window decoration; detaching fullscreen restores it for the
+visible catalog window, and returning to inline playback removes it again.
+The player control bar supplies Close and fullscreen actions; Escape keeps its
+existing behavior. `MacPlaybackWindowChrome` owns the reversible decoration
+snapshot. TV presentation is unchanged.
 The player hides the navigation toolbar and uses one video canvas in windowed
 and fullscreen playback. Controls attach as a bottom overlay of that canvas,
 so windowed toolbar/safe-area insets cannot offset them from their background. The bottom control bar contains a fullscreen toggle that

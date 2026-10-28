@@ -44,6 +44,7 @@ struct MainTabView: View {
 
             if playback.showPlayer {
                 MacPlaybackHost(playback: playback, isDetached: $playbackIsDetached)
+                    .ignoresSafeArea(.container, edges: .all)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .allowsHitTesting(!playbackIsDetached)
                     .zIndex(1)
@@ -502,6 +503,66 @@ private struct MacPlaybackContent: View {
     }
 }
 
+/// Owns only the temporary window decoration change, preserving native resize
+/// and restoring catalog chrome before detaching playback or dismissing it.
+@MainActor
+final class MacPlaybackWindowChrome {
+    private weak var window: NSWindow?
+    private var savedStyle: NSWindow.StyleMask = []
+    private var savedShadow = true
+    private var savedTitleVisibility: NSWindow.TitleVisibility = .visible
+    private var savedTitlebarTransparency = false
+    private var savedSeparator: NSTitlebarSeparatorStyle = .automatic
+    private var savedButtons: [(NSButton, Bool)] = []
+
+    func apply(to window: NSWindow) {
+        guard self.window !== window else { return }
+        restore()
+        self.window = window
+        savedStyle = window.styleMask
+        savedShadow = window.hasShadow
+        savedTitleVisibility = window.titleVisibility
+        savedTitlebarTransparency = window.titlebarAppearsTransparent
+        savedSeparator = window.titlebarSeparatorStyle
+        savedButtons = [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton]
+            .compactMap { window.standardWindowButton($0) }
+            .map { ($0, $0.isHidden) }
+        let frame = window.frame
+        // Keep .titled: SwiftUI's existing NSWindow must remain key-capable
+        // for Space, Escape and menu shortcuts. Extend video over its chrome.
+        window.styleMask.insert(.fullSizeContentView)
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.titlebarSeparatorStyle = .none
+        for (button, _) in savedButtons { button.isHidden = true }
+        window.hasShadow = false
+        window.setFrame(frame, display: false)
+    }
+
+    func restore() {
+        guard let window else { return }
+        self.window = nil
+        let frame = window.frame
+        window.styleMask = savedStyle
+        window.hasShadow = savedShadow
+        window.titleVisibility = savedTitleVisibility
+        window.titlebarAppearsTransparent = savedTitlebarTransparency
+        window.titlebarSeparatorStyle = savedSeparator
+        for (button, hidden) in savedButtons { button.isHidden = hidden }
+        savedButtons = []
+        window.setFrame(frame, display: false)
+    }
+}
+
+private final class MacPlaybackContainer: NSView {
+    var windowChanged: (() -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        windowChanged?()
+    }
+}
+
 /// Reparents one hosting view so fullscreen never recreates the player session
 /// or changes the catalog window's fullscreen state.
 struct MacPlaybackHost: NSViewRepresentable {
@@ -513,7 +574,11 @@ struct MacPlaybackHost: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSView {
-        let container = NSView()
+        let container = MacPlaybackContainer()
+        container.windowChanged = { [weak coordinator = context.coordinator, weak container] in
+            guard let container else { return }
+            coordinator?.updateContainer(container)
+        }
         context.coordinator.updateContainer(container)
         return container
     }
@@ -535,6 +600,7 @@ struct MacPlaybackHost: NSViewRepresentable {
         private var escapeMonitor: Any?
         private var windowState = MacPlaybackWindowState()
         private let presentation = MacPlaybackPresentation()
+        private let windowChrome = MacPlaybackWindowChrome()
         private let detached: Binding<Bool>
 
         init(playback: PlaybackCoordinator, detached: Binding<Bool>) {
@@ -547,7 +613,10 @@ struct MacPlaybackHost: NSViewRepresentable {
             self.container = container
             // SwiftUI can update/replace the inline NSView while its player is
             // detached. Remember the current destination; only attach inline.
-            if windowState.phase == .inline { attachPlayer(to: container) }
+            if windowState.phase == .inline {
+                if let window = container.window { windowChrome.apply(to: window) }
+                attachPlayer(to: container)
+            }
         }
 
         func attachPlayer(to parent: NSView) {
@@ -608,6 +677,7 @@ struct MacPlaybackHost: NSViewRepresentable {
             guard let container, let mainWindow = container.window,
                   windowState.beginEntering() else { return }
             let playbackRect = mainWindow.convertToScreen(container.convert(container.bounds, to: nil))
+            windowChrome.restore()
             let window = NSWindow(
                 contentRect: playbackRect,
                 styleMask: [.titled, .closable, .resizable, .miniaturizable],
@@ -616,6 +686,11 @@ struct MacPlaybackHost: NSViewRepresentable {
             window.isReleasedWhenClosed = false
             window.title = "Cinerama Playback"
             window.backgroundColor = .black
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.titlebarSeparatorStyle = .none
+            window.styleMask.insert(.fullSizeContentView)
+            window.hasShadow = false
             window.collectionBehavior = [.fullScreenPrimary]
             window.delegate = self
             let content = NSView(frame: NSRect(origin: .zero, size: playbackRect.size))
@@ -678,6 +753,7 @@ struct MacPlaybackHost: NSViewRepresentable {
             windowState.didRestoreInline()
             detached.wrappedValue = false
             let mainWindow = container.window
+            if let mainWindow { windowChrome.apply(to: mainWindow) }
             closeFullscreenWindow()
             mainWindow?.makeKeyAndOrderFront(nil)
         }
@@ -692,6 +768,7 @@ struct MacPlaybackHost: NSViewRepresentable {
 
         func tearDown() {
             windowState.close()
+            windowChrome.restore()
             if let escapeMonitor {
                 NSEvent.removeMonitor(escapeMonitor)
                 self.escapeMonitor = nil

@@ -122,6 +122,37 @@ struct MacPlaybackWindowTests {
 @Suite("Mac playback host attachment", .serialized)
 @MainActor
 struct MacPlaybackHostAttachmentTests {
+    @Test func borderlessPlaybackRestoresCatalogDecorationAndPreservesResizing() {
+        let window = NSWindow(contentRect: NSRect(x: 100, y: 100, width: 900, height: 600),
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                              backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        defer { window.close() }
+        let style = window.styleMask
+        let frame = window.frame
+        let shadow = window.hasShadow
+        let chrome = MacPlaybackWindowChrome()
+        chrome.apply(to: window)
+        chrome.apply(to: window)
+        #expect(window.styleMask.contains(.fullSizeContentView))
+        #expect(window.titleVisibility == .hidden)
+        #expect(window.titlebarAppearsTransparent)
+        #expect(window.titlebarSeparatorStyle == .none)
+        #expect(window.standardWindowButton(.closeButton)?.isHidden == true)
+        #expect(window.styleMask.contains(.resizable))
+        #expect(window.canBecomeKey)
+        #expect(!window.hasShadow)
+        #expect(window.frame == frame)
+        chrome.restore()
+        chrome.restore()
+        #expect(window.styleMask == style)
+        #expect(window.hasShadow == shadow)
+        #expect(window.frame == frame)
+        chrome.apply(to: window)
+        chrome.restore()
+        #expect(window.styleMask == style)
+    }
+
     @Test func windowTransferReusesOneHostAndRepairsInlineAttachment() throws {
         let playback = PlaybackCoordinator(plexService: PlexService())
         let coordinator = MacPlaybackHost.Coordinator(playback: playback, detached: .constant(false))
