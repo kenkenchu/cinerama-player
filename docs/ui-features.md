@@ -15,22 +15,23 @@ servers beneath the shell and retries on profile, foreground, and network change
 The shell is a full-width destination view with a pinned bottom instrument
 console, replacing the sidebar. Home, Movies, TV Shows, Videos, Live TV, Search,
 Downloads and Settings remain available on every catalog screen. Native buttons
-use icons and an underlined neutral selected state. Names and shortcuts appear
-in explicit hover labels above the console and remain available as accessibility
-labels. A preference anchor positions the label over the hovered instrument
-outside the housing clip. Only the selected icon shows the short indicator;
-inactive icons have no underscore. The
-console has a Liquid Glass housing with chamfered shoulders and fine rails.
-Flat icon instruments use subtle selection plates, brighter markings and a
-steady white lamp for the selected destination; the accent fill is not used.
-`ViewThatFits` drops the console wordmark first when space is tight; it keeps
-all eight destinations visible at the supported minimum window width.
-The app uses a fixed dark native control environment. The console uses Apple
-Liquid Glass, with an opaque metallic-blue fallback for Reduce Transparency. Decorative etching is
-noninteractive and accessibility-hidden. `CockpitInstrumentStyle` uses native
-ButtonStyle pressed state and pointer hover for immediate feedback, without
-animation timers. Instrument widths and destination order are unchanged; hiding
-the captions makes the strip shorter.
+use illuminated icons and permanent caption labels. Three connected bays group
+Home/Movies/TV Shows/Videos, Live TV/Search/Downloads, and Settings, preserving
+instrument order, 76pt button widths and keyboard shortcuts. The selected button
+has a neutral gradient plate, fine outline and steady white lower lamp.
+Names and shortcuts also appear in explicit hover labels above the console;
+a preference anchor positions them outside the housing clip.
+
+The Liquid Glass housing has swept shoulders, double rails and short static
+index marks. Smoked metallic-blue bay fills and fine dividers define the panel.
+`ViewThatFits` drops the wordmark first when space is tight, keeping all eight
+instruments visible at the supported 900pt minimum window width. The compact
+housing is 746pt wide (eight 76pt instruments, intra-bay gaps, bay padding,
+dividers and housing padding), plus 40pt outside margins.
+Reduce Transparency substitutes opaque metallic-blue housing/bay surfaces.
+Decoration is noninteractive and accessibility-hidden. `CockpitInstrumentStyle`
+retains native ButtonStyle pressed feedback and pointer hover without animation
+timers. Mac-only styling leaves TV navigation and player controls unchanged.
 
 Each destination retains its own `NavigationPath`. The Navigate menu supplies
 Cmd-1 through Cmd-8 in instrument order; Cmd-F still selects Search. The obsolete

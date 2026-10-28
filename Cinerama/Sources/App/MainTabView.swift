@@ -129,7 +129,8 @@ struct MainTabView: View {
             }
             navigationInstruments
         }
-        .padding(12)
+        .padding(.horizontal, 22)
+        .padding(.vertical, 12)
         .background {
             if reduceTransparency {
                 CockpitHousing().fill(Color.cineramaSurface)
@@ -176,8 +177,31 @@ struct MainTabView: View {
     }
 
     private var navigationInstruments: some View {
-        HStack(spacing: 6) {
-            ForEach(MacDestination.allCases) { item in
+        HStack(spacing: 12) {
+            instrumentBay([.home, .movies, .shows, .videos])
+            consoleDivider
+            instrumentBay([.liveTV, .search, .downloads])
+            consoleDivider
+            instrumentBay([.settings])
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Navigation instruments")
+    }
+
+    private var consoleDivider: some View {
+        Rectangle()
+            .fill(.white.opacity(0.16))
+            .frame(width: 1, height: 38)
+            .overlay(alignment: .top) {
+                Rectangle().fill(.white.opacity(0.55)).frame(width: 1, height: 8)
+            }
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+    }
+
+    private func instrumentBay(_ items: [MacDestination]) -> some View {
+        HStack(spacing: 4) {
+            ForEach(items) { item in
                 MacNavigationInstrument(
                     title: item.rawValue,
                     symbol: item.symbol,
@@ -195,8 +219,17 @@ struct MainTabView: View {
                 }
             }
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Navigation instruments")
+        .padding(4)
+        .background {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.cineramaBackground.opacity(reduceTransparency ? 1 : 0.35))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(.white.opacity(0.08), lineWidth: 0.5)
+                }
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
+        }
     }
 
     private func path(_ item: MacDestination) -> Binding<NavigationPath> {
@@ -275,20 +308,20 @@ private struct CockpitTooltipAnchor: PreferenceKey {
     }
 }
 
-/// A chamfered glass housing gives the console a physical silhouette while
-/// keeping its established dimensions and navigation behavior.
+/// Swept shoulders frame three instrument bays without changing native navigation.
 private struct CockpitHousing: Shape {
     func path(in rect: CGRect) -> Path {
-        let cut = min(18, min(rect.width, rect.height) / 3)
+        let shoulder = min(30, rect.height / 3)
+        let corner: CGFloat = 10
         return Path { path in
-            path.move(to: CGPoint(x: rect.minX + cut, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.minY))
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + cut))
-            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - cut))
-            path.addLine(to: CGPoint(x: rect.maxX - cut, y: rect.maxY))
-            path.addLine(to: CGPoint(x: rect.minX + cut, y: rect.maxY))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - cut))
-            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + cut))
+            path.move(to: CGPoint(x: rect.minX + shoulder, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX - shoulder, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + shoulder))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - corner))
+            path.addLine(to: CGPoint(x: rect.maxX - corner, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX + corner, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - corner))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + shoulder))
             path.closeSubpath()
         }
     }
@@ -298,9 +331,13 @@ private struct CockpitPanelEtching: View {
     var body: some View {
         Canvas { context, size in
             var rails = Path()
-            for y in [CGFloat(6), size.height - 6] {
+            for y in [CGFloat(5), CGFloat(8), size.height - 5] {
                 rails.move(to: CGPoint(x: 32, y: y))
                 rails.addLine(to: CGPoint(x: size.width - 32, y: y))
+            }
+            for x in stride(from: CGFloat(40), through: size.width - 40, by: 12) {
+                rails.move(to: CGPoint(x: x, y: size.height - 8))
+                rails.addLine(to: CGPoint(x: x, y: size.height - 11))
             }
             context.stroke(rails, with: .color(.white.opacity(0.10)), lineWidth: 0.5)
         }
@@ -332,35 +369,42 @@ private struct CockpitInstrumentStyle: ButtonStyle {
     @State private var isHovered = false
 
     func makeBody(configuration: Configuration) -> some View {
-        VStack(spacing: 7) {
+        VStack(spacing: 6) {
             Image(systemName: symbol)
                 .symbolVariant(isSelected ? .fill : .none)
                 .font(.system(.title3, weight: .medium))
                 .frame(height: 22)
                 .shadow(color: .white.opacity(isSelected ? 0.35 : 0), radius: 6)
+            configuration.label
+                .font(.system(.caption2, weight: isSelected ? .semibold : .medium))
+                .lineLimit(1)
+                .fixedSize()
             Capsule()
                 .fill(.white.opacity(isSelected ? 0.95 : 0))
-                .frame(width: 18, height: 2)
+                .frame(width: 26, height: 2)
                 .shadow(color: .white.opacity(isSelected ? 0.6 : 0), radius: 4)
                 .accessibilityHidden(true)
         }
         .foregroundStyle(.white.opacity(isSelected ? 0.98 : 0.70))
         .frame(width: 76)
-        .padding(.vertical, 10)
+        .padding(.vertical, 9)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.white.opacity(isSelected ? 0.07 : (isHovered ? 0.035 : 0)))
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(LinearGradient(
+                    colors: [.white.opacity(isSelected ? 0.16 : (isHovered ? 0.07 : 0.02)),
+                             .white.opacity(isSelected ? 0.05 : 0)],
+                    startPoint: .top, endPoint: .bottom))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .strokeBorder(.white.opacity(isSelected ? 0.20 : 0), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .strokeBorder(.white.opacity(isSelected ? 0.32 : 0), lineWidth: 0.5)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
         }
         .opacity(configuration.isPressed ? 0.65 : 1)
         .brightness(isHovered && isEnabled ? 0.035 : 0)
         .opacity(isEnabled ? 1 : 0.45)
-        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .onHover { isHovered = $0 }
     }
 }

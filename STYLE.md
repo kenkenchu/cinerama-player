@@ -79,8 +79,8 @@ and time readouts can use monospaced digits.
 ## Screens and Interaction
 
 Navigation uses a pinned bottom instrument console of native buttons, with
-icons for all eight destinations, hover labels for names/shortcuts,
-and accessibility labels. Flat translucent plates,
+icons and permanent captions for all eight destinations, hover labels for names/shortcuts,
+and accessibility labels. Grouped translucent bays,
 bright markings and a short steady white lamp identify the selected instrument
 in the fixed appearance. Keep native
 keyboard focus, the Navigate menu shortcuts and the full-width destination
@@ -148,19 +148,23 @@ of this visual language; see `docs/tvos-ui.md` for its remote/focus rules.
 
 ## Cockpit Instrument Finish
 
-Keep the approved strip layout, button dimensions and destination order. Give
-the console regular Liquid Glass with chamfered
-housing shoulders and fine rails. Reduce Transparency replaces its glass with
-an opaque metallic-blue surface. Instruments use flat illuminated glyphs,
-subtle 16pt selection plates and a steady white selection lamp. Names appear
-only in explicit hover labels above the console and accessibility labels.
-Keep hover labels outside the housing clip, noninteractive and accessibility-hidden.
-Show the underline only for the selected instrument. Native ButtonStyle
-pressed state supplies opacity feedback; pointer hover slightly brightens the
-face. Avoid recessed wells, bevels, screws and mechanical key travel. Do not add blinking
-lamps, decorative timers or invented system telemetry. All hardware decoration
-must ignore hit testing and accessibility. Native focus and button activation
-remain intact; these are cosmetic changes to the established navigation.
+The Mac exploration-ship console groups native navigation buttons into three
+connected bays: Home/Movies/TV Shows/Videos, Live TV/Search/Downloads, and Settings.
+Preserve destination order, 76pt instrument widths and existing shortcuts.
+A regular Liquid Glass housing has swept outer shoulders, fine double rails and
+static index marks. Smoked metallic-blue bay fills separate the controls; fine
+vertical dividers carry short white markings. Reduce Transparency replaces the
+glass and translucent bays with opaque metallic-blue surfaces.
+
+Keep permanent caption labels below the illuminated glyphs. The active instrument
+uses an 8pt rounded neutral gradient plate, a fine outline and a steady white
+lower lamp. Pointer hover brightens the face; native ButtonStyle pressed state
+supplies opacity feedback. Names and shortcuts also appear in explicit hover
+labels outside the housing clip. The wordmark drops first in narrow windows.
+Do not add blinking lamps, decorative timers or invented telemetry. All etching,
+bay backgrounds and housing decoration ignore hit testing and accessibility.
+Native focus and button activation remain intact. This Mac-specific console does
+not alter the TV shell or player transport.
 
 ## Liquid Glass Placement
 
