@@ -4,8 +4,8 @@ struct TVLiveTVView: View {
     let service: PlexService
     @State private var model: LiveTVViewModel
     @State private var query = ""
-    @State private var selectedChannel: PlexLiveChannel?
-    @State private var playback: TVLivePlayback?
+    @State private var presentation: TVLivePlayerPresentation?
+    @State private var lastPlayback: TVLivePlayback?
     @AppStorage("tvExperimentalLiveMPEG2Mode") private var mode = "disabled"
 
     init(service: PlexService) {
@@ -40,8 +40,11 @@ struct TVLiveTVView: View {
                                 || ($0.displayNumber ?? "").localizedCaseInsensitiveContains(query)
                         }) { channel in
                             Button {
-                                playback = TVLivePlayback(service: service, mode: mode == "metal" ? .metal : .cpu)
-                                selectedChannel = channel
+                                guard let provider = model.provider else { return }
+                                let playback = TVLivePlayback(service: service, mode: mode == "metal" ? .metal : .cpu)
+                                lastPlayback = playback
+                                presentation = TVLivePlayerPresentation(provider: provider, channel: channel,
+                                    serverID: model.serverID, playback: playback)
                             } label: {
                                 VStack(spacing: 12) {
                                     TVArtwork(service: service, path: channel.thumb, serverID: model.serverID,
@@ -59,15 +62,28 @@ struct TVLiveTVView: View {
         .navigationTitle("Live TV")
         .searchable(text: $query, prompt: "Channels")
         .task(id: "\(mode)|\(service.liveTVServerID ?? "")") { if enabled { await model.load() } }
-        .fullScreenCover(item: $selectedChannel, onDismiss: {
-            let retired = playback
-            playback = nil
+        .fullScreenCover(item: $presentation, onDismiss: {
+            let retired = lastPlayback
+            lastPlayback = nil
             Task { await retired?.finish() }
-        }) { channel in
-            if let playback, let provider = model.provider {
-                TVLivePlayerScreen(provider: provider, channel: channel,
-                    serverID: model.serverID, playback: playback)
-            }
+        }) { session in
+            session
         }
+    }
+}
+
+/// The cover's item owns every input needed to render it. Never read a second
+/// optional @State value from the cover closure: its first snapshot can be nil
+/// even though SwiftUI has already activated the modal and blocked grid focus.
+struct TVLivePlayerPresentation: Identifiable, View {
+    let id = UUID()
+    let provider: PlexLiveTVProvider
+    let channel: PlexLiveChannel
+    let serverID: String?
+    let playback: TVLivePlayback
+
+    var body: some View {
+        TVLivePlayerScreen(provider: provider, channel: channel,
+            serverID: serverID, playback: playback)
     }
 }

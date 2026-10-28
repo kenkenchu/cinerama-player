@@ -1,6 +1,8 @@
 import AVFoundation
 import CineramaMPEG2
 import Foundation
+import SwiftUI
+import UIKit
 import Testing
 @testable import CineramaTV
 
@@ -197,5 +199,61 @@ struct TVMPEG2NativeTests {
         }
         #expect(metal ? cm2_gpu_blocks(decoder) > 0 : cm2_gpu_blocks(decoder) == 0)
         return (pixels, audio)
+    }
+}
+
+/// Exercise the real cover content and its .task, rather than only headless
+/// decoder startup. No Plex requests or manual screen inspection are involved.
+@Suite("TV Live TV modal presentation", .serialized)
+@MainActor struct TVLivePresentationTests {
+    @Test(arguments: [ExperimentalMPEG2Mode.cpu, .metal])
+    func firstPresentationStartsPlayerAndDismisses(mode: ExperimentalMPEG2Mode) async throws {
+        let state = LivePresentationState()
+        var pending: CheckedContinuation<PlexLiveTuneResult, any Error>?
+        var receivedChannel: String?
+        let playback = TVLivePlayback(service: PlexService(), mode: mode,
+            tuneChannel: { _, channel, serverID in
+                #expect(serverID == "fixture-server")
+                receivedChannel = channel.id
+                return try await withCheckedThrowingContinuation { pending = $0 }
+            })
+        let provider = PlexLiveTVProvider(identifier: "fixture", providerIdentifier: "fixture",
+            title: "Fixture", dvrID: 1, gridKey: "fixture")
+        let channel = try TVTestFixtures.decode(PlexLiveChannel.self, ["id": "1", "title": "Fixture"])
+        let host = UIHostingController(rootView: LivePresentationHost(state: state))
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        defer { window.isHidden = true; window.rootViewController = nil }
+        // Let the host enter the native hierarchy before activating its cover.
+        try await Task.sleep(for: .milliseconds(100))
+        state.presentation = TVLivePlayerPresentation(provider: provider, channel: channel,
+            serverID: "fixture-server", playback: playback)
+        let deadline = ContinuousClock.now + .seconds(5)
+        while pending == nil, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(25))
+        }
+        let didStart = pending != nil
+        #expect(didStart, "The first modal must contain a player that starts tuning")
+        #expect(receivedChannel == channel.id)
+        #expect(host.presentedViewController != nil)
+        state.presentation = nil
+        await playback.finish()
+        pending?.resume(throwing: CancellationError())
+        try await Task.sleep(for: .seconds(1))
+        #expect(host.presentedViewController == nil)
+        #expect(playback.stopped)
+        #expect(!playback.engine.outputConfigured)
+    }
+}
+
+@MainActor @Observable private final class LivePresentationState {
+    var presentation: TVLivePlayerPresentation?
+}
+
+private struct LivePresentationHost: View {
+    @Bindable var state: LivePresentationState
+    var body: some View {
+        Color.black.fullScreenCover(item: $state.presentation) { session in session }
     }
 }

@@ -10,7 +10,11 @@ its separate native AVKit player and existing format restrictions.
 
 - `TVLiveTVView` owns the remote-focused channel grid, search and decoder picker.
   The shared `LiveTVViewModel` loads the highest-priority connected server's
-  provider/channels. No guide, program schedule or EPG is required.
+  provider/channels. No guide, program schedule or EPG is required. Its cover
+  item (`TVLivePlayerPresentation`) captures provider, channel, server and player
+  together; cover content must not depend on a second optional view-state value.
+  Separate state can supply an empty cover on the first selection, blocking grid
+  focus while leaving the channel grid visible.
 - `TVLivePlayback` tunes once through the shared Plex API, rejects unconfirmed
   remux decisions and unsupported metadata, activates the TV playback audio
   session before the engine creates/attaches audio output, serializes
@@ -101,3 +105,19 @@ unexpectedly during its renderer test (185 other tests passed); the full rerun
 passed without further source changes. Device renderer tests use a generated
 fixture and do not tune a Plex channel. The signed TV app was reinstalled for
 user channel verification without a manual launch.
+
+Follow-up (2026-10-27): the user confirmed the audio-order change did **not**
+resolve either mode's channel-grid freeze. Live TV's cover previously used the
+channel as its item and conditionally read a separate optional playback state.
+It now uses one complete presentation value, matching the library player flow,
+with the provider/server snapshot retained through dismissal. The cover always
+contains its player. A hosted native presentation regression opens the actual
+Live TV cover, waits for its tune task, and dismisses it in both modes, without
+connecting to Plex. User real-channel acceptance remains pending.
+
+Follow-up verification: both signed builds and all **40 TV tests** pass on the
+tvOS 26.0 simulator and Apple TV HD/tvOS 26.6. The new cover test passes in both
+modes on the device, including first presentation, tune-task entry and dismissal.
+The signed app was reinstalled without manual launch. Mac UI/shared decoder
+sources are unchanged in this follow-up; the preceding 186-test Mac baseline
+remains the latest run. Actual Plex-channel playback still needs user confirmation.
