@@ -58,9 +58,11 @@ See [TV UI](tvos-ui.md) for current implementation boundaries and runtime checks
 
 1. Put Mac and Apple TV on the same network. On Apple TV, leave Settings →
    Remotes and Devices → Remote App and Devices open.
-2. In Xcode choose Window → Devices and Simulators (Shift-Command-2), select
-   Devices, select the discovered Apple TV, and Pair using the TV's displayed
-   code. Apple TV HD can also connect by a USB-C data cable.
+2. In Xcode 27.1 choose Xcode → Open Developer Tool → Device Hub, then
+   + → Pair Nearby Device… → Apple TV. Select the discovered TV and enter
+   its displayed code. Older Xcode versions use Window → Devices and
+   Simulators. Apple TV HD can also connect by a USB-C data cable; the
+   Wi-Fi-only Apple TV 4K has no Ethernet or USB data port.
 3. Ensure your Apple account/team is available in Xcode Settings → Accounts.
    Enable Developer Mode on Apple TV if Xcode or the device requests it, then
    follow its restart/confirmation prompts.
@@ -89,7 +91,26 @@ or no profile, complete pairing/registration and rerun the signed build. Do not
 fall back to ad hoc signing. No private keys, profiles or build products belong
 in Git. TV provisioning is separate from the existing Mac signing workflow.
 
-## Verified Workstation and Device (2026-10-25)
+### Pairing on the UniFi Wi-Fi Network
+
+On 2026-10-28, the Mac could discover Apple TV Lite through AirPlay and
+Bluetooth but not through Xcode. Restarting the Mac allowed pairing to proceed,
+but the TV showing the Mac as paired did not initially produce a Device Hub
+entry. Moving the Mac onto the same access point as the TV resolved pairing;
+both Apple TV 4K devices then appeared in Device Hub, `devicectl`, and Xcode
+build destinations. They had already shared the same network/VLAN on different
+APs. Use the same-AP workaround if this recurs; the underlying cross-AP cause
+was not isolated.
+
+Observed UniFi settings were Client Device Isolation off, Multicast Filtering
+off, Proxy ARP off, Multicast and Broadcast Blocker off, and Multicast to
+Unicast on. No router setting change was needed. Xcode and Device Hub were not
+listed in macOS Local Network settings; that absence alone did not establish
+a permission failure. Apple requires IPv6 for wireless TV pairing; IPv4
+reachability and AirPlay discovery alone do not verify Xcode connectivity.
+See [Apple's Device Hub guide](https://developer.apple.com/documentation/xcode/managing-your-simulated-and-physical-devices-in-device-hub).
+
+## Verified Workstation and Devices (2026-10-28)
 
 The signed build and installation succeeded with:
 
@@ -97,11 +118,20 @@ The signed build and installation succeeded with:
 - Signing identity: `Apple Development: kenkenchu@gmail.com (BZ2K63HJTE)`.
   `BZ2K63HJTE` is the identity suffix, **not** the development team ID; using it
   as `CINERAMA_TVOS_TEAM` fails provisioning.
-- Connected device: `Apple TV 4th`, Apple TV HD (`AppleTV5,3`).
-- Xcode destination and devicectl installation ID (both verified):
-  `c8b3bc526b697182f0646a639aef4be26f1ca852`.
 
-From the repository root, build and install with:
+All three physical TVs appear in both `devicectl` and Xcode build destinations:
+
+| Device | Model | Build destination / installation ID |
+| --- | --- | --- |
+| Apple TV 4th | Apple TV HD (`AppleTV5,3`) | `c8b3bc526b697182f0646a639aef4be26f1ca852` |
+| Apple TV Lite | Apple TV 4K, 3rd generation (`AppleTV14,1`) | `00008110-001828EA0151401E` |
+| Apple TV Pro | Apple TV 4K, 3rd generation (`AppleTV14,1`) | `00008110-00182D681486401E` |
+
+Lite advertised tvOS 27.2 during discovery. Apple TV HD remains the tvOS 26
+compatibility baseline; installing on 4K hardware does not change the app's
+current HD media policy or establish UHD/HDR support.
+
+From the repository root, build and install with the chosen device ID (HD example):
 
 ```bash
 CINERAMA_TVOS_TEAM=JCJFCBSNUG \
@@ -114,9 +144,19 @@ xcrun devicectl device install app \
 
 Confirm the device is connected with `xcrun devicectl list devices` before
 installing. If pairing or identifiers change, rediscover both IDs as described
-above. The installed bundle is `com.cinerama-player.tv`. This checkpoint verified
-the signed build and installation only; the app was not launched and tests were
-not run.
+above. The installed bundle is `com.cinerama-player.tv`.
+
+On 2026-10-28, signed builds and installations succeeded separately for Lite and
+Pro. Switching build destinations exposed an incremental signing failure:
+`embedded.mobileprovision` had changed after sealing. A clean TV build followed
+by `scripts/build_tvos.sh` with Pro's destination restored signature verification
+and installation. If this recurs, clean the TV scheme using the same derived
+data path before rebuilding; never install a bundle that fails verification.
+
+The agent did not launch the apps or run tests during this installation-only
+checkpoint. The user subsequently reported “all good now” for the three-TV
+setup. This is general setup acceptance, not a codec, caption, focus or sustained
+performance audit.
 
 ## Automated Tests
 

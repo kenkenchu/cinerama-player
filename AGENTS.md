@@ -141,6 +141,15 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 ## Next-Session Handoff
 
+- Three-TV setup (2026-10-28): Apple TV 4th plus Apple TV Lite and Apple TV Pro
+  (both 3rd-generation 4K) are paired. Signed Cinerama installs succeeded on both
+  new TVs; the user reported “all good now.” No agent launch or tests in this
+  install-only checkpoint; do not infer a comprehensive playback audit or UHD
+  support. Device IDs and signing recovery are in `docs/tvos-prototype.md`.
+  With UniFi, pairing succeeded after moving the Mac to the same AP as the TV;
+  same VLAN across different APs had not sufficed. Root cause was not isolated.
+  Xcode 27.1 uses Device Hub → + → Pair Nearby Device → Apple TV.
+
 - TV UX refinement (2026-10-27): TV-only layouts now use shared TV spacing,
   a smaller Home hero with trailing pager, artwork-led library/season/episode
   grids, a prominent detail Play/Resume action and separate Playback Options.
@@ -173,8 +182,8 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 - TV target: `CineramaTV/Sources`, scheme `Cinerama-tvOS`. See
   `docs/tvos-prototype.md` for signing, pairing, install and user verification.
-  Its Verified Workstation and Device section records the working build/install
-  commands and device ID (2026-10-25). Use `CINERAMA_TVOS_TEAM=JCJFCBSNUG`;
+  Its Verified Workstation and Devices section records the working build/install
+  commands and all three device IDs (2026-10-28). Use `CINERAMA_TVOS_TEAM=JCJFCBSNUG`;
   the signing identity suffix `BZ2K63HJTE` is not the team ID.
   TV now adopts the Mac screening-deck styling through `TVDeckStyle.swift`,
   framed Home/detail viewports and library bays, preserving native TV tabs and
