@@ -3,11 +3,14 @@
 This opt-in player decodes real MPEG-2 streams. It builds on the isolated
 [reconstruction experiment](../MetalMPEG2Prototype/README.md), but adds a patched
 FFmpeg decoder, HLS demuxing, PCM audio and native sample-buffer rendering. It is
-for HD SDR MPEG-2. Mac keeps Standard playback by default; TV Live TV is
-disabled until explicitly enabled. TV has a separate native host and controls;
+for HD SDR MPEG-2. Mac keeps Standard playback by default; TV Live TV uses CPU decoding
+without an opt-in toggle. TV has a separate native host and controls;
 see [TV Live TV](../../docs/tvos-live-tv.md).
 
 ## User test
+
+The decoder selector and Cmd-I instructions below apply to Mac. TV uses its
+Live TV tab and More → Playback Information.
 
 Quit and reopen the signed Cinerama build after rebuilding. In **Settings → Live
 TV decoding experiment → MPEG-2 decoder**, select **Experimental CPU** or
@@ -57,6 +60,18 @@ There is no silent CPU fallback that could invalidate an A/B test.
   AC3/EAC3/AAC/MP2 audio is decoded locally to interleaved float PCM at the
   source rate, preserving supported mono through 7.1 layouts with explicit
   Core Audio channel labels. Unknown layouts fail explicitly. Unsupported codecs fail rather than requesting Plex conversion.
+- TV opts into two seconds of compressed packet read-ahead before decode, capped
+  at 8 MiB of packet payload/side data and 2048 packets, plus one in-flight packet.
+  A dedicated producer owns `av_read_frame`; decoding and audio-track metadata
+  use a snapshot of stream parameters, time bases, frame rates and languages.
+  Initial reads wait for the target, a capacity limit or input termination, so
+  short streams also drain. Subsequent reads consume while the producer refills.
+  DTS measures the queued video span; byte/count caps bound missing or invalid
+  timestamps. Cancellation wakes queue waits and interrupts IO; close joins the
+  producer before freeing demux/decoder resources. Mac defaults to no read-ahead.
+  This reserve absorbs brief delivery gaps, not sustained throughput deficits;
+  it adds tuning/live latency and retains no DVR history. Queue seconds/bytes
+  appear in diagnostics separately from renderer queues.
 - `AVSampleBufferRenderSynchronizer` paces video and audio on one media clock.
   The worker waits for renderer readiness and limits decode-ahead to 600 ms.
   Startup waits for at least 150 ms of audio and 100 ms of video (video alone
@@ -92,6 +107,10 @@ for TV controls, build/cache/relink paths and hardware acceptance.
 CINERAMA_MACOS_SIGNING_IDENTITY='Apple Development: kenkenchu@gmail.com (BZ2K63HJTE)' ./scripts/build_macos.sh
 CINERAMA_MACOS_SIGNING_IDENTITY='Apple Development: kenkenchu@gmail.com (BZ2K63HJTE)' ./scripts/test_macos.sh
 ```
+
+Native input-buffer regressions compare serial/buffered pixels, timestamps and
+sample counts, exercise short EOF and cancellation while full, and compare paced
+HTTP delivery with/without read-ahead across an injected one-second gap.
 
 Native tests generate their own three-second MPEG-2/AC3 fixtures, including
 progressive, TFF/BFF interlaced, 4:2:2, 1920x1080 interlaced and HLS. Each

@@ -26,6 +26,31 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
     def do_GET(self):
         path = urlparse(self.path).path
+        if path in ("/jitter.ts", "/stalled.ts"):
+            body = (root / "jitter.ts").read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            if path == "/stalled.ts":
+                self.wfile.write(body[:(len(body) * 2 // 5 // 188) * 188])
+                self.wfile.flush()
+                time.sleep(3)
+                return
+            # Pace the ten-second fixture near its media rate, then add a
+            # one-second gap after four seconds. A burst followed by a sleep
+            # would also pass without prefetch because TCP buffers the burst.
+            began = time.monotonic()
+            try:
+                for chunk in range(40):
+                    deadline = began + chunk * 0.25 + (1 if chunk >= 16 else 0)
+                    time.sleep(max(0, deadline - time.monotonic()))
+                    chunk_start = (len(body) * chunk // 40 // 188) * 188
+                    end = (len(body) * (chunk + 1) // 40 // 188) * 188 if chunk < 39 else len(body)
+                    self.wfile.write(body[chunk_start:end])
+                    self.wfile.flush()
+            except (BrokenPipeError, ConnectionResetError):
+                pass
+            return
         if path == "/slow":
             time.sleep(3)
             return
@@ -54,6 +79,9 @@ thread = threading.Thread(target=server.serve_forever, daemon=True)
 thread.start()
 try:
     subprocess.run([sys.argv[2], f"http://127.0.0.1:{server.server_port}/hls.m3u8?X-Plex-Token=fixture-test"], check=True, timeout=30)
+    subprocess.run([sys.argv[2], "--buffered-cancel-read", f"http://127.0.0.1:{server.server_port}/stalled.ts"], check=True, timeout=10)
+    subprocess.run([sys.argv[2], "--unbuffered-jitter", f"http://127.0.0.1:{server.server_port}/jitter.ts"], check=True, timeout=20)
+    subprocess.run([sys.argv[2], "--buffered-jitter", f"http://127.0.0.1:{server.server_port}/jitter.ts"], check=True, timeout=20)
     subprocess.run([sys.argv[2], "--failure", f"http://127.0.0.1:{server.server_port}/unavailable"], check=True, timeout=15)
     subprocess.run([sys.argv[2], "--cancel", f"http://127.0.0.1:{server.server_port}/slow"], check=True, timeout=5)
 finally:

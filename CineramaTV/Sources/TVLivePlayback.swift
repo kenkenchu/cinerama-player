@@ -28,7 +28,7 @@ final class TVLivePlayback {
         }
         self.releaseTune = releaseTune
         identity = service.serverSessionToken
-        engine = ExperimentalMPEG2Engine(mode: .cpu)
+        engine = ExperimentalMPEG2Engine(mode: .cpu, inputBufferDuration: 2)
     }
 
     static func validate(_ tune: PlexLiveTuneResult) throws {

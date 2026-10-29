@@ -30,6 +30,16 @@ AVKit player and existing format restrictions.
   common clock, bounded queues, audio switching, diagnostics and recovery.
   `ExperimentalMPEG2Engine.swift` retains the Mac protocol/AppKit adapter;
   `TVLivePlayerScreen` owns its UIKit display-layer host and TV controls.
+- TV requests a two-second compressed input reserve before decoding, bounded to
+  8 MiB / 2048 packets plus one in-flight packet. Read-ahead runs independently of
+  renderer backpressure, so short network/segment delivery gaps can be absorbed
+  without retaining seconds of decoded HD frames. Startup waits for the reserve
+  or a capacity/EOF limit. Renderer startup remains 150 ms audio / 100 ms video;
+  raising the audio renderer threshold can deadlock against its backpressure.
+  Playback Information shows compressed input seconds/bytes separately from
+  audio/video renderer queues. The reserve adds tuning/live latency; it cannot
+  compensate for sustained slow delivery, slow decoding or gaps beyond the
+  available reserve. Mac keeps its existing zero-read-ahead default.
 - CPU parsing, IDCT, motion compensation and BWDIF field-rate deinterlacing
   handle video locally. This is not hardware MPEG-2 decoding.
 - TV metadata and actual native bitstream checks reject dimensions above
@@ -151,6 +161,18 @@ most of the picture a few seconds after tuning on Apple TV Lite. That timing
 matches auto-hide handing focus to the full-screen Select button. Its style now
 returns only the transparent label, bypassing system button decoration. Both
 signed builds and all 40 tests on the tvOS 26.0 simulator pass. The signed app
-was installed on Lite without manual launch. Actual mask
-removal and remote focus behavior require user confirmation on Lite; automated
-tests do not establish visual correctness.
+was installed on Lite without manual launch. The user confirmed the mask is gone
+on Lite. This confirms mask removal; automated tests do not establish broader
+visual correctness.
+
+Input-buffer checkpoint (2026-10-28): after the mask fix, the user reported one
+channel frequently freezing picture and sound together, then resuming on Lite.
+TV now enables the bounded compressed reserve above. Both signed builds,
+187 Mac tests, and all 40 TV tests on the tvOS 26.0 simulator and Apple TV Lite
+pass. Native CPU/Metal fidelity, stream/fault checks and new buffered tests pass:
+exact video output/PTS and A/V sample counts, short EOF, audio switching, bounded
+pause, cancellation on a full queue and during blocked HTTP IO. With a paced
+one-second HTTP delivery gap, the serial control's longest sample wait was
+604 ms versus 7 ms with buffering. This synthetic result does not establish
+real-channel improvement. The signed app was installed on Lite without manual
+launch; user verification on the affected channel is pending.

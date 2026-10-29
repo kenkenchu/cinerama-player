@@ -8,12 +8,14 @@
 #include <cstring>
 #include <thread>
 #include <chrono>
+#include <atomic>
 #include <mach/mach.h>
 struct Frame { std::vector<uint8_t> pixels; CMTime pts; };
 struct Result { std::vector<Frame> frames; int audio=0; uint64_t blocks=0; double elapsed=0,gpu=0; };
 static void require(bool value,const char *message) { if(!value) { fprintf(stderr,"FAIL: %s\n",message); exit(1); } }
-static Result decode(const char *path,bool metal,int expectedChannels) {
+static Result decode(const char *path,bool metal,int expectedChannels,bool buffered=false) {
     Result r; CM2Decoder *d=cm2_create(metal); require(d,"create");
+    cm2_set_input_buffer(d,buffered?2:0);
     double start=CFAbsoluteTimeGetCurrent();
     if(cm2_open(d,path)<0) { fprintf(stderr,"%s\n",cm2_error(d)); exit(1); }
     CMTime lastAudio=kCMTimeInvalid, lastAudioEnd=kCMTimeInvalid;
@@ -95,11 +97,83 @@ static void soak(const char *path, bool metal, int expectedFrames) {
         metal?"Metal":"CPU",video,audio,CFAbsoluteTimeGetCurrent()-start,baseline/1048576.0,peak/1048576.0,(peak-baseline)/1048576.0);
     cm2_close(d);
 }
+// Compare byte-for-byte output with the serial path, then leave the producer
+// blocked on a full queue and verify cancellation/close joins it promptly.
+static void bufferedInput(const char *path,bool full=true) {
+    Result direct=decode(path,false,2), buffered=decode(path,false,2,true);
+    require(direct.frames.size()==buffered.frames.size() && direct.audio==buffered.audio,"buffering preserves all A/V samples and EOF");
+    for(size_t i=0;i<direct.frames.size();i++) {
+        require(CMTimeCompare(direct.frames[i].pts,buffered.frames[i].pts)==0 &&
+            direct.frames[i].pixels==buffered.frames[i].pixels,"buffering preserves video bytes and timestamps");
+    }
+    CM2Decoder *d=cm2_create(0); cm2_set_input_buffer(d,2);
+    require(cm2_open(d,path)==0,"open buffered cancellation fixture");
+    int kind=0; CMSampleBufferRef sample=cm2_next(d,&kind);
+    require(sample,"buffered startup completes"); CFRelease(sample);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    if(full) require(cm2_input_buffer_seconds(d)>=1.9 && cm2_input_buffer_seconds(d)<2.1,"compressed queue preloads two seconds");
+    require(cm2_input_buffer_bytes(d)>0 && cm2_input_buffer_bytes(d)<=8*1024*1024,"compressed queue has a hard memory cap");
+    double start=CFAbsoluteTimeGetCurrent(); cm2_cancel(d); cm2_close(d);
+    require(CFAbsoluteTimeGetCurrent()-start<1,"cancel wakes and joins a full producer");
+    puts("Compressed input buffering, exact output, EOF, bounded pause and cancellation passed");
+}
+static void bufferedJitter(const char *path,bool buffered=true) {
+    CM2Decoder *d=cm2_create(0); cm2_set_input_buffer(d,buffered?2:0);
+    require(cm2_open(d,path)==0,"open jitter fixture");
+    CMTime origin=kCMTimeInvalid;
+    auto start=std::chrono::steady_clock::now();
+    int video=0,audio=0; double longestRead=0;
+    while(video<150) {
+        double began=CFAbsoluteTimeGetCurrent();
+        int kind=0; CMSampleBufferRef sample=cm2_next(d,&kind);
+        require(sample,"jitter sample available");
+        CMTime pts=CMSampleBufferGetPresentationTimeStamp(sample);
+        if(!CMTIME_IS_VALID(origin)) { origin=pts; start=std::chrono::steady_clock::now(); }
+        else {
+            double wait=CFAbsoluteTimeGetCurrent()-began;
+            longestRead=fmax(longestRead,wait);
+            if(buffered) require(wait<0.3,"prefetch absorbs HTTP delivery gap during paced consumption");
+        }
+        if(kind==1) video++; else audio++;
+        double offset=CMTimeGetSeconds(CMTimeSubtract(pts,origin));
+        CFRelease(sample);
+        std::this_thread::sleep_until(start+std::chrono::microseconds((int64_t)(fmax(0,offset)*1000000)));
+    }
+    require(audio>0,"jitter fixture retains audio"); cm2_close(d);
+    if(!buffered) require(longestRead>0.5,"unbuffered control observes the HTTP delivery gap");
+    printf("%s paced input: longest sample wait %.3fs\n",buffered?"Buffered":"Unbuffered",longestRead);
+}
 int main(int argc,char **argv) {
     @autoreleasepool {
+        if(argc==3 && strcmp(argv[1],"--buffered-short")==0) { bufferedInput(argv[2],false); return 0; }
+        if(argc==3 && strcmp(argv[1],"--unbuffered-jitter")==0) { bufferedJitter(argv[2],false); return 0; }
+        if(argc==3 && strcmp(argv[1],"--buffered-input")==0) { bufferedInput(argv[2]); return 0; }
+        if(argc==3 && strcmp(argv[1],"--buffered-jitter")==0) { bufferedJitter(argv[2]); return 0; }
         if(argc==5 && strcmp(argv[1],"--soak")==0) {
             require(strcmp(argv[3],"cpu")==0 || strcmp(argv[3],"metal")==0,"explicit soak mode");
             soak(argv[2],strcmp(argv[3],"metal")==0,atoi(argv[4])); return 0;
+        }
+        if(argc==3 && strcmp(argv[1],"--buffered-cancel-read")==0) {
+            CM2Decoder *d=cm2_create(0); cm2_set_input_buffer(d,2);
+            std::atomic<bool> received{false},done{false}; int result=0;
+            std::thread worker([&] {
+                result=cm2_open(d,argv[2]);
+                while(result>=0) {
+                    int kind=0; CMSampleBufferRef sample=cm2_next(d,&kind);
+                    if(!sample) { result=kind; break; }
+                    received.store(true); CFRelease(sample);
+                }
+                done.store(true);
+            });
+            double deadline=CFAbsoluteTimeGetCurrent()+5;
+            while(!received.load() && !done.load() && CFAbsoluteTimeGetCurrent()<deadline)
+                std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            require(received.load(),"buffered reader starts before stalled IO");
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            require(!done.load(),"reader is blocked on stalled input");
+            double start=CFAbsoluteTimeGetCurrent(); cm2_cancel(d); worker.join(); cm2_close(d);
+            require(result<0 && CFAbsoluteTimeGetCurrent()-start<2,"cancel interrupts buffered network read and wakes consumer");
+            puts("Buffered network IO and consumer cancellation passed"); return 0;
         }
         if(argc==3 && strcmp(argv[1],"--cancel")==0) {
             CM2Decoder *d=cm2_create(0); int result=0; double start=CFAbsoluteTimeGetCurrent();
@@ -137,7 +211,7 @@ int main(int argc,char **argv) {
         double psnr=squared==0?INFINITY:10*log10(255.0*255.0/(squared/samples));
         printf("decode: frames=%zu audio=%d blocks=%llu PSNR=%.2f dB maxError=%d CPU=%.3fs Metal=%.3fs GPU=%.3fs\n",gpu.frames.size(),gpu.audio,(unsigned long long)gpu.blocks,psnr,maxError,cpu.elapsed,gpu.elapsed,gpu.gpu);
         require(psnr>45 && maxError<=12,"CPU/Metal reconstruction fidelity");
-        CM2Decoder *tracks=cm2_create(0); require(cm2_open(tracks,argv[1])==0,"open for track tests");
+        CM2Decoder *tracks=cm2_create(0); cm2_set_input_buffer(tracks,2); require(cm2_open(tracks,argv[1])==0,"open for track tests");
         if(cm2_audio_track_count(tracks)==2) {
             int first=cm2_audio_track_id(tracks,0), second=cm2_audio_track_id(tracks,1);
             require(strcmp(cm2_audio_track_language(tracks,0),"eng")==0 && strcmp(cm2_audio_track_language(tracks,1),"spa")==0,"track language metadata");

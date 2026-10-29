@@ -17,3 +17,6 @@ _cm2_audio_track_supported
 _cm2_selected_audio
 _cm2_request_audio
 _cm2_retryable
+_cm2_set_input_buffer
+_cm2_input_buffer_seconds
+_cm2_input_buffer_bytes

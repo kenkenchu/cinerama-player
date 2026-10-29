@@ -120,7 +120,8 @@ New Mac-specific UI belongs beside its feature. Engine behavior stays behind
 The CPU/Metal Live TV worker and buffer/recovery policies are explicitly shared
 from `Playback/MPEG2Pipeline.swift` and `LivePlaybackBufferState.swift`. Native
 views stay platform-owned; TV links only its dedicated device/simulator MPEG-2
-framework. See [TV Live TV](tvos-live-tv.md).
+framework. TV opts into bounded compressed-packet read-ahead in the native
+decoder; Mac keeps its zero-read-ahead default. See [TV Live TV](tvos-live-tv.md).
 
 ## Platform Boundary Gate
 

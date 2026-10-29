@@ -22,6 +22,10 @@ extern "C" {
 #include <vector>
 #include <cmath>
 #include <cstring>
+#include <deque>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 
 static const size_t capacity = 8192;
 struct Target { uint8_t *destination; ptrdiff_t stride; };
@@ -33,6 +37,20 @@ struct CM2Decoder {
     char error[192] = {};
     bool retryable = false;
     AVFormatContext *format = nullptr;
+    // Only the reader touches the live demuxer after startup. Decode/track APIs
+    // use an immutable snapshot so demux metadata updates cannot race them.
+    AVFormatContext *streamInfo = nullptr;
+    double inputTarget = 0;
+    std::thread inputReader;
+    std::mutex inputMutex;
+    std::condition_variable inputChanged;
+    struct InputPacket { AVPacket *packet; double videoTime; size_t bytes; };
+    std::deque<InputPacket> inputPackets;
+    std::deque<double> inputVideoTimes;
+    size_t inputBytes = 0;
+    int inputResult = 0;
+    bool inputFull = false, inputPrimed = false;
+
     NSString *authToken = nil;
     NSString *sourceHost = nil;
     NSNumber *sourcePort = nil;
@@ -62,6 +80,72 @@ struct CM2Decoder {
 };
 static thread_local CM2Decoder *active = nullptr;
 static void fail(CM2Decoder *d, const char *message, bool retryable=false) { snprintf(d->error,sizeof(d->error),"%s",message); d->retryable=retryable; }
+static AVFormatContext *mediaFormat(CM2Decoder *d) { return d->streamInfo ?: d->format; }
+static constexpr size_t maxInputBytes = 8 * 1024 * 1024;
+static constexpr size_t maxInputPackets = 2048;
+// Called with inputMutex held. DTS follows decode order, including B frames.
+static double inputDepth(CM2Decoder *d) {
+    return d->inputVideoTimes.size()<2 ? 0 : fmax(0,d->inputVideoTimes.back()-d->inputVideoTimes.front());
+}
+static void readAhead(CM2Decoder *d) {
+    while(!d->cancelled.load()) {
+        {
+            std::unique_lock<std::mutex> lock(d->inputMutex);
+            while(!d->cancelled.load() && (inputDepth(d)>=d->inputTarget || d->inputPackets.size()>=maxInputPackets)) {
+                d->inputFull=true; d->inputChanged.notify_all();
+                d->inputChanged.wait(lock);
+            }
+            d->inputFull=false;
+            if(d->cancelled.load()) return;
+        }
+        AVPacket *packet=av_packet_alloc();
+        int result=packet ? av_read_frame(d->format,packet) : AVERROR(ENOMEM);
+        size_t bytes=packet ? (size_t)std::max(0,packet->size) : 0;
+        if(packet) for(int i=0;i<packet->side_data_elems;i++) bytes+=packet->side_data[i].size;
+        if(result>=0 && bytes>maxInputBytes) result=AVERROR(ENOBUFS);
+        std::unique_lock<std::mutex> lock(d->inputMutex);
+        if(result<0) {
+            av_packet_free(&packet); d->inputResult=result;
+            d->inputChanged.notify_all(); return;
+        }
+        auto full=[&] {
+            return d->inputBytes+bytes>maxInputBytes || d->inputPackets.size()>=maxInputPackets || inputDepth(d)>=d->inputTarget;
+        };
+        while(!d->cancelled.load() && full()) {
+            d->inputFull=true; d->inputChanged.notify_all();
+            d->inputChanged.wait(lock);
+        }
+        d->inputFull=false;
+        if(d->cancelled.load()) { av_packet_free(&packet); return; }
+        double time=NAN;
+        if(packet->stream_index==d->videoIndex) {
+            int64_t timestamp=packet->dts!=AV_NOPTS_VALUE ? packet->dts : packet->pts;
+            if(timestamp!=AV_NOPTS_VALUE) {
+                time=timestamp*av_q2d(d->streamInfo->streams[d->videoIndex]->time_base);
+                d->inputVideoTimes.push_back(time);
+            }
+        }
+        d->inputPackets.push_back({packet,time,bytes}); d->inputBytes+=bytes;
+        d->inputChanged.notify_all();
+    }
+}
+static int readPacket(CM2Decoder *d) {
+    if(d->inputTarget<=0) return av_read_frame(d->format,d->packet);
+    if(!d->inputReader.joinable()) d->inputReader=std::thread([d] { @autoreleasepool { readAhead(d); } });
+    std::unique_lock<std::mutex> lock(d->inputMutex);
+    d->inputChanged.wait(lock,[&] {
+        return d->cancelled.load() || d->inputResult<0 ||
+            (!d->inputPackets.empty() && (d->inputPrimed || d->inputFull));
+    });
+    if(d->cancelled.load()) return AVERROR_EXIT;
+    if(d->inputPackets.empty()) return d->inputResult;
+    d->inputPrimed=true;
+    auto next=d->inputPackets.front(); d->inputPackets.pop_front(); d->inputBytes-=next.bytes;
+    if(std::isfinite(next.videoTime)) d->inputVideoTimes.pop_front();
+    av_packet_move_ref(d->packet,next.packet); av_packet_free(&next.packet);
+    d->inputChanged.notify_all(); return 0;
+}
+
 static int interrupt(void *opaque) { return ((CM2Decoder *)opaque)->cancelled.load() ? 1 : 0; }
 
 // Plex segment URLs may omit the top-level token. Carry it only to the same
@@ -232,13 +316,26 @@ int cm2_open(CM2Decoder *d,const char *url) {
         if(kind==1 && d->metal) context->opaque=d;
         if(avcodec_open2(context,codec,nullptr)<0) { fail(d,"Could not initialize the experimental decoder"); return -1; }
     }
+    if(d->inputTarget>0) {
+        d->streamInfo=avformat_alloc_context();
+        if(!d->streamInfo) { fail(d,"Stream snapshot allocation failed"); return -1; }
+        for(unsigned i=0;i<d->format->nb_streams;i++) {
+            AVStream *source=d->format->streams[i], *copy=avformat_new_stream(d->streamInfo,nullptr);
+            if(!copy || avcodec_parameters_copy(copy->codecpar,source->codecpar)<0 ||
+                av_dict_copy(&copy->metadata,source->metadata,0)<0) {
+                fail(d,"Stream snapshot allocation failed"); return -1;
+            }
+            copy->time_base=source->time_base; copy->avg_frame_rate=source->avg_frame_rate;
+            copy->r_frame_rate=source->r_frame_rate; copy->sample_aspect_ratio=source->sample_aspect_ratio;
+        }
+    }
     return 0;
 }
 static bool switchAudio(CM2Decoder *d,int index) {
-    if(index<0 || index>=(int)d->format->nb_streams || d->format->streams[index]->codecpar->codec_type!=AVMEDIA_TYPE_AUDIO) {
+    if(index<0 || index>=(int)mediaFormat(d)->nb_streams || mediaFormat(d)->streams[index]->codecpar->codec_type!=AVMEDIA_TYPE_AUDIO) {
         fail(d,"Invalid audio selection"); return false;
     }
-    AVCodecParameters *params=d->format->streams[index]->codecpar;
+    AVCodecParameters *params=mediaFormat(d)->streams[index]->codecpar;
     const AVCodec *codec=avcodec_find_decoder(params->codec_id);
     AVCodecContext *next=codec?avcodec_alloc_context3(codec):nullptr;
     if(!next) { fail(d,"Selected audio codec is unavailable; choose Standard playback"); return false; }
@@ -282,9 +379,9 @@ static bool prepareVideoFilter(CM2Decoder *d, AVFrame *frame) {
     d->filters=avfilter_graph_alloc();
     if(!d->filters) { fail(d,"Deinterlacer allocation failed"); return false; }
     d->filters->nb_threads=2;
-    AVRational tb=d->format->streams[d->videoIndex]->time_base;
+    AVRational tb=mediaFormat(d)->streams[d->videoIndex]->time_base;
     AVRational sar=frame->sample_aspect_ratio.num>0?frame->sample_aspect_ratio:AVRational{1,1};
-    AVRational fps=av_guess_frame_rate(d->format,d->format->streams[d->videoIndex],frame);
+    AVRational fps=av_guess_frame_rate(mediaFormat(d),mediaFormat(d)->streams[d->videoIndex],frame);
     char args[256];
     snprintf(args,sizeof(args),"video_size=%dx%d:pix_fmt=%d:time_base=%d/%d:pixel_aspect=%d/%d:frame_rate=%d/%d",
         frame->width,frame->height,frame->format,tb.num,tb.den,sar.num,sar.den,fps.num,fps.den);
@@ -397,7 +494,7 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
                 int kind=d->pendingKind, index=kind==1?d->videoIndex:d->audioIndex;
                 int64_t timestamp=d->frame->best_effort_timestamp;
                 if(timestamp==AV_NOPTS_VALUE) { av_frame_unref(d->frame); fail(d,"Missing media timestamp"); return -1; }
-                AVRational tb=d->format->streams[index]->time_base;
+                AVRational tb=mediaFormat(d)->streams[index]->time_base;
                 CMTime pts=CMTimeMake(av_rescale_q(timestamp,tb,{1,1000000}),1000000);
                 if(kind==1) {
                     if(!prepareVideoFilter(d,d->frame)) return -1;
@@ -422,7 +519,7 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
             }
             return 0;
         }
-        int result=av_read_frame(d->format,d->packet);
+        int result=readPacket(d);
         if(result<0) {
             if(result!=AVERROR_EOF) { fail(d,"Live stream read failed",true); return -1; }
             d->draining=true;
@@ -445,9 +542,29 @@ int cm2_read(CM2Decoder *d,CMSampleBufferRef *sample) {
 CMSampleBufferRef cm2_next(CM2Decoder *d,int *kind) {
     @autoreleasepool { CMSampleBufferRef sample=nullptr; *kind=cm2_read(d,&sample); return sample; }
 }
-void cm2_cancel(CM2Decoder *d) { if(d) d->cancelled.store(true); }
+void cm2_set_input_buffer(CM2Decoder *d,double seconds) {
+    // Configure before open; bounded even if a caller supplies an invalid value.
+    if(d && !d->format) d->inputTarget=std::isfinite(seconds) ? fmin(2,fmax(0,seconds)) : 0;
+}
+double cm2_input_buffer_seconds(CM2Decoder *d) {
+    std::lock_guard<std::mutex> lock(d->inputMutex); return inputDepth(d);
+}
+uint64_t cm2_input_buffer_bytes(CM2Decoder *d) {
+    std::lock_guard<std::mutex> lock(d->inputMutex); return d->inputBytes;
+}
+void cm2_cancel(CM2Decoder *d) {
+    if(d) {
+        // Use the same mutex as waits to avoid a lost cancellation wakeup.
+        std::lock_guard<std::mutex> lock(d->inputMutex);
+        d->cancelled.store(true); d->inputChanged.notify_all();
+    }
+}
 void cm2_close(CM2Decoder *d) {
     if(!d) return;
+    cm2_cancel(d);
+    if(d->inputReader.joinable()) d->inputReader.join();
+    for(auto &entry:d->inputPackets) av_packet_free(&entry.packet);
+    avformat_free_context(d->streamInfo);
     avcodec_free_context(&d->video); avcodec_free_context(&d->audio);
     avformat_close_input(&d->format); av_frame_free(&d->frame); av_frame_free(&d->filtered); av_packet_free(&d->packet);
     avfilter_graph_free(&d->filters);
@@ -461,9 +578,9 @@ double cm2_gpu_seconds(CM2Decoder *d) { return d->gpuTime.load(); }
 const char *cm2_error(CM2Decoder *d) { return d->error[0]?d->error:"Experimental decoder stopped"; }
 
 static AVStream *audioStream(CM2Decoder *d,int position) {
-    if(!d->format || position<0) return nullptr;
-    for(unsigned i=0;i<d->format->nb_streams;i++) if(d->format->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO)
-        if(position--==0) return d->format->streams[i];
+    if(!mediaFormat(d) || position<0) return nullptr;
+    for(unsigned i=0;i<mediaFormat(d)->nb_streams;i++) if(mediaFormat(d)->streams[i]->codecpar->codec_type==AVMEDIA_TYPE_AUDIO)
+        if(position--==0) return mediaFormat(d)->streams[i];
     return nullptr;
 }
 int cm2_audio_track_count(CM2Decoder *d) {

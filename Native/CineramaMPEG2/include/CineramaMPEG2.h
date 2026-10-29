@@ -7,8 +7,15 @@
 extern "C" {
 #endif
 typedef struct CM2Decoder CM2Decoder;
-// All operations except cancel and request_audio run serially on ONE worker thread.
+// Except cancel, request_audio and queue observations, APIs run serially on ONE
+// caller worker. Optional read-ahead owns a separate internal demux thread.
 CM2Decoder *cm2_create(int metal);
+// Optional compressed read-ahead, configured before open (0 default, 2 s max).
+// Bounded to 8 MiB / 2048 packets plus one in-flight packet; cancel wakes waits.
+void cm2_set_input_buffer(CM2Decoder *, double seconds);
+// Queue observations are safe during a read, not output underrun measurements.
+double cm2_input_buffer_seconds(CM2Decoder *);
+uint64_t cm2_input_buffer_bytes(CM2Decoder *);
 int cm2_open(CM2Decoder *, const char *url);
 // 1 video, 2 audio, 0 EOF, -1 failure. Samples are returned retained.
 int cm2_read(CM2Decoder *, CMSampleBufferRef *sample);

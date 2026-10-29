@@ -32,6 +32,10 @@ for spec in progressive interlaced bottom-first surround tracks chroma422 hd-int
     if [ "$interlaced" -ne 0 ]; then expected=180; fi
     MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" "$fixture" "$expected" "$channels"
 done
+MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" --buffered-input "$CACHE/fixtures/progressive.ts"
+"$CACHE/generate-fixture" "$CACHE/fixtures/short.ts" 0 0 0 0 15
+MTL_DEBUG_LAYER=1 "$CACHE/decode-tests" --buffered-short "$CACHE/fixtures/short.ts"
+"$CACHE/generate-fixture" "$CACHE/fixtures/jitter.ts" 0 0 0 0 300
 MTL_DEBUG_LAYER=1 python3 Native/CineramaMPEG2/Tests/LiveHLSTest.py "$CACHE/fixtures" "$CACHE/decode-tests"
 
 python3 - "$CACHE/fixtures" <<'PYFIXTURE'

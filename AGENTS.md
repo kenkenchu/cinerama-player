@@ -141,6 +141,19 @@ pinned rustup toolchain, not Homebrew cargo/rustc, for CineramaDovi.
 
 ## Next-Session Handoff
 
+- TV buffering (2026-10-28): the user confirmed the white mask is gone on
+  Apple TV Lite after replacing the full-screen Select button's system style.
+  One channel then repeatedly froze picture/audio together before resuming.
+  TV now opts into a two-second compressed packet reserve (8 MiB / 2048 packets
+  plus one in-flight packet), independent of renderer backpressure. Mac defaults
+  to no read-ahead. Native demux runs on its own cancellable producer; decode
+  metadata uses a snapshot. Both signed builds, 187 Mac tests and all 40 TV tests
+  on tvOS 26.0 simulator/Lite pass; native fidelity/fault/buffer/cancellation
+  checks pass. A synthetic one-second delivery gap gives 604 ms serial vs 7 ms
+  buffered sample waits. Real-channel improvement on Lite is pending user
+  verification. The signed app is installed on Lite. See `docs/tvos-live-tv.md`;
+  no manual app launch.
+
 - Three-TV setup (2026-10-28): Apple TV 4th plus Apple TV Lite and Apple TV Pro
   (both 3rd-generation 4K) are paired. Signed Cinerama installs succeeded on both
   new TVs; the user reported “all good now.” No agent launch or tests in this

@@ -27,11 +27,12 @@ private struct MPEG2ReadFailure: Error {
 }
 private final class MPEG2NativeSession: @unchecked Sendable {
     let decoder: OpaquePointer
-    init(metal: Bool) throws {
+    init(metal: Bool, inputBufferDuration: TimeInterval) throws {
         guard let decoder = cm2_create(metal ? 1 : 0) else {
             throw PlaybackError.unknown("Could not initialize the experimental MPEG-2 decoder.")
         }
         self.decoder = decoder
+        cm2_set_input_buffer(decoder, inputBufferDuration)
     }
     deinit { cm2_close(decoder) }
     func cancel() { cm2_cancel(decoder) }
@@ -88,6 +89,7 @@ final class ExperimentalMPEG2Engine: NSObject {
     var onPlaybackEnded: (@MainActor () -> Void)?
     var playbackCoordinator: AVPlaybackCoordinator { coordinator }
     let mode: ExperimentalMPEG2Mode
+    let inputBufferDuration: TimeInterval
     private(set) var gpuBlocks: UInt64 = 0
     private(set) var gpuSeconds = 0.0
     private(set) var buffers = LivePlaybackBufferState()
@@ -124,8 +126,9 @@ final class ExperimentalMPEG2Engine: NSObject {
     @ObservationIgnored private var preferredAudio: AudioTrack?
     @ObservationIgnored nonisolated(unsafe) private var outputObservers: [NSObjectProtocol] = []
 
-    init(mode: ExperimentalMPEG2Mode) {
+    init(mode: ExperimentalMPEG2Mode, inputBufferDuration: TimeInterval = 0) {
         self.mode = mode
+        self.inputBufferDuration = inputBufferDuration
         super.init()
         display.videoGravity = .resizeAspect
         coordinator = AVDelegatingPlaybackCoordinator(playbackControlDelegate: self)
@@ -154,11 +157,12 @@ final class ExperimentalMPEG2Engine: NSObject {
         state = .loading; isBuffering = true; error = nil
         desiredRate = shouldAutoPlay ? 1 : 0
         let mode = mode
+        let inputBufferDuration = inputBufferDuration
         lastProgress = ProcessInfo.processInfo.systemUptime
         worker = Task.detached(priority: .userInitiated) { [weak self] in
             while !Task.isCancelled {
                 do {
-                    let session = try MPEG2NativeSession(metal: mode == .metal)
+                    let session = try MPEG2NativeSession(metal: mode == .metal, inputBufferDuration: inputBufferDuration)
                     guard let self, await self.attach(session, id: id) else { return }
                     try session.open(url)
                     let tracks = session.audioTracks()
@@ -377,6 +381,8 @@ final class ExperimentalMPEG2Engine: NSObject {
         cm2_request_audio(session.decoder, Int32(track.id))
     }
     func setVideoFillEnabled(_ enabled: Bool) { display.videoGravity = enabled ? .resizeAspectFill : .resizeAspect }
+    var inputBufferedSeconds: TimeInterval { session.map { cm2_input_buffer_seconds($0.decoder) } ?? 0 }
+    var inputBufferedBytes: UInt64 { session.map { cm2_input_buffer_bytes($0.decoder) } ?? 0 }
     private var queueEndOffset: String {
         guard let audioEnd = buffers.audioEnd, let videoEnd = buffers.videoEnd else { return "Unavailable" }
         return String(format: "%.3f s", audioEnd - videoEnd)
@@ -386,6 +392,7 @@ final class ExperimentalMPEG2Engine: NSObject {
          ("GPU reconstructed blocks", String(gpuBlocks)),
          ("GPU reconstruction time", String(format: "%.3f s", gpuSeconds)),
          ("Prediction / parsing", "CPU"),
+         ("Compressed input buffer", String(format: "%.2f s · %.2f MiB", inputBufferedSeconds, Double(inputBufferedBytes) / 1_048_576)),
          ("Stream reconnects", String(recovery.totalAttempts)),
          ("Timestamp resets", String(timestampResets)),
          ("Video output", "\(outputVideoWidth) × \(outputVideoHeight) · " + String(format: "%.2f outputs/s", outputVideoCadence)),

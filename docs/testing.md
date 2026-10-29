@@ -175,3 +175,17 @@ Apple TV HD test run was attempted but could not launch because the device was
 asleep. No device test pass is claimed. User live-channel picture/audio/focus
 and sustained A8 performance/energy remain pending, as do physical audio route
 and output synchronization checks. Mac M5/M6/M7 acceptance remains separate.
+
+## TV compressed input buffering (2026-10-28)
+
+Both signed builds, 187 Mac tests and 40 TV tests pass on the tvOS 26.0 simulator
+and Apple TV Lite. TV renderer tests now use the production two-second input
+reserve and assert bounded compressed depth/bytes while paused, followed by
+resume, reconnect, rapid reload and stop. Native tests compare buffered/serial
+video bytes, timestamps and sample counts, short-input EOF, buffered audio
+switching, full-queue cancellation and cancellation during stalled HTTP input.
+A paced HTTP control sees a 604 ms sample wait across an injected one-second
+network gap; buffered consumption sees 7 ms. Existing CPU/Metal fidelity, HLS,
+format-fault and IO-cancellation tests pass. See [TV Live TV](tvos-live-tv.md)
+for limits. These checks do not establish real Plex-channel delivery, sustained
+A8 performance, physical A/V output or long-term memory/energy behavior.

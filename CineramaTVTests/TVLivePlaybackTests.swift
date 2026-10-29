@@ -77,6 +77,7 @@ import Testing
         await session.start(provider: provider, channel: channel, serverID: "fixture")
         session.togglePause(); session.setForeground(true)
         #expect(session.engine.mode == .cpu)
+        #expect(session.engine.inputBufferDuration == 2)
         #expect(!session.started)
         #expect(session.stopped)
         #expect(session.engine.state == .stopped)
@@ -101,7 +102,7 @@ import Testing
         // Match channel selection: construct and dismiss an inactive session
         // before activating audio. Neither operation may open an output device.
         try AVAudioSession.sharedInstance().setActive(false)
-        let engine = ExperimentalMPEG2Engine(mode: .cpu)
+        let engine = ExperimentalMPEG2Engine(mode: .cpu, inputBufferDuration: 2)
         #expect(!engine.outputConfigured)
         engine.stop()
         #expect(!engine.outputConfigured)
@@ -122,6 +123,8 @@ import Testing
         let time = engine.currentTime
         try await Task.sleep(for: .seconds(1))
         #expect(engine.submittedVideoFrames == frames)
+        #expect(engine.inputBufferedSeconds >= 1.9 && engine.inputBufferedSeconds < 2.1)
+        #expect(engine.inputBufferedBytes > 0 && engine.inputBufferedBytes <= 8 * 1_024 * 1_024)
         #expect(abs(engine.currentTime - time) < 0.05)
         #expect(engine.buffers.peakVideoDepth < 2.1 && engine.buffers.peakAudioDepth < 2.1)
         engine.play()
@@ -155,6 +158,7 @@ struct TVMPEG2NativeTests {
     private func decode(_ fixture: URL) throws -> (pixels: [UInt8], audio: Int) {
         let decoder = try #require(cm2_create(0))
         defer { cm2_close(decoder) }
+        cm2_set_input_buffer(decoder, 2)
         try #require(cm2_open(decoder, fixture.path) == 0)
         var video = 0, audio = 0
         var pixels: [UInt8] = []
