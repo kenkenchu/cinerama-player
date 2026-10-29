@@ -185,7 +185,7 @@ struct TVLivePlayerScreen: View {
             } label: {
                 Color.clear.contentShape(Rectangle())
             }
-            .buttonStyle(.plain).focusEffectDisabled()
+            .buttonStyle(TVLiveSurfaceButtonStyle()).focusEffectDisabled()
             .focused($focus, equals: .surface)
             .accessibilityLabel("Show playback controls")
             .disabled(controlsVisible)
@@ -306,6 +306,15 @@ struct TVLivePlayerScreen: View {
         }
     }
 
+}
+
+/// The full-screen focus target must never acquire a system button background.
+/// tvOS plain buttons can still draw a bright focused plate over the video when
+/// the controls auto-hide. Return only the transparent label in every state.
+private struct TVLiveSurfaceButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
 }
 
 private struct TVMPEG2Surface: UIViewRepresentable {

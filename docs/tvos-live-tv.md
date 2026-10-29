@@ -39,7 +39,10 @@ AVKit player and existing format restrictions.
 Remote Play/Pause and the focused button control the shared clock. Back returns
 to channels. The compact app-owned controls hide after five seconds of active playback.
 Remote direction or Select reveals them; pause, tuning, errors and VoiceOver
-keep them visible. Audio opens a native track sheet; More holds Playback
+keep them visible. The full-screen Select target uses a custom undecorated
+button style; do not
+replace it with the system plain style, which can draw a bright focus plate over
+the video when the controls hide. Audio opens a native track sheet; More holds Playback
 Information and Back to Channels. Remote Back still returns directly to channels.
 Audio offers the decoder's supported tracks and marks the current one. The red
 LIVE marker is status only. Playback Information exposes safe decoder, GPU,
@@ -142,3 +145,12 @@ CPU-only verification: both signed builds and all 40 TV tests pass on the tvOS
 26.0 simulator and Apple TV HD/tvOS 26.6, including CPU renderer lifecycle,
 native cadence/PCM and cover presentation/dismissal. The signed app was installed
 without manual launch. Mac source and the preceding 186-test baseline are unchanged.
+
+Focus-overlay correction (2026-10-28): the user reported a white mask covering
+most of the picture a few seconds after tuning on Apple TV Lite. That timing
+matches auto-hide handing focus to the full-screen Select button. Its style now
+returns only the transparent label, bypassing system button decoration. Both
+signed builds and all 40 tests on the tvOS 26.0 simulator pass. The signed app
+was installed on Lite without manual launch. Actual mask
+removal and remote focus behavior require user confirmation on Lite; automated
+tests do not establish visual correctness.
