@@ -299,16 +299,8 @@ struct TVMediaView: View {
             }) == true ? selected : nil
         }
         let tracks = media.parts.first?.streams.filter(TVStreamResolver.supportsSubtitle) ?? []
-        if let details = model.details,
-            let saved = TVTrackPreferences.selection(
-                kind: "subtitle", streams: tracks,
-                details: details, profile: service.activeProfileID)
-        {
-            return saved
-        }
-        return media.parts.first?.streams.first {
-            $0.isSelected == true && TVStreamResolver.supportsSubtitle($0)
-        }?.id
+        return TVTrackPreferences.subtitleSelection(streams: tracks,
+            details: model.details, profile: service.activeProfileID)
     }
 
     private func selectedAudio(media: PlexMedia, index: Int) -> Int? {

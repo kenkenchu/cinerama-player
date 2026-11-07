@@ -79,6 +79,49 @@ struct TVTrackPreferencesTests {
         }
     }
 
+    @Test func subtitlesDefaultOnButExplicitOffWins() throws {
+        try isolatedDefaults { defaults in
+            let details = try TVTestFixtures.details()
+            let stream = try TVTestFixtures.stream(TVTestFixtures.subtitle)
+            #expect(TVTrackPreferences.subtitleSelection(streams: [stream], details: details,
+                profile: "profile", defaults: defaults) == 3)
+            TVTrackPreferences.remember(nil, kind: "subtitle", details: details, profile: "profile", defaults: defaults)
+            #expect(TVTrackPreferences.subtitleSelection(streams: [stream], details: details,
+                profile: "profile", defaults: defaults) == nil)
+        }
+    }
+
+    @Test func unavailableRememberedSubtitleFallsBackWithoutEnablingBitmapTracks() throws {
+        try isolatedDefaults { defaults in
+            let details = try TVTestFixtures.details()
+            var previous = TVTestFixtures.subtitle
+            previous["languageCode"] = "fra"
+            TVTrackPreferences.remember(try TVTestFixtures.stream(previous), kind: "subtitle",
+                details: details, profile: "profile", defaults: defaults)
+            var bitmap = TVTestFixtures.subtitle
+            bitmap["id"] = 4
+            bitmap["codec"] = "pgs"
+            bitmap["selected"] = true
+            let streams = try [bitmap, TVTestFixtures.subtitle].map(TVTestFixtures.stream)
+            #expect(TVTrackPreferences.subtitleSelection(streams: streams, details: details,
+                profile: "profile", defaults: defaults) == 3)
+            #expect(TVTrackPreferences.subtitleSelection(streams: [streams[0]], details: details,
+                profile: "profile", defaults: defaults) == nil)
+        }
+    }
+
+    @Test func fullSubtitlesArePreferredOverForcedUnlessPlexSelectedForced() throws {
+        var forced = TVTestFixtures.subtitle
+        forced["id"] = 4
+        forced["forced"] = true
+        let full = try TVTestFixtures.stream(TVTestFixtures.subtitle)
+        #expect(TVTrackPreferences.subtitleSelection(streams: [try TVTestFixtures.stream(forced), full],
+            details: nil, profile: nil) == 3)
+        forced["selected"] = true
+        #expect(TVTrackPreferences.subtitleSelection(streams: [try TVTestFixtures.stream(forced), full],
+            details: nil, profile: nil) == 4)
+    }
+
     private func isolatedDefaults(_ body: (UserDefaults) throws -> Void) throws {
         let suite = "com.cinerama-player.tests.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))

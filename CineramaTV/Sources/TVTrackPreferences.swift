@@ -51,11 +51,28 @@ enum TVTrackPreferences {
         defaults.set(data, forKey: key)
     }
 
+    /// Library playback defaults to an available full text subtitle. Plex's
+    /// explicit selection wins; remembered Off remains authoritative.
+    static func subtitleSelection(streams: [PlexStream], details: PlexMediaDetails?, profile: String?, defaults: UserDefaults = .standard) -> Int? {
+        let tracks = streams.filter(TVStreamResolver.supportsSubtitle)
+        if let details, let saved = selection(kind: "subtitle", streams: tracks,
+            details: details, profile: profile, defaults: defaults) {
+            return saved
+        }
+        return tracks.first { $0.isSelected == true }?.id
+            ?? tracks.first { $0.isDefault == true && $0.isForced != true }?.id
+            ?? tracks.first { $0.isForced != true }?.id
+            ?? tracks.first?.id
+    }
+
     /// Outer optional distinguishes no preference from an explicit Off choice.
     static func selection(kind: String, streams: [PlexStream], details: PlexMediaDetails, profile: String?, defaults: UserDefaults = .standard) -> Int?? {
         guard let key = key(details: details, profile: profile, kind: kind),
               let data = defaults.data(forKey: key),
               let preference = try? JSONDecoder().decode(Track.self, from: data) else { return nil }
-        return .some(preference.matching(streams)?.id)
+        if preference.off { return .some(nil) }
+        // A missing remembered language/format is not an explicit Off choice.
+        guard let match = preference.matching(streams) else { return nil }
+        return .some(match.id)
     }
 }

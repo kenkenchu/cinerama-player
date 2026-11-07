@@ -68,10 +68,8 @@ extension TVStreamResolver {
             let streams = media.parts.first?.streams ?? []
             let subtitles = streams.filter(supportsSubtitle)
             let audio = streams.filter(supportsAudio)
-            let savedSubtitle = TVTrackPreferences.selection(kind: "subtitle", streams: subtitles, details: details, profile: profile)
-            let subtitleID: Int?
-            if let savedSubtitle { subtitleID = savedSubtitle }
-            else { subtitleID = subtitles.first { $0.isSelected == true }?.id }
+            let subtitleID = TVTrackPreferences.subtitleSelection(streams: subtitles,
+                details: details, profile: profile)
             let audioID = TVTrackPreferences.selection(kind: "audio", streams: audio,
                 details: details, profile: profile) ?? nil
             do { return try choice(media: media, index: index, subtitleID: subtitleID, audioID: audioID) }

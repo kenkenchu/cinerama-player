@@ -36,7 +36,11 @@ received AVPlayer legible track without gating video startup on subtitle
 metadata. SRT/WebVTT and ASS/SSA text packaging is allowed; advanced ASS styling
 and bitmap subtitles are not supported. Device-local audio/subtitle preferences
 are scoped by profile/server/movie or series and include explicit subtitle Off.
-Changes take effect on the next Play/Resume. Native AVKit also exposes received
+Library subtitles default on in both Home and details: a remembered choice
+(including explicit Off) wins, followed by Plex's selected text track, a default
+full text track, the first full text track, then a forced-only track. Missing
+remembered tracks fall back to this default rather than silently becoming Off.
+Bitmap tracks remain unsupported. Changes take effect on the next Play/Resume. Native AVKit also exposes received
 tracks during playback; complete persistence of in-player native-menu changes
 is not yet implemented.
 
