@@ -229,3 +229,8 @@ Verification (2026-11-07): both signed builds, 45 tvOS 26.0 simulator tests and
 187 Mac tests pass. The simulator initially reported an installation-busy launch
 failure; the complete retry passed. No manual app launch or device performance
 measurement was performed.
+
+The signed update was subsequently installed on Apple TV 4th generation
+(`AppleTV5,3`) without an agent launch. The user confirmed browsing feels
+smoother. This is qualitative device acceptance of the artwork optimization;
+playback throughput and frame rates were not measured.
