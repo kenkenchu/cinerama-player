@@ -211,3 +211,21 @@ and diff checks pass. Mac UI/shared playback source is unchanged; its preceding
 186-test baseline remains the latest full Mac test run. The existing TV tests
 cover playback policy, lifecycle, native renderer and modal contracts; the new
 visual hierarchy, control fade and remote focus paths still need user acceptance.
+
+## Artwork performance
+
+TV artwork is downsampled with ImageIO to the requested display dimensions and
+fully decoded on a serial background actor before presentation. This avoids
+main-thread decompression and bounds bitmap allocations even when an artwork
+server returns a full-resolution original. The 32 MiB / 120-entry decoded cache
+uses actual bitmap row bytes and height for cost accounting. Cancelled or
+superseded loads cannot publish an old image. Mac artwork is unchanged.
+
+`TVArtworkTests` checks oversized-image dimensions/memory and malformed input.
+These checks establish allocation bounds, not measured A8 scrolling frame rates;
+physical-device browsing and playback performance remain user verification.
+
+Verification (2026-11-07): both signed builds, 45 tvOS 26.0 simulator tests and
+187 Mac tests pass. The simulator initially reported an installation-busy launch
+failure; the complete retry passed. No manual app launch or device performance
+measurement was performed.

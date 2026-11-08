@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import ImageIO
 
 /// Bounded, profile-scoped memory cache. Networking uses PlexService's existing
 /// authenticated image pipeline; token-bearing URLs never reach diagnostics.
@@ -7,6 +8,7 @@ import UIKit
 @Observable
 final class TVArtworkModel {
     var image: UIImage?
+    private var loadGeneration = 0
     private static let cache: NSCache<NSString, UIImage> = {
         let value = NSCache<NSString, UIImage>()
         value.totalCostLimit = 32 * 1024 * 1024
@@ -15,14 +17,45 @@ final class TVArtworkModel {
     }()
 
     func load(service: PlexService, path: String?, serverID: String?, width: Int, height: Int) async {
+        loadGeneration += 1
+        let generation = loadGeneration
         image = nil
         guard let url = service.imageURL(for: path, serverID: serverID, width: width, height: height) else { return }
         let key = "\(service.activeProfileID ?? "-")|\(serverID ?? "-")|\(url.absoluteString)" as NSString
         if let cached = Self.cache.object(forKey: key) { image = cached; return }
         guard let data = try? await service.imageData(for: url), !Task.isCancelled,
-              let decoded = UIImage(data: data) else { return }
-        Self.cache.setObject(decoded, forKey: key, cost: width * height * 4)
+              generation == loadGeneration else { return }
+        let decoded = await TVArtworkDecoder.shared.decode(data, maxPixelSize: max(width, height))
+        guard !Task.isCancelled, generation == loadGeneration, let decoded else { return }
+        Self.cache.setObject(decoded, forKey: key,
+            cost: decoded.cgImage.map { $0.bytesPerRow * $0.height } ?? 0)
         image = decoded
+    }
+}
+
+/// A serial executor keeps image decompression off the UI actor and avoids a
+/// burst of concurrent bitmap allocations when a shelf first becomes visible.
+actor TVArtworkDecoder {
+    static let shared = TVArtworkDecoder()
+
+    func decode(_ data: Data, maxPixelSize: Int) -> UIImage? {
+        guard !Task.isCancelled else { return nil }
+        return Self.thumbnail(data, maxPixelSize: maxPixelSize)
+    }
+
+    nonisolated static func thumbnail(_ data: Data, maxPixelSize: Int) -> UIImage? {
+        guard maxPixelSize > 0 else { return nil }
+        return autoreleasepool {
+            guard let source = CGImageSourceCreateWithData(data as CFData,
+                [kCGImageSourceShouldCache: false] as CFDictionary),
+                let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
+                    kCGImageSourceShouldCacheImmediately: true,
+                ] as CFDictionary) else { return nil }
+            return UIImage(cgImage: image)
+        }
     }
 }
 
